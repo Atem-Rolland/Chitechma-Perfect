@@ -87,6 +87,15 @@ export interface Payment {
   method?: "MTN Mobile Money" | "Orange Money" | "Bank Transfer" | "Card";
 }
 
+export interface CourseMaterial {
+  id: string;
+  name: string;
+  type: "pdf" | "docx" | "video" | "zip" | "link";
+  url?: string; 
+  size?: string; 
+  uploadDate?: string; 
+}
+
 export interface Assignment {
   id: string;
   courseId: string;
