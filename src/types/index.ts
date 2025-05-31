@@ -77,13 +77,13 @@ export interface Grade {
 
 export interface Payment {
   id: string;
-  studentId?: string; // Optional if it's for the current user
+  studentId?: string; 
   amount: number;
   currency: string; 
-  date: string; // Use string for ISO date for easier mock data and formatting
+  date: string; 
   purpose: string; 
   status: "Completed" | "Pending" | "Failed";
-  transactionId?: string; // Could be same as id or a separate gateway ID
+  transactionId?: string; 
   method?: "MTN Mobile Money" | "Orange Money" | "Bank Transfer" | "Card";
 }
 
