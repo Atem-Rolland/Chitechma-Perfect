@@ -137,3 +137,15 @@ export interface MockCourseForum { // Simplified course for forum context
   id: string;
   name: string;
 }
+
+export interface LiveClass {
+  id: string;
+  courseId: string;
+  courseCode: string;
+  courseName: string;
+  title: string;
+  lecturerName: string;
+  dateTime: string; // ISO string for date and time
+  meetingLink: string; // URL to the Google Meet or other platform
+  durationMinutes?: number; // Optional duration in minutes
+}

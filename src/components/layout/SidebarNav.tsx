@@ -35,7 +35,8 @@ import {
   Video, // For Video Lectures
   MessageSquare, // For Discussion Forum
   BookCheck, // For View Grades (main results)
-  History // For Payment History
+  History, // For Payment History
+  Presentation // For Live Classes
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -51,7 +52,7 @@ const iconMap: Record<string, React.ElementType> = {
   DollarSign,
   Settings,
   ShieldCheck,
-  BookCheck, // Main "My Grades" icon
+  BookCheck, 
   BarChart3,
   DownloadCloud,
   FileWarning,
@@ -60,6 +61,7 @@ const iconMap: Record<string, React.ElementType> = {
   Video,
   MessageSquare,
   History,
+  Presentation,
 };
 
 const defaultSidebarNav: Record<Role | "guest", NavItem[]> = {
@@ -68,8 +70,8 @@ const defaultSidebarNav: Record<Role | "guest", NavItem[]> = {
     { title: 'My Courses', href: '/courses', icon: BookOpen },
     { 
       title: 'Results', 
-      href: '#', // Parent item, not a direct link
-      icon: GraduationCap, // Or BookCheck for a more direct "grades" feel
+      href: '#', 
+      icon: GraduationCap, 
       subItems: [
         { title: 'View Grades', href: '/dashboard/student/grades', icon: BookCheck },
         { title: 'GPA Analytics', href: '/dashboard/student/grades/gpa-analytics', icon: BarChart3 },
@@ -79,7 +81,7 @@ const defaultSidebarNav: Record<Role | "guest", NavItem[]> = {
     },
     { 
       title: 'Tuition & Payments', 
-      href: '#', // Parent item
+      href: '#', 
       icon: CreditCard,
       subItems: [
         { title: 'Overview & Pay', href: '/dashboard/student/payments', icon: CreditCard },
@@ -88,12 +90,13 @@ const defaultSidebarNav: Record<Role | "guest", NavItem[]> = {
     },
     {
       title: 'E-Learning',
-      href: '#', // Parent item
-      icon: FolderArchive, // Or a more generic e-learning icon
+      href: '#', 
+      icon: FolderArchive, 
       subItems: [
         { title: 'Course Materials', href: '/dashboard/student/e-learning/materials', icon: FolderArchive },
         { title: 'Assignments', href: '/dashboard/student/e-learning/assignments', icon: ClipboardCheck },
         { title: 'Video Lectures', href: '/dashboard/student/e-learning/lectures', icon: Video },
+        { title: 'Live Classes', href: '/dashboard/student/e-learning/live-classes', icon: Presentation },
         { title: 'Discussion Forum', href: '/dashboard/student/e-learning/forum', icon: MessageSquare },
       ]
     }
@@ -136,7 +139,6 @@ interface SidebarNavItemProps {
 const SidebarNavItem: React.FC<SidebarNavItemProps> = ({ item, pathname }) => {
   const Icon = item.icon ? iconMap[item.icon.displayName || item.icon.name] || item.icon : null;
   
-  // For parent items with subItems, isActive should also check if any subItem is active
   let isActive = pathname === item.href || (item.href !== '/dashboard' && item.href !== '#' && pathname.startsWith(item.href));
   if (item.subItems && !isActive) {
     isActive = item.subItems.some(sub => pathname === sub.href || (sub.href !== '/dashboard' && sub.href !== '#' && pathname.startsWith(sub.href)));
@@ -194,7 +196,7 @@ const SidebarNavItem: React.FC<SidebarNavItemProps> = ({ item, pathname }) => {
                     <Link href={subItem.href} passHref legacyBehavior>
                       <SidebarMenuSubButton 
                         isActive={pathname === subItem.href || (subItem.href !== '/dashboard' && subItem.href !== '#' && pathname.startsWith(subItem.href))}
-                        className="pl-6" // Indent sub-items
+                        className="pl-6" 
                       >
                         {SubIcon && <SubIcon className="h-4 w-4 mr-2" />}
                         {subItem.title}
