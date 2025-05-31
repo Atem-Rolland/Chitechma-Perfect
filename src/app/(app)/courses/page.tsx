@@ -177,6 +177,8 @@ export default function CoursesPage() {
   const { user, role, profile } = useAuth();
   const isStudent = role === 'student';
 
+  const [hasLoadedInitialRegistrations, setHasLoadedInitialRegistrations] = useState(false);
+
   const studentAcademicContext = useMemo(() => {
     if (isStudent && profile) { 
       return {
@@ -221,24 +223,52 @@ export default function CoursesPage() {
   const [daysToDeadline, setDaysToDeadline] = useState<number | null>(null);
 
   useEffect(() => {
-    async function loadCoursesAndRegistrations() {
-      setIsLoading(true);
+    async function loadData() {
+      setIsLoading(true); // Page-level loading for courses
       const fetchedCourses = await fetchCourses();
       setAllCourses(fetchedCourses);
-
+  
       if (user?.uid && typeof window !== 'undefined') {
         const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
         if (storageKey) {
-            const storedIds = localStorage.getItem(storageKey);
-            if (storedIds) {
-                setRegisteredCourseIds(JSON.parse(storedIds));
+          const storedIds = localStorage.getItem(storageKey);
+          if (storedIds) {
+            try {
+              const parsedIds = JSON.parse(storedIds);
+              if (Array.isArray(parsedIds)) {
+                setRegisteredCourseIds(parsedIds);
+              } else {
+                setRegisteredCourseIds([]);
+                localStorage.removeItem(storageKey); // Clear corrupted data
+              }
+            } catch (e) {
+              console.error("Failed to parse registered courses from localStorage:", e);
+              setRegisteredCourseIds([]);
+              localStorage.removeItem(storageKey); // Clear corrupted data
             }
+          } else {
+            setRegisteredCourseIds([]);
+          }
         }
+      } else if (!user?.uid && typeof window !== 'undefined') {
+        setRegisteredCourseIds([]); // Clear if no user
       }
+      setHasLoadedInitialRegistrations(true);
       setIsLoading(false);
     }
-    loadCoursesAndRegistrations();
+    loadData();
   }, [user?.uid]);
+  
+  // Effect for saving registered courses to localStorage
+  useEffect(() => {
+    // Only save if initial load is complete and user is identified
+    if (hasLoadedInitialRegistrations && user?.uid && typeof window !== 'undefined') {
+      const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
+      if (storageKey) {
+        localStorage.setItem(storageKey, JSON.stringify(registeredCourseIds));
+      }
+    }
+  }, [registeredCourseIds, user?.uid, hasLoadedInitialRegistrations]);
   
    useEffect(() => {
     if (isStudent && studentAcademicContext) {
@@ -319,15 +349,6 @@ export default function CoursesPage() {
     );
     return relevantCourses.reduce((sum, course) => sum + course.credits, 0);
   }, [registeredCoursesList, currentRegistrationMeta.academicYear, currentRegistrationMeta.semester]);
-  
-  useEffect(() => {
-    if (user?.uid && typeof window !== 'undefined') {
-        const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
-        if (storageKey) {
-            localStorage.setItem(storageKey, JSON.stringify(registeredCourseIds));
-        }
-    }
-  }, [registeredCourseIds, user?.uid]);
 
 
   const handleRegisterCourse = (course: Course) => {
@@ -836,3 +857,5 @@ export default function CoursesPage() {
     </motion.div>
   );
 }
+
+    
