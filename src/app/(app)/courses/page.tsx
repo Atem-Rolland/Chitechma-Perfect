@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Course } from "@/types";
-import { BookOpen, Search, Filter, Tag, ArrowRight, School, Info, CalendarDays, BookUser, PlusCircle, MinusCircle, Download, AlertCircle, XCircle, CheckCircle, Eye } from "lucide-react";
+import { BookOpen, Search, Filter, Tag, School, Info, CalendarDays, BookUser, PlusCircle, MinusCircle, Download, AlertCircle, XCircle, CheckCircle, Eye } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
@@ -218,6 +218,7 @@ export default function CoursesPage() {
             // To be strict, if a prereq code doesn't map to any course, it can't be met.
              return true; 
         }
+        // Check if any of the potential prerequisite courses (which could be from different departments if codes are reused) are registered.
         const isPrereqMet = potentialPrereqCourses.some(pc => registeredCourseIds.includes(pc.id));
         return !isPrereqMet;
       });
@@ -510,3 +511,4 @@ export default function CoursesPage() {
 }
 
     
+
