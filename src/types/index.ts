@@ -14,6 +14,8 @@ export interface UserProfile {
   program?: string; 
   currentAcademicYear?: string; 
   currentSemester?: string; 
+  isNewStudent?: boolean; // Added
+  isGraduating?: boolean; // Added
   createdAt?: any; 
   updatedAt?: any; 
 }
@@ -148,4 +150,11 @@ export interface LiveClass {
   dateTime: string; // ISO string for date and time
   meetingLink: string; // URL to the Google Meet or other platform
   durationMinutes?: number; // Optional duration in minutes
+}
+
+// For Tuition fees page
+export interface FeeItem {
+  name: string;
+  amount: number;
+  condition?: string; // Optional description of when this fee applies
 }

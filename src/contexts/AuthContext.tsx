@@ -35,23 +35,14 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// MOCK_INITIAL_STUDENT_DETAILS:
-// This object provides fallback default academic details for students.
-// In a real application:
-// - These details (department, level, program, academicYear, semester) would be 
-//   formally set by university administration when a student record is created or updated in Firestore.
-// - They would not be hardcoded as defaults in the frontend context.
-// - The student profile would be the single source of truth for this information.
-// This mock is purely for development convenience to allow student-specific features 
-// (like course filtering, dashboard display) to function without a full admin backend for managing student records.
-// Other personal details like matricule, DOB, POB, etc., are handled by mock data directly
-// in components like StudentDashboard.tsx if not part of the core UserProfile schema.
 const MOCK_INITIAL_STUDENT_DETAILS = {
-  department: "Department of computer engineering and system maintenance", 
-  level: 400, 
-  program: "B.Eng. Computer Engineering and System Maintenance", 
-  currentAcademicYear: "2024/2025", 
-  currentSemester: "First Semester", 
+  department: "Department of computer engineering and system maintenance",
+  level: 100, // Default to level 100 for new students
+  program: "B.Eng. Computer Engineering and System Maintenance",
+  currentAcademicYear: "2024/2025",
+  currentSemester: "First Semester",
+  isNewStudent: true, // New students are indeed new
+  isGraduating: false, // New students are not graduating by default
 };
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
@@ -66,15 +57,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const userDocSnap = await getDoc(userDocRef);
     if (userDocSnap.exists()) {
       const userProfileData = userDocSnap.data() as UserProfile;
-      // Ensure all fields are present, provide defaults if necessary
+      // Ensure all fields are present, provide defaults if necessary for students
       const completeProfile: UserProfile = {
         ...userProfileData,
-        // Populate academic fields only if the role is student and they are missing
         department: userProfileData.department || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.department : undefined),
         level: userProfileData.level || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.level : undefined),
         program: userProfileData.program || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.program : undefined),
         currentAcademicYear: userProfileData.currentAcademicYear || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.currentAcademicYear : undefined),
         currentSemester: userProfileData.currentSemester || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.currentSemester : undefined),
+        isNewStudent: userProfileData.isNewStudent === undefined && userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.isNewStudent : userProfileData.isNewStudent,
+        isGraduating: userProfileData.isGraduating === undefined && userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.isGraduating : userProfileData.isGraduating,
       };
       setProfile(completeProfile);
       setRole(completeProfile.role);
@@ -115,6 +107,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
     
+    let studentSpecificDetails = {};
+    if (userRole === 'student') {
+      studentSpecificDetails = {
+        department: MOCK_INITIAL_STUDENT_DETAILS.department,
+        level: MOCK_INITIAL_STUDENT_DETAILS.level,
+        program: MOCK_INITIAL_STUDENT_DETAILS.program,
+        currentAcademicYear: MOCK_INITIAL_STUDENT_DETAILS.currentAcademicYear,
+        currentSemester: MOCK_INITIAL_STUDENT_DETAILS.currentSemester,
+        isNewStudent: MOCK_INITIAL_STUDENT_DETAILS.isNewStudent,
+        isGraduating: MOCK_INITIAL_STUDENT_DETAILS.isGraduating,
+      };
+    }
+
     const userProfile: UserProfile = {
       uid: firebaseUser.uid,
       email: firebaseUser.email,
@@ -123,14 +128,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       photoURL: firebaseUser.photoURL,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      // Add student-specific mock details if role is student for immediate use
-      ...(userRole === 'student' && {
-        department: MOCK_INITIAL_STUDENT_DETAILS.department,
-        level: MOCK_INITIAL_STUDENT_DETAILS.level,
-        program: MOCK_INITIAL_STUDENT_DETAILS.program,
-        currentAcademicYear: MOCK_INITIAL_STUDENT_DETAILS.currentAcademicYear,
-        currentSemester: MOCK_INITIAL_STUDENT_DETAILS.currentSemester,
-      }),
+      ...studentSpecificDetails,
     };
     await setDoc(doc(db, "users", firebaseUser.uid), userProfile);
 
@@ -159,5 +157,3 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     </AuthContext.Provider>
   );
 };
-
-    
