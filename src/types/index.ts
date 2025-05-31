@@ -14,8 +14,8 @@ export interface UserProfile {
   program?: string; 
   currentAcademicYear?: string; 
   currentSemester?: string; 
-  isNewStudent?: boolean; // Added
-  isGraduating?: boolean; // Added
+  isNewStudent?: boolean; 
+  isGraduating?: boolean; 
   createdAt?: any; 
   updatedAt?: any; 
 }
@@ -77,13 +77,14 @@ export interface Grade {
 
 export interface Payment {
   id: string;
-  studentId: string;
+  studentId?: string; // Optional if it's for the current user
   amount: number;
   currency: string; 
-  date: any; 
+  date: string; // Use string for ISO date for easier mock data and formatting
   purpose: string; 
-  status: "pending" | "completed" | "failed";
-  transactionId?: string;
+  status: "Completed" | "Pending" | "Failed";
+  transactionId?: string; // Could be same as id or a separate gateway ID
+  method?: "MTN Mobile Money" | "Orange Money" | "Bank Transfer" | "Card";
 }
 
 export interface Assignment {
@@ -93,49 +94,48 @@ export interface Assignment {
   courseName: string;
   title: string;
   description: string;
-  dueDate: string; // ISO string for date
+  dueDate: string; 
   status: "Pending Submission" | "Submitted" | "Graded" | "Late";
-  grade?: string; // e.g., "85/100" or "A"
+  grade?: string; 
   feedback?: string;
-  submissionDate?: string; // ISO string for date
-  submittedFile?: { name: string; type: string; size: number }; // Mock file info
+  submissionDate?: string; 
+  submittedFile?: { name: string; type: string; size: number }; 
   submittedText?: string;
   allowsResubmission?: boolean;
 }
 
-// Forum Specific Types
 export interface ForumUser {
   id: string;
   name: string;
-  avatarUrl?: string; // URL to user's avatar image
+  avatarUrl?: string; 
 }
 
 export interface ForumPost {
   id: string;
   author: ForumUser;
   content: string;
-  createdAt: string; // ISO date string
-  replyToId?: string; // ID of the post this is a reply to (for threaded replies)
+  createdAt: string; 
+  replyToId?: string; 
 }
 
 export interface ForumThread {
   id: string;
-  courseId: string; // To associate thread with a course
-  courseName?: string; // Optional, for display convenience
+  courseId: string; 
+  courseName?: string; 
   title: string;
-  originalPost: ForumPost; // The first post in the thread
-  replies: ForumPost[]; // Array of replies to the original post
-  author: ForumUser; // Author of the original post/thread
-  createdAt: string; // ISO date string for thread creation
-  lastActivityAt: string; // ISO date string for the last reply or original post if no replies
-  lastActivityBy?: ForumUser; // User who made the last activity
+  originalPost: ForumPost; 
+  replies: ForumPost[]; 
+  author: ForumUser; 
+  createdAt: string; 
+  lastActivityAt: string; 
+  lastActivityBy?: ForumUser; 
   replyCount: number;
-  viewCount: number; // Simulated
+  viewCount: number; 
   isPinned?: boolean;
   isLocked?: boolean;
 }
 
-export interface MockCourseForum { // Simplified course for forum context
+export interface MockCourseForum { 
   id: string;
   name: string;
 }
@@ -147,14 +147,29 @@ export interface LiveClass {
   courseName: string;
   title: string;
   lecturerName: string;
-  dateTime: string; // ISO string for date and time
-  meetingLink: string; // URL to the Google Meet or other platform
-  durationMinutes?: number; // Optional duration in minutes
+  dateTime: string; 
+  meetingLink: string; 
+  durationMinutes?: number; 
 }
 
-// For Tuition fees page
 export interface FeeItem {
   name: string;
   amount: number;
-  condition?: string; // Optional description of when this fee applies
+  condition?: string; 
+}
+
+export interface VideoLecture {
+  id: string;
+  courseId: string;
+  courseCode: string;
+  courseName: string;
+  title: string;
+  description: string;
+  thumbnailUrl: string;
+  videoUrl: string; 
+  duration: string; 
+  uploadDate: string; 
+  sourceType?: "Google Classroom" | "CUSMS Platform";
+  sourceDetails?: string; 
+  classroomLink?: string; 
 }
