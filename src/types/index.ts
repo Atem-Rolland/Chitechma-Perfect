@@ -48,39 +48,37 @@ export interface Course {
   academicYear: string; // e.g., "2024/2025"
 }
 
+export interface CaDetails {
+  assignments?: number; // e.g., out of 5
+  groupWork?: number;   // e.g., out of 5
+  attendance?: number;  // e.g., out of 5
+  writtenCA?: number;   // e.g., out of 15
+  totalCaScore?: number; // e.g., out of 30
+}
+
 export interface Grade {
   id: string; // Unique ID for the grade entry
-  studentId: string; // Links to UserProfile.uid // In a real app, this would be fetched based on logged-in user
-  courseId: string; // Links to Course.id
+  studentId: string; 
+  courseId: string; 
   courseCode: string;
   courseName: string;
   credits: number;
-  score: number; // e.g., 75 (0-100)
-  gradeLetter: string; // e.g., "A", "B+", "C"
-  gradePoint: number; // e.g., 4.0, 3.5, 2.0 (based on university scale)
-  academicYear: string; // e.g., "2023/2024"
-  semester: string; // e.g., "First Semester"
+  score: number; // Final score (e.g., CA + Exam = 75 out of 100)
+  gradeLetter: string; 
+  gradePoint: number; 
+  academicYear: string; 
+  semester: string; 
+  caDetails?: CaDetails; // Detailed CA breakdown
+  examScore?: number; // Exam score (e.g., out of 70)
 }
 
 export interface Payment {
   id: string;
   studentId: string;
   amount: number;
-  currency: string; // e.g., "XAF", "USD", "NGN"
+  currency: string; 
   date: any; // Firestore Timestamp
-  purpose: string; // e.g., "Tuition Fee - Fall 2024"
+  purpose: string; 
   status: "pending" | "completed" | "failed";
   transactionId?: string;
-  // Add other payment-specific fields
 }
-
-// For react-hook-form, define schema types if using Zod
-// Example:
-// import { z } from 'zod';
-// export const LoginSchema = z.object({
-//   email: z.string().email(),
-//   password: z.string().min(6),
-// });
-// export type LoginFormData = z.infer<typeof LoginSchema>;
-
-    
