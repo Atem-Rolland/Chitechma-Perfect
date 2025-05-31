@@ -2,7 +2,7 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Youtube, Video } from "lucide-react"; // Using Youtube as a generic video icon
+import { Video } from "lucide-react"; 
 import { motion } from "framer-motion";
 
 export default function VideoLecturesPage() {
@@ -28,3 +28,4 @@ export default function VideoLecturesPage() {
     </motion.div>
   );
 }
+
