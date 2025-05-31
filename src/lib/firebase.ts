@@ -10,15 +10,18 @@ const firebaseProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 // Check for critical Firebase configuration variables before attempting to initialize
 if (!firebaseApiKey) {
   throw new Error(
-    "CRITICAL: Firebase API Key (NEXT_PUBLIC_FIREBASE_API_KEY) is missing or undefined. " +
-    "Firebase cannot be initialized. Please check your environment variable configuration (e.g., .env.local file, and ensure it's prefixed with NEXT_PUBLIC_)."
+    "CRITICAL: Firebase API Key (NEXT_PUBLIC_FIREBASE_API_KEY) is missing. Firebase cannot initialize.\n" +
+    "- If using Firebase Studio: Set this in your project's Environment Variable settings.\n" +
+    "- For local development: Ensure it's in a .env.local file at your project root and you've restarted your dev server.\n" +
+    "The variable MUST be prefixed with NEXT_PUBLIC_."
   );
 }
 if (!firebaseProjectId) {
-  // Although the original error was about API key, project ID is also critical.
   throw new Error(
-    "CRITICAL: Firebase Project ID (NEXT_PUBLIC_FIREBASE_PROJECT_ID) is missing or undefined. " +
-    "Firebase cannot be initialized. Please check your environment variable configuration."
+    "CRITICAL: Firebase Project ID (NEXT_PUBLIC_FIREBASE_PROJECT_ID) is missing. Firebase cannot initialize.\n" +
+    "- If using Firebase Studio: Set this in your project's Environment Variable settings.\n" +
+    "- For local development: Ensure it's in a .env.local file at your project root and you've restarted your dev server.\n" +
+    "The variable MUST be prefixed with NEXT_PUBLIC_."
   );
 }
 // You could add checks for other firebaseConfig fields if they are essential for your app's initialization.
@@ -49,3 +52,4 @@ const db: Firestore = getFirestore(app);
 
 export { app, auth, db };
 // export { app, auth, db, storage }; // If using Firebase Storage
+
