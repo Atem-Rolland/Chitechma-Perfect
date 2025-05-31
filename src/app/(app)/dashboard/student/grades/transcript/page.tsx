@@ -19,11 +19,14 @@ export default function TranscriptPage() {
             <DownloadCloud className="h-6 w-6 text-primary" />
             Download Transcript
           </CardTitle>
-          <CardDescription>Download your official academic transcript.</CardDescription>
+          <CardDescription>Request and download your official or unofficial academic transcript.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-muted-foreground">Transcript generation and PDF download functionality will be implemented here.</p>
-          <Button disabled>
+          <p className="text-muted-foreground">
+            Functionality to request and download your academic transcript in PDF format will be implemented here.
+            You will be able to choose between official (signed) and unofficial versions.
+          </p>
+          <Button disabled className="w-full sm:w-auto">
             <DownloadCloud className="mr-2 h-4 w-4" />
             Download Transcript (PDF) - Coming Soon
           </Button>
@@ -32,3 +35,4 @@ export default function TranscriptPage() {
     </motion.div>
   );
 }
+
