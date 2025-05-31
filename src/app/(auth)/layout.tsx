@@ -16,7 +16,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         {children}
       </main>
       <footer className="mt-8 text-center text-sm text-muted-foreground">
-        <p>&copy; {new Date().getFullYear()} {siteConfig.name}. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} Rollycreative. All rights reserved.</p>
       </footer>
     </div>
   );

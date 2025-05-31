@@ -59,7 +59,7 @@ export default function HomePage() {
       </main>
 
       <footer className="absolute bottom-6 text-center text-sm text-muted-foreground">
-        <p>&copy; {new Date().getFullYear()} {siteConfig.name}. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} Rollycreative. All rights reserved.</p>
         <nav className="mt-2 space-x-4">
           {siteConfig.footerNav.map((item) => (
             <Link key={item.href} href={item.href} className="hover:text-primary">
