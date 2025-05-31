@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from "@/components/ui/dialog"; // Added DialogFooter
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Video as VideoIconLucide, PlayCircle, Clock, Search, Filter, Download, AlertTriangle, ExternalLink, Globe } from "lucide-react"; // Renamed to avoid conflict
 import { motion } from "framer-motion";
@@ -65,7 +65,7 @@ const MOCK_VIDEO_LECTURES: VideoLecture[] = [
     duration: "42:15", uploadDate: "2024-09-10",
     sourceType: "Google Classroom",
     sourceDetails: "AI Ethics - Fall 2024 (Section B)",
-    classroomLink: "https://classroom.google.com/u/0/c/NzYzMjEwNDYxNDYy" // Updated link
+    classroomLink: "https://classroom.google.com/u/0/c/NzYzMjEwNDYxNDYy" 
   },
   {
     id: "lec1_mth201", courseId: "MTH201", courseCode: "MTH201", courseName: "Calculus I",
