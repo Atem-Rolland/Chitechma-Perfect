@@ -70,7 +70,7 @@ export interface Grade {
   semester: string; 
   caDetails?: CaDetails; 
   examScore?: number; 
-  isPass?: boolean; // Added to explicitly mark if the course was passed
+  isPass?: boolean; 
 }
 
 export interface Payment {
@@ -84,3 +84,19 @@ export interface Payment {
   transactionId?: string;
 }
 
+export interface Assignment {
+  id: string;
+  courseId: string;
+  courseCode: string;
+  courseName: string;
+  title: string;
+  description: string;
+  dueDate: string; // ISO string for date
+  status: "Pending Submission" | "Submitted" | "Graded" | "Late";
+  grade?: string; // e.g., "85/100" or "A"
+  feedback?: string;
+  submissionDate?: string; // ISO string for date
+  submittedFile?: { name: string; type: string; size: number }; // Mock file info
+  submittedText?: string;
+  allowsResubmission?: boolean;
+}
