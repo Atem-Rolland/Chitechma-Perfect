@@ -52,42 +52,44 @@ const MOCK_ALL_COURSES_SOURCE: Course[] = [
   { id: "MGT403_CESM_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology. Introduction to research methods and academic writing.", department: DEPARTMENTS.CESM, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "AMPHI200, Wed 14-17", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
   { id: "CSE405_CESM_Y2425_S1", title: "Embedded Systems", code: "CSE405", description: "Detailed course description for Embedded Systems. Design and programming of embedded systems.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Thu 8-11", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
   { id: "NES403_CESM_Y2425_S1", title: "Modeling in Information System", code: "NES403", description: "Detailed course description for Modeling in Information System. Techniques for system modeling.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Elective", level: 400, schedule: "Fri 11-13, CR10", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-  // ... (Add more courses if needed for variety, or keep it concise for dashboard)
-  // Second semester courses for CESM Level 400
   { id: "CSE406_CESM_Y2425_S2", title: "Algorithm and Data Structure", code: "CSE406", description: "In-depth study of algorithms and data structures.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 8-10, CR1", prerequisites: ["CSE301", "CSE401"], semester: "Second Semester", academicYear: "2024/2025" },
   { id: "CSE402_CESM_Y2425_S2", title: "Distributed Programming", code: "CSE402", description: "Concepts and practices in distributed programming.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "Tue 10-12, CR1", prerequisites: ["CSE409"], semester: "Second Semester", academicYear: "2024/2025" },
 ];
 
+const getLocalStorageKeyForAllRegistrations = (uid?: string) => {
+  if (!uid) return null;
+  return `allRegisteredCourses_${uid}`;
+};
+
 export function StudentDashboard() {
-  const { profile, logout } = useAuth();
+  const { user, profile, logout } = useAuth();
   const [isLoadingCourses, setIsLoadingCourses] = useState(true);
   const [displayedEnrolledCourses, setDisplayedEnrolledCourses] = useState<Course[]>([]);
 
   useEffect(() => {
-    async function loadRegisteredCourses() {
+    async function loadRegisteredCoursesForDashboard() {
       setIsLoadingCourses(true);
-      // Simulate fetching all courses and then filtering
-      // In a real app, you'd fetch the student's actual registered courses
-      await new Promise(resolve => setTimeout(resolve, 700)); // Simulate delay
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate some delay
 
-      if (profile) {
-        // These are the IDs of courses Atem Rolland (CESM, L400, 2024/2025 S1) is "registered" for in this mock.
-        const mockRegisteredCourseIdsForDashboard = [
-          "CSE401_CESM_Y2425_S1", // Mobile Application Development
-          "CSE409_CESM_Y2425_S1", // Software Development and OOP
-          "MGT403_CESM_Y2425_S1", // Research Methodology
-          // Add more if needed for the demo, ensuring they match student's current academic context (year/semester)
-        ];
+      if (profile && user?.uid && typeof window !== 'undefined') {
+        const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
+        let studentRegisteredIds: string[] = [];
+        if (storageKey) {
+            const storedIds = localStorage.getItem(storageKey);
+            if (storedIds) {
+                studentRegisteredIds = JSON.parse(storedIds);
+            }
+        }
         
-        const studentCurrentYear = profile.currentAcademicYear || ACADEMIC_YEARS[1]; // Default to 2024/2025
-        const studentCurrentSemester = profile.currentSemester || SEMESTERS[0]; // Default to First Semester
+        const studentCurrentYear = profile.currentAcademicYear || ACADEMIC_YEARS[1];
+        const studentCurrentSemester = profile.currentSemester || SEMESTERS[0];
 
         const filtered = MOCK_ALL_COURSES_SOURCE.filter(course => 
-            mockRegisteredCourseIdsForDashboard.includes(course.id) &&
+            studentRegisteredIds.includes(course.id) &&
             course.academicYear === studentCurrentYear &&
             course.semester === studentCurrentSemester &&
-            course.department === profile.department && // Ensure department matches
-            course.level === profile.level // Ensure level matches
+            course.department === profile.department &&
+            course.level === profile.level
         );
         setDisplayedEnrolledCourses(filtered);
       } else {
@@ -95,8 +97,8 @@ export function StudentDashboard() {
       }
       setIsLoadingCourses(false);
     }
-    loadRegisteredCourses();
-  }, [profile]);
+    loadRegisteredCoursesForDashboard();
+  }, [profile, user?.uid]);
 
 
   const getInitials = (name: string | null | undefined) => {
@@ -122,7 +124,6 @@ export function StudentDashboard() {
       transition={{ duration: 0.5 }}
       className="space-y-8"
     >
-      {/* Student Identity Card & Profile Settings */}
       <Card className="overflow-hidden shadow-xl">
         <CardHeader className="bg-gradient-to-r from-primary/10 via-card to-card p-6">
           <div className="flex flex-col sm:flex-row items-center gap-6">
@@ -186,7 +187,6 @@ export function StudentDashboard() {
         </CardHeader>
       </Card>
 
-      {/* Personal Info Section (Read-only) */}
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-headline text-2xl"><Info className="text-primary h-6 w-6"/>Personal & Academic Information</CardTitle>
@@ -213,7 +213,7 @@ export function StudentDashboard() {
           <div>
             <h3 className="font-semibold text-lg text-foreground/90 mt-6 mb-3 border-b pb-2 flex items-center gap-2"><School className="h-5 w-5 text-accent"/>Academic Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Matricule:</strong> <span className="font-mono text-foreground/90">{studentMockPersonalData.matricule}</span></div>
+                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Matricule:</strong> <span className="font-mono text-foreground/90">{(profile as any)?.matricule || studentMockPersonalData.matricule}</span></div>
                 <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Degree Program:</strong> <span className="text-foreground/90">{academicProgram}</span></div>
                 <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Department:</strong> <span className="text-foreground/90">{studentDepartment}</span></div>
                 <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Current Level:</strong> <span className="text-foreground/90">{studentLevel}</span></div>
@@ -227,18 +227,18 @@ export function StudentDashboard() {
           <div>
             <h3 className="font-semibold text-lg text-foreground/90 mt-6 mb-3 border-b pb-2 flex items-center gap-2"><Mail className="h-5 w-5 text-accent"/>Contact Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-              <div className="flex items-start gap-2"><Phone className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Phone:</strong> <span className="text-foreground/90">{studentMockPersonalData.phone}</span></div>
+              <div className="flex items-start gap-2"><Phone className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Phone:</strong> <span className="text-foreground/90">{(profile as any)?.phone || studentMockPersonalData.phone}</span></div>
               <div className="flex items-start gap-2"><Mail className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Email:</strong> <span className="text-foreground/90">{profile?.email || "N/A"}</span></div>
-              <div className="md:col-span-2 flex items-start gap-2"><MapPin className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Address:</strong> <span className="text-foreground/90">{studentMockPersonalData.address}</span></div>
+              <div className="md:col-span-2 flex items-start gap-2"><MapPin className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Address:</strong> <span className="text-foreground/90">{(profile as any)?.address || studentMockPersonalData.address}</span></div>
             </div>
           </div>
           
           <div>
             <h3 className="font-semibold text-lg text-foreground/90 mt-6 mb-3 border-b pb-2 flex items-center gap-2"><GuardianIcon className="h-5 w-5 text-accent"/>Guardian Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-              <div className="flex items-start gap-2"><User className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-32 text-muted-foreground">Guardian Name:</strong> <span className="text-foreground/90">{studentMockPersonalData.guardianName}</span></div>
-              <div className="flex items-start gap-2"><Phone className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Phone:</strong> <span className="text-foreground/90">{studentMockPersonalData.guardianPhone}</span></div>
-              <div className="md:col-span-2 flex items-start gap-2"><MapPin className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Address:</strong> <span className="text-foreground/90">{studentMockPersonalData.guardianAddress}</span></div>
+              <div className="flex items-start gap-2"><User className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-32 text-muted-foreground">Guardian Name:</strong> <span className="text-foreground/90">{(profile as any)?.guardianName || studentMockPersonalData.guardianName}</span></div>
+              <div className="flex items-start gap-2"><Phone className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Phone:</strong> <span className="text-foreground/90">{(profile as any)?.guardianPhone || studentMockPersonalData.guardianPhone}</span></div>
+              <div className="md:col-span-2 flex items-start gap-2"><MapPin className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Address:</strong> <span className="text-foreground/90">{(profile as any)?.guardianAddress || studentMockPersonalData.guardianAddress}</span></div>
             </div>
           </div>
         </CardContent>
@@ -363,5 +363,3 @@ export function StudentDashboard() {
     </motion.div>
   );
 }
-
-    

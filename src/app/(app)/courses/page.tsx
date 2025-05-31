@@ -17,7 +17,7 @@ import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth"; 
+import { useAuth } from "@/hooks/useAuth";
 import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS } from "@/config/data";
 
 
@@ -167,8 +167,14 @@ const defaultRegistrationMeta = {
   semester: "First Semester",   
 };
 
+const getLocalStorageKeyForAllRegistrations = (uid?: string) => {
+  if (!uid) return null;
+  return `allRegisteredCourses_${uid}`;
+};
+
+
 export default function CoursesPage() {
-  const { role, profile } = useAuth();
+  const { user, role, profile } = useAuth();
   const isStudent = role === 'student';
 
   const studentAcademicContext = useMemo(() => {
@@ -215,14 +221,24 @@ export default function CoursesPage() {
   const [daysToDeadline, setDaysToDeadline] = useState<number | null>(null);
 
   useEffect(() => {
-    async function loadCourses() {
+    async function loadCoursesAndRegistrations() {
       setIsLoading(true);
       const fetchedCourses = await fetchCourses();
       setAllCourses(fetchedCourses);
+
+      if (user?.uid && typeof window !== 'undefined') {
+        const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
+        if (storageKey) {
+            const storedIds = localStorage.getItem(storageKey);
+            if (storedIds) {
+                setRegisteredCourseIds(JSON.parse(storedIds));
+            }
+        }
+      }
       setIsLoading(false);
     }
-    loadCourses();
-  }, []);
+    loadCoursesAndRegistrations();
+  }, [user?.uid]);
   
    useEffect(() => {
     if (isStudent && studentAcademicContext) {
@@ -304,6 +320,15 @@ export default function CoursesPage() {
     return relevantCourses.reduce((sum, course) => sum + course.credits, 0);
   }, [registeredCoursesList, currentRegistrationMeta.academicYear, currentRegistrationMeta.semester]);
   
+  useEffect(() => {
+    if (user?.uid && typeof window !== 'undefined') {
+        const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
+        if (storageKey) {
+            localStorage.setItem(storageKey, JSON.stringify(registeredCourseIds));
+        }
+    }
+  }, [registeredCourseIds, user?.uid]);
+
 
   const handleRegisterCourse = (course: Course) => {
     if (!currentRegistrationMeta.isOpen) {
