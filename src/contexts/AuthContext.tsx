@@ -36,13 +36,14 @@ interface AuthProviderProps {
 }
 
 const MOCK_INITIAL_STUDENT_DETAILS = {
+  displayName: "Atem Rolland", // Default display name
   department: "Department of computer engineering and system maintenance",
-  level: 200, // Changed from 100 to 200
+  level: 400, 
   program: "B.Eng. Computer Engineering and System Maintenance",
   currentAcademicYear: "2024/2025",
   currentSemester: "First Semester",
-  isNewStudent: true, 
-  isGraduating: false, 
+  isNewStudent: false, // Level 400 students are typically not new
+  isGraduating: true,  // Level 400 students are typically graduating
 };
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
@@ -60,6 +61,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Ensure all fields are present, provide defaults if necessary for students
       const completeProfile: UserProfile = {
         ...userProfileData,
+        displayName: userProfileData.displayName || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.displayName : firebaseUser.displayName),
         department: userProfileData.department || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.department : undefined),
         level: userProfileData.level || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.level : undefined),
         program: userProfileData.program || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.program : undefined),
@@ -73,6 +75,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return completeProfile;
     } else {
       console.warn("User profile not found in Firestore for UID:", firebaseUser.uid, "A new profile might be created if this is a new registration.");
+      // If profile doesn't exist but user is authenticated (e.g., first time after social sign-in before profile creation)
+      // we might want to construct a default profile based on role if known, or FirebaseUser data.
+      // For now, setting to null and relying on registration to create it.
       setProfile(null);
       setRole(null);
       return null;
@@ -107,9 +112,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
     
-    let studentSpecificDetails = {};
+    let roleSpecificDetails = {};
     if (userRole === 'student') {
-      studentSpecificDetails = {
+      roleSpecificDetails = {
+        displayName: displayName || MOCK_INITIAL_STUDENT_DETAILS.displayName,
         department: MOCK_INITIAL_STUDENT_DETAILS.department,
         level: MOCK_INITIAL_STUDENT_DETAILS.level,
         program: MOCK_INITIAL_STUDENT_DETAILS.program,
@@ -118,17 +124,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         isNewStudent: MOCK_INITIAL_STUDENT_DETAILS.isNewStudent,
         isGraduating: MOCK_INITIAL_STUDENT_DETAILS.isGraduating,
       };
+    } else {
+        roleSpecificDetails = { displayName };
     }
 
     const userProfile: UserProfile = {
       uid: firebaseUser.uid,
       email: firebaseUser.email,
-      displayName: displayName || firebaseUser.displayName,
+      // displayName is handled by roleSpecificDetails
       role: userRole,
       photoURL: firebaseUser.photoURL,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      ...studentSpecificDetails,
+      ...roleSpecificDetails,
     };
     await setDoc(doc(db, "users", firebaseUser.uid), userProfile);
 
