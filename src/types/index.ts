@@ -9,33 +9,33 @@ export interface UserProfile {
   displayName: string | null;
   photoURL?: string | null;
   role: Role;
-  department?: string; // Student's department
-  level?: number; // Student's current level
-  program?: string; // Student's program of study
-  currentAcademicYear?: string; // Student's current academic year
-  currentSemester?: string; // Student's current semester
-  createdAt?: any; // Firestore Timestamp
-  updatedAt?: any; // Firestore Timestamp
+  department?: string; 
+  level?: number; 
+  program?: string; 
+  currentAcademicYear?: string; 
+  currentSemester?: string; 
+  createdAt?: any; 
+  updatedAt?: any; 
 }
 
 export interface AppUser extends FirebaseUser {
-  profile?: UserProfile; // Extended profile information
+  profile?: UserProfile; 
 }
 
 export interface StudentDetails {
-  userId: string; // links to UserProfile.uid
+  userId: string; 
   matricule: string;
   program: string;
   department: string;
   idCardURL?: string;
-  // Add other student-specific fields
+  
 }
 
 export interface Course {
   id: string;
   title: string;
   code: string;
-  description: string;
+  description:string;
   department: string;
   lecturerId: string; 
   lecturerName?: string; 
@@ -44,32 +44,33 @@ export interface Course {
   type: 'Compulsory' | 'Elective' | 'General';
   level: number; 
   prerequisites?: string[]; 
-  semester: string; // e.g., "First Semester", "Second Semester"
-  academicYear: string; // e.g., "2024/2025"
+  semester: string; 
+  academicYear: string; 
 }
 
 export interface CaDetails {
-  assignments?: number; // e.g., out of 5
-  groupWork?: number;   // e.g., out of 5
-  attendance?: number;  // e.g., out of 5
-  writtenCA?: number;   // e.g., out of 15
-  totalCaScore?: number; // e.g., out of 30
+  assignments?: number; 
+  groupWork?: number;   
+  attendance?: number;  
+  writtenCA?: number;   
+  totalCaScore?: number; 
 }
 
 export interface Grade {
-  id: string; // Unique ID for the grade entry
+  id: string; 
   studentId: string; 
   courseId: string; 
   courseCode: string;
   courseName: string;
   credits: number;
-  score: number; // Final score (e.g., CA + Exam = 75 out of 100)
+  score: number; 
   gradeLetter: string; 
   gradePoint: number; 
   academicYear: string; 
   semester: string; 
-  caDetails?: CaDetails; // Detailed CA breakdown
-  examScore?: number; // Exam score (e.g., out of 70)
+  caDetails?: CaDetails; 
+  examScore?: number; 
+  isPass?: boolean; // Added to explicitly mark if the course was passed
 }
 
 export interface Payment {
@@ -77,8 +78,9 @@ export interface Payment {
   studentId: string;
   amount: number;
   currency: string; 
-  date: any; // Firestore Timestamp
+  date: any; 
   purpose: string; 
   status: "pending" | "completed" | "failed";
   transactionId?: string;
 }
+
