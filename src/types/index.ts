@@ -36,6 +36,9 @@ export interface Course {
   lecturerName?: string; // Denormalized for easier display
   schedule?: string; // e.g., "Mon, Wed 10:00 - 11:30"
   credits: number;
+  type: 'Compulsory' | 'Elective' | 'General'; // Added General as an option
+  level: number; // e.g., 100, 200, 300, 400
+  prerequisites?: string[]; // Array of course codes
   // Add other course-specific fields
 }
 
@@ -43,7 +46,7 @@ export interface Grade {
   id: string;
   studentId: string;
   courseId: string;
-  term: string; // e.g., "Fall 2024"
+  term: string; // e.g., "First Semester 2024/2025"
   score: number;
   gradeLetter: string; // e.g., "A", "B+", "C"
   resultPDF_URL?: string;
