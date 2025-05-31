@@ -1,0 +1,187 @@
+"use client";
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
+import type { NavItem, Role } from '@/config/site';
+import { cn } from '@/lib/utils';
+import { 
+  SidebarMenu, 
+  SidebarMenuItem, 
+  SidebarMenuButton,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem
+} from '@/components/ui/sidebar'; // Assuming Sidebar components are correctly exported
+import { 
+  LayoutDashboard, 
+  BookOpen, 
+  Users, 
+  CreditCard, 
+  GraduationCap, 
+  UserCheck,
+  FileText,
+  DollarSign,
+  Settings,
+  ShieldCheck,
+  ChevronDown,
+  ChevronRight
+} from 'lucide-react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const iconMap: Record<string, React.ElementType> = {
+  LayoutDashboard,
+  BookOpen,
+  Users,
+  CreditCard,
+  GraduationCap,
+  UserCheck,
+  FileText,
+  DollarSign,
+  Settings,
+  ShieldCheck
+};
+
+const defaultSidebarNav: Record<Role | "guest", NavItem[]> = {
+  student: [
+    { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { title: 'My Courses', href: '/dashboard/student/courses', icon: BookOpen },
+    { title: 'My Grades', href: '/dashboard/student/grades', icon: GraduationCap },
+    { title: 'Tuition & Payments', href: '/dashboard/student/payments', icon: CreditCard },
+  ],
+  lecturer: [
+    { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { title: 'Manage Courses', href: '/dashboard/lecturer/courses', icon: BookOpen },
+    { title: 'Upload Grades', href: '/dashboard/lecturer/grades', icon: FileText },
+    { title: 'Student Lists', href: '/dashboard/lecturer/students', icon: Users },
+  ],
+  admin: [
+    { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { title: 'User Management', href: '/dashboard/admin/users', icon: Users },
+    { 
+      title: 'Academic Setup', 
+      href: '#', 
+      icon: Settings,
+      subItems: [
+        { title: 'Courses', href: '/dashboard/admin/courses', icon: BookOpen },
+        { title: 'Departments', href: '/dashboard/admin/departments', icon: ShieldCheck },
+        { title: 'Programs', href: '/dashboard/admin/programs', icon: GraduationCap },
+      ]
+    },
+    { title: 'Approve Accounts', href: '/dashboard/admin/approvals', icon: UserCheck },
+  ],
+  finance: [
+    { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { title: 'Payment Records', href: '/dashboard/finance/payments', icon: DollarSign },
+    { title: 'Financial Reports', href: '/dashboard/finance/reports', icon: FileText },
+  ],
+  guest: [], // No specific nav for guests in sidebar, they'd be redirected
+  null: [], // Same as guest
+};
+
+interface SidebarNavItemProps {
+  item: NavItem & { subItems?: NavItem[] };
+  pathname: string;
+}
+
+const SidebarNavItem: React.FC<SidebarNavItemProps> = ({ item, pathname }) => {
+  const Icon = item.icon ? iconMap[item.icon.displayName || item.icon.name] || item.icon : null;
+  const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+  const [isSubmenuOpen, setIsSubmenuOpen] = useState(isActive && !!item.subItems);
+
+  const handleToggleSubmenu = (e: React.MouseEvent) => {
+    if (item.subItems) {
+      e.preventDefault();
+      setIsSubmenuOpen(!isSubmenuOpen);
+    }
+  };
+
+  if (item.subItems) {
+    return (
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          isActive={isActive}
+          onClick={handleToggleSubmenu}
+          className="justify-between"
+          aria-expanded={isSubmenuOpen}
+          tooltip={item.title}
+        >
+          <div className="flex items-center gap-2">
+            {Icon && <Icon className="h-5 w-5" />}
+            <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+          </div>
+          <AnimatePresence initial={false}>
+            {isSubmenuOpen ? (
+              <motion.div key="chevron-down" initial={{ rotate: -90 }} animate={{ rotate: 0 }} exit={{ rotate: -90 }}>
+                <ChevronDown className="h-4 w-4 group-data-[collapsible=icon]:hidden" />
+              </motion.div>
+            ) : (
+              <motion.div key="chevron-right" initial={{ rotate: 0 }} animate={{ rotate: -90 }} exit={{ rotate: 0 }}>
+                <ChevronRight className="h-4 w-4 group-data-[collapsible=icon]:hidden" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </SidebarMenuButton>
+        <AnimatePresence>
+        {isSubmenuOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden group-data-[collapsible=icon]:hidden"
+          >
+            <SidebarMenuSub>
+              {item.subItems.map(subItem => (
+                <SidebarMenuSubItem key={subItem.href}>
+                  <Link href={subItem.href} passHref legacyBehavior>
+                    <SidebarMenuSubButton 
+                      isActive={pathname === subItem.href || (subItem.href !== '/dashboard' && pathname.startsWith(subItem.href))}
+                      className="pl-6"
+                    >
+                       {subItem.icon && React.createElement(iconMap[subItem.icon.displayName || subItem.icon.name] || subItem.icon, { className: "h-4 w-4 mr-2"})}
+                      {subItem.title}
+                    </SidebarMenuSubButton>
+                  </Link>
+                </SidebarMenuSubItem>
+              ))}
+            </SidebarMenuSub>
+          </motion.div>
+        )}
+        </AnimatePresence>
+      </SidebarMenuItem>
+    );
+  }
+
+  return (
+    <SidebarMenuItem>
+      <Link href={item.href} passHref legacyBehavior>
+        <SidebarMenuButton isActive={isActive} tooltip={item.title}>
+          {Icon && <Icon className="h-5 w-5" />}
+          <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+        </SidebarMenuButton>
+      </Link>
+    </SidebarMenuItem>
+  );
+};
+
+
+export function SidebarNav() {
+  const { role } = useAuth();
+  const pathname = usePathname();
+  
+  const navItems = role ? defaultSidebarNav[role] : [];
+
+  if (!navItems.length) {
+    return null; // Or a loading/skeleton state
+  }
+
+  return (
+    <SidebarMenu>
+      {navItems.map((item) => (
+        <SidebarNavItem key={item.href} item={item} pathname={pathname} />
+      ))}
+    </SidebarMenu>
+  );
+}
