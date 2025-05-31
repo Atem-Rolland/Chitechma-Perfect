@@ -65,7 +65,7 @@ const MOCK_VIDEO_LECTURES: VideoLecture[] = [
     duration: "42:15", uploadDate: "2024-09-10",
     sourceType: "Google Classroom",
     sourceDetails: "AI Ethics - Fall 2024 (Section B)",
-    classroomLink: "https://classroom.google.com/c/YOUR_CLASS_ID/m/YOUR_MATERIAL_ID" // Example placeholder link
+    classroomLink: "https://classroom.google.com/u/0/c/NzYzMjEwNDYxNDYy" // Updated link
   },
   {
     id: "lec1_mth201", courseId: "MTH201", courseCode: "MTH201", courseName: "Calculus I",
@@ -286,10 +286,10 @@ export default function VideoLecturesPage() {
                                     variant="outline" 
                                     className="mt-4 text-yellow-400 border-yellow-400 hover:bg-yellow-400/10"
                                     onClick={() => {
-                                        if (selectedLecture.classroomLink && selectedLecture.classroomLink !== "#") {
+                                        if (selectedLecture.classroomLink && selectedLecture.classroomLink !== "#" && selectedLecture.classroomLink !== "https://classroom.google.com/c/YOUR_CLASS_ID/m/YOUR_MATERIAL_ID") {
                                             window.open(selectedLecture.classroomLink, '_blank', 'noopener,noreferrer');
                                         } else {
-                                            toast({ title: "Link Unavailable", description: "The direct link to this Google Classroom resource is not available in this demo."})
+                                            toast({ title: "Link Unavailable", description: "The direct link to this Google Classroom resource is not available or is a placeholder in this demo."})
                                         }
                                     }}
                                 >
@@ -310,7 +310,7 @@ export default function VideoLecturesPage() {
             </div>
             <DialogFooter className="mt-2 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                <div className="flex gap-2 flex-wrap">
-                {selectedLecture.sourceType === "Google Classroom" && selectedLecture.classroomLink && selectedLecture.classroomLink !== "#" && (
+                {selectedLecture.sourceType === "Google Classroom" && selectedLecture.classroomLink && selectedLecture.classroomLink !== "#" && selectedLecture.classroomLink !== "https://classroom.google.com/c/YOUR_CLASS_ID/m/YOUR_MATERIAL_ID" && (
                     <Button 
                         variant="outline"
                         onClick={() => window.open(selectedLecture.classroomLink!, '_blank', 'noopener,noreferrer')}
@@ -334,3 +334,4 @@ export default function VideoLecturesPage() {
 }
 
     
+
