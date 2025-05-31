@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2, AlertTriangle } from 'lucide-react';
 import type { Role } from '@/types';
+import { DEPARTMENTS, VALID_LEVELS } from '@/config/data';
 import {
   Form,
   FormControl,
@@ -30,9 +31,34 @@ const registerSchema = z.object({
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
   confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters." }),
   role: z.enum(["student", "lecturer", "admin", "finance"]),
+  department: z.string().optional(),
+  level: z.coerce.number().optional(),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
+}).superRefine((data, ctx) => {
+  if (data.role === "student") {
+    if (!data.department) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Department is required for students.",
+        path: ["department"],
+      });
+    }
+    if (data.level === undefined || Number.isNaN(data.level)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Level is required for students.",
+        path: ["level"],
+      });
+    } else if (!VALID_LEVELS.includes(data.level)) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Invalid level selected.",
+            path: ["level"],
+        });
+    }
+  }
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -51,14 +77,25 @@ export function RegisterForm() {
       password: "",
       confirmPassword: "",
       role: "student",
+      department: "",
+      level: undefined,
     },
   });
+
+  const selectedRole = form.watch("role");
 
   const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
     setError(null);
     try {
-      await register(data.email, data.password, data.displayName, data.role as Role);
+      await register(
+        data.email, 
+        data.password, 
+        data.displayName, 
+        data.role as Role,
+        data.department,
+        data.level
+      );
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || "Failed to register. Please try again.");
@@ -152,6 +189,56 @@ export function RegisterForm() {
             </FormItem>
           )}
         />
+
+        {selectedRole === 'student' && (
+          <>
+            <FormField
+              control={form.control}
+              name="department"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Department</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your department" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {Object.entries(DEPARTMENTS).map(([key, name]) => (
+                        <SelectItem key={key} value={name}>{name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="level"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Level</FormLabel>
+                  <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={field.value?.toString()}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your level" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {VALID_LEVELS.map(level => (
+                        <SelectItem key={level} value={level.toString()}>{level}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </>
+        )}
+
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           Create Account

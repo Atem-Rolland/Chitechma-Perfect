@@ -15,6 +15,8 @@ import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { AppUser, UserProfile, Role } from '@/types';
 import { useRouter } from 'next/navigation';
+import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS } from '@/config/data';
+
 
 interface AuthContextType {
   user: AppUser | null;
@@ -22,11 +24,10 @@ interface AuthContextType {
   loading: boolean;
   role: Role;
   login: (email: string, pass: string) => Promise<AppUser>;
-  register: (email: string, pass: string, displayName: string, role?: Role) => Promise<AppUser>;
+  register: (email: string, pass: string, displayName: string, role?: Role, department?: string, level?: number) => Promise<AppUser>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   fetchUserProfile: (firebaseUser: FirebaseUser) => Promise<UserProfile | null>; // Exposed for refresh
-  // mfaSetup: () => Promise<void>; // Placeholder for MFA
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,15 +36,16 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-const MOCK_INITIAL_STUDENT_DETAILS = {
-  displayName: "Atem Rolland", // Default display name
-  department: "Department of computer engineering and system maintenance",
-  level: 400, 
-  program: "B.Eng. Computer Engineering and System Maintenance",
-  currentAcademicYear: "2024/2025",
-  currentSemester: "First Semester",
-  isNewStudent: false, // Level 400 students are typically not new
-  isGraduating: true,  // Level 400 students are typically graduating
+// Fallback details if not provided or fetched, especially for initial setup or missing profile data
+const FALLBACK_STUDENT_DETAILS = {
+  displayName: "New Student",
+  department: DEPARTMENTS.CESM, // Default department
+  level: VALID_LEVELS[0], // Default to the first valid level (e.g., 200)
+  program: "B.Eng. Computer Engineering and System Maintenance", // Generic program
+  currentAcademicYear: ACADEMIC_YEARS[1], // e.g., 2024/2025
+  currentSemester: SEMESTERS[0], // e.g., First Semester
+  isNewStudent: true,
+  isGraduating: false,
 };
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
@@ -58,26 +60,28 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const userDocSnap = await getDoc(userDocRef);
     if (userDocSnap.exists()) {
       const userProfileData = userDocSnap.data() as UserProfile;
-      // Ensure all fields are present, provide defaults if necessary for students
+      
+      // Ensure all fields are present, provide defaults if necessary
       const completeProfile: UserProfile = {
-        ...userProfileData,
-        displayName: userProfileData.displayName || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.displayName : firebaseUser.displayName),
-        department: userProfileData.department || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.department : undefined),
-        level: userProfileData.level || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.level : undefined),
-        program: userProfileData.program || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.program : undefined),
-        currentAcademicYear: userProfileData.currentAcademicYear || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.currentAcademicYear : undefined),
-        currentSemester: userProfileData.currentSemester || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.currentSemester : undefined),
-        isNewStudent: userProfileData.isNewStudent === undefined && userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.isNewStudent : userProfileData.isNewStudent,
-        isGraduating: userProfileData.isGraduating === undefined && userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.isGraduating : userProfileData.isGraduating,
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        ...userProfileData, // Spread fetched data first
+        displayName: userProfileData.displayName || firebaseUser.displayName || (userProfileData.role === 'student' ? FALLBACK_STUDENT_DETAILS.displayName : "User"),
+        role: userProfileData.role || null, // Ensure role exists
+        // For students, ensure academic details have fallbacks if not present
+        department: userProfileData.role === 'student' ? (userProfileData.department || FALLBACK_STUDENT_DETAILS.department) : userProfileData.department,
+        level: userProfileData.role === 'student' ? (userProfileData.level || FALLBACK_STUDENT_DETAILS.level) : userProfileData.level,
+        program: userProfileData.role === 'student' ? (userProfileData.program || FALLBACK_STUDENT_DETAILS.program) : userProfileData.program,
+        currentAcademicYear: userProfileData.role === 'student' ? (userProfileData.currentAcademicYear || FALLBACK_STUDENT_DETAILS.currentAcademicYear) : userProfileData.currentAcademicYear,
+        currentSemester: userProfileData.role === 'student' ? (userProfileData.currentSemester || FALLBACK_STUDENT_DETAILS.currentSemester) : userProfileData.currentSemester,
+        isNewStudent: userProfileData.role === 'student' ? (userProfileData.isNewStudent === undefined ? (userProfileData.level === VALID_LEVELS[0]) : userProfileData.isNewStudent) : userProfileData.isNewStudent,
+        isGraduating: userProfileData.role === 'student' ? (userProfileData.isGraduating === undefined ? (userProfileData.level === VALID_LEVELS[VALID_LEVELS.length -1]) : userProfileData.isGraduating) : userProfileData.isGraduating,
       };
       setProfile(completeProfile);
       setRole(completeProfile.role);
       return completeProfile;
     } else {
-      console.warn("User profile not found in Firestore for UID:", firebaseUser.uid, "A new profile might be created if this is a new registration.");
-      // If profile doesn't exist but user is authenticated (e.g., first time after social sign-in before profile creation)
-      // we might want to construct a default profile based on role if known, or FirebaseUser data.
-      // For now, setting to null and relying on registration to create it.
+      console.warn("User profile not found in Firestore for UID:", firebaseUser.uid, ". A new profile might be created upon registration flow completion.");
       setProfile(null);
       setRole(null);
       return null;
@@ -108,35 +112,40 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return appUser;
   };
 
-  const register = async (email: string, password: string, displayName: string, userRole: Role = 'student'): Promise<AppUser> => {
+  const register = async (
+    email: string, 
+    password: string, 
+    displayName: string, 
+    userRole: Role = 'student',
+    department?: string,
+    level?: number
+  ): Promise<AppUser> => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
     
-    let roleSpecificDetails = {};
+    let roleSpecificDetails: Partial<UserProfile> = { displayName };
+
     if (userRole === 'student') {
       roleSpecificDetails = {
-        displayName: displayName || MOCK_INITIAL_STUDENT_DETAILS.displayName,
-        department: MOCK_INITIAL_STUDENT_DETAILS.department,
-        level: MOCK_INITIAL_STUDENT_DETAILS.level,
-        program: MOCK_INITIAL_STUDENT_DETAILS.program,
-        currentAcademicYear: MOCK_INITIAL_STUDENT_DETAILS.currentAcademicYear,
-        currentSemester: MOCK_INITIAL_STUDENT_DETAILS.currentSemester,
-        isNewStudent: MOCK_INITIAL_STUDENT_DETAILS.isNewStudent,
-        isGraduating: MOCK_INITIAL_STUDENT_DETAILS.isGraduating,
+        ...roleSpecificDetails,
+        department: department || FALLBACK_STUDENT_DETAILS.department,
+        level: level || FALLBACK_STUDENT_DETAILS.level,
+        program: FALLBACK_STUDENT_DETAILS.program, // Default program
+        currentAcademicYear: FALLBACK_STUDENT_DETAILS.currentAcademicYear, // Default academic year
+        currentSemester: FALLBACK_STUDENT_DETAILS.currentSemester, // Default semester
+        isNewStudent: level === VALID_LEVELS[0] || level === undefined, // True if lowest level or undefined
+        isGraduating: level === VALID_LEVELS[VALID_LEVELS.length - 1] // True if highest level (e.g. 400 for a 4-year program)
       };
-    } else {
-        roleSpecificDetails = { displayName };
     }
 
     const userProfile: UserProfile = {
       uid: firebaseUser.uid,
       email: firebaseUser.email,
-      // displayName is handled by roleSpecificDetails
       role: userRole,
       photoURL: firebaseUser.photoURL,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      ...roleSpecificDetails,
+      ...roleSpecificDetails, // displayName is included here
     };
     await setDoc(doc(db, "users", firebaseUser.uid), userProfile);
 
