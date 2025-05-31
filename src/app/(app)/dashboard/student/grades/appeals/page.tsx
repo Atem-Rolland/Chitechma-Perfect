@@ -52,12 +52,20 @@ export default function GradeAppealsPage() {
   const handleSubmitAppeal = async () => {
     // This function would handle the actual submission logic
     // For now, it will remain disabled.
+    if (!selectedCourse || !appealReason) {
+      toast({
+        variant: "destructive",
+        title: "Missing Information",
+        description: "Please select a course and provide a reason for your appeal.",
+      });
+      return;
+    }
     setIsSubmitting(true);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500));
     toast({
       title: "Appeal Submitted (Simulated)",
-      description: "Your grade appeal for the selected course has been notionally submitted.",
+      description: `Your grade appeal for ${appealableCourses.find(c => c.id === selectedCourse)?.name || 'the selected course'} has been notionally submitted.`,
     });
     setSelectedCourse("");
     setAppealReason("");
@@ -93,7 +101,7 @@ export default function GradeAppealsPage() {
             <Select 
               value={selectedCourse} 
               onValueChange={setSelectedCourse}
-              disabled // Keep course selection disabled for now
+              // Removed disabled attribute
             >
               <SelectTrigger id="course-select" aria-label="Select course to appeal">
                 <SelectValue placeholder="Select a course..." />
@@ -104,7 +112,7 @@ export default function GradeAppealsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground mt-1">Course selection will be enabled once backend integration for grade appeals is complete. This list shows examples.</p>
+            <p className="text-xs text-muted-foreground mt-1">Select the course for which you want to appeal the grade. This list shows examples.</p>
           </div>
 
           <div>
@@ -115,7 +123,6 @@ export default function GradeAppealsPage() {
               rows={6}
               value={appealReason}
               onChange={(e) => setAppealReason(e.target.value)}
-              // Removed disabled attribute
             />
           </div>
           
@@ -141,14 +148,15 @@ export default function GradeAppealsPage() {
           <Button 
             disabled // Submit button remains disabled as backend is not implemented
             className="w-full" 
-            onClick={handleSubmitAppeal}
+            onClick={handleSubmitAppeal} // onClick is still wired up, but button is disabled
+            type="button" // Explicitly set type to button if not submitting a real form
           >
             <Send className="mr-2 h-4 w-4" />
             Submit Appeal - Feature Under Development
           </Button>
           <p className="text-sm text-muted-foreground text-center">
             Note: The grade appeal submission system is currently under development. 
-            This page demonstrates the UI for inputting reasons and selecting a file.
+            You can select a course, enter a reason, and choose a file for UI demonstration.
           </p>
         </CardContent>
       </Card>
