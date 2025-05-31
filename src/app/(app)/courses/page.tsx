@@ -188,7 +188,7 @@ export default function CoursesPage() {
     if (isStudent && profile) { 
       return {
         department: profile.department || DEPARTMENTS.CESM, 
-        level: profile.level || 400,         
+        level: profile.level || 200, // Default to 200 if not set        
         currentAcademicYear: profile.currentAcademicYear || defaultRegistrationMeta.academicYear,
         currentSemester: profile.currentSemester || defaultRegistrationMeta.semester,
       };
@@ -214,7 +214,7 @@ export default function CoursesPage() {
       academicYear: defaultRegistrationMeta.academicYear,
       semester: defaultRegistrationMeta.semester,
       department: "all",
-      level: "400", 
+      level: "200", // Default level filter for general view
       courseType: "all",
     };
   }, [isStudent, studentAcademicContext]);
@@ -287,7 +287,7 @@ export default function CoursesPage() {
 
 
   const staticDepartments = useMemo(() => ["all", ...Object.values(DEPARTMENTS)], []);
-  const staticLevels = useMemo(() => ["all", "200", "300", "400", "600", "700", "800"], []); 
+  const staticLevels = useMemo(() => ["all", "200", "300", "400", "500", "600", "700"], []); 
   const courseTypes = ["all", "Compulsory", "Elective", "General"];
   const academicYears = ["all", "2023/2024", "2024/2025", "2025/2026"]; 
   const semesters = ["all", "First Semester", "Second Semester", "Resit Semester"];

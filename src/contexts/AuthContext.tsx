@@ -37,12 +37,12 @@ interface AuthProviderProps {
 
 const MOCK_INITIAL_STUDENT_DETAILS = {
   department: "Department of computer engineering and system maintenance",
-  level: 100, // Default to level 100 for new students
+  level: 200, // Changed from 100 to 200
   program: "B.Eng. Computer Engineering and System Maintenance",
   currentAcademicYear: "2024/2025",
   currentSemester: "First Semester",
-  isNewStudent: true, // New students are indeed new
-  isGraduating: false, // New students are not graduating by default
+  isNewStudent: true, 
+  isGraduating: false, 
 };
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
