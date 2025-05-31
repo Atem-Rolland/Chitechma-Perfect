@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
@@ -24,6 +25,7 @@ interface AuthContextType {
   register: (email: string, pass: string, displayName: string, role?: Role) => Promise<AppUser>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  fetchUserProfile: (firebaseUser: FirebaseUser) => Promise<UserProfile | null>; // Exposed for refresh
   // mfaSetup: () => Promise<void>; // Placeholder for MFA
 }
 
@@ -32,6 +34,15 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 interface AuthProviderProps {
   children: ReactNode;
 }
+
+// Mock departments for initial student profile creation if not specified elsewhere
+// In a real app, department/level would likely be set via an admin panel or a more detailed student onboarding.
+const MOCK_INITIAL_STUDENT_DETAILS = {
+  department: "Department of computer engineering and system maintenance", // Example default
+  level: 100, // Example default
+  currentAcademicYear: "2024/2025", // Example default
+  currentSemester: "First Semester", // Example default
+};
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<AppUser | null>(null);
@@ -45,13 +56,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const userDocSnap = await getDoc(userDocRef);
     if (userDocSnap.exists()) {
       const userProfileData = userDocSnap.data() as UserProfile;
-      setProfile(userProfileData);
-      setRole(userProfileData.role);
-      return userProfileData;
+      // Ensure all fields are present, provide defaults if necessary (especially for new fields)
+      const completeProfile: UserProfile = {
+        ...userProfileData,
+        department: userProfileData.department || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.department : undefined),
+        level: userProfileData.level || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.level : undefined),
+        currentAcademicYear: userProfileData.currentAcademicYear || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.currentAcademicYear : undefined),
+        currentSemester: userProfileData.currentSemester || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.currentSemester : undefined),
+      };
+      setProfile(completeProfile);
+      setRole(completeProfile.role);
+      return completeProfile;
     } else {
-      // Handle case where user exists in Auth but not in Firestore (e.g., incomplete registration)
-      // For now, return null and let the app decide how to handle this.
-      // Potentially create a default profile or redirect to a profile setup page.
       console.warn("User profile not found in Firestore for UID:", firebaseUser.uid);
       setProfile(null);
       setRole(null);
@@ -87,15 +103,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
     
-    // Create user profile in Firestore
     const userProfile: UserProfile = {
       uid: firebaseUser.uid,
       email: firebaseUser.email,
       displayName: displayName || firebaseUser.displayName,
       role: userRole,
+      photoURL: firebaseUser.photoURL,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      photoURL: firebaseUser.photoURL
+      // Add student-specific mock details if role is student
+      ...(userRole === 'student' && {
+        department: MOCK_INITIAL_STUDENT_DETAILS.department,
+        level: MOCK_INITIAL_STUDENT_DETAILS.level,
+        currentAcademicYear: MOCK_INITIAL_STUDENT_DETAILS.currentAcademicYear,
+        currentSemester: MOCK_INITIAL_STUDENT_DETAILS.currentSemester,
+      }),
     };
     await setDoc(doc(db, "users", firebaseUser.uid), userProfile);
 
@@ -111,18 +133,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setUser(null);
     setProfile(null);
     setRole(null);
-    router.push('/login'); // Redirect to login after logout
+    router.push('/login'); 
   };
 
   const resetPassword = async (email: string) => {
     await sendPasswordResetEmail(auth, email);
   };
 
-  // const mfaSetup = async () => { /* Implement MFA logic */ };
-
   return (
-    <AuthContext.Provider value={{ user, profile, loading, role, login, register, logout, resetPassword }}>
+    <AuthContext.Provider value={{ user, profile, loading, role, login, register, logout, resetPassword, fetchUserProfile }}>
       {children}
     </AuthContext.Provider>
   );
 };
+
+    

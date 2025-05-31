@@ -17,6 +17,7 @@ import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth"; // Added useAuth import
 
 const MIN_CREDITS = 18;
 const MAX_CREDITS = 24;
@@ -42,83 +43,72 @@ async function fetchCourses(): Promise<Course[]> {
   
   const mockCourses: Course[] = [
     // --- 400 Level, First Semester, 2024/2025 Academic Year ---
-
-    // Department of computer engineering and system maintenance (CESM)
+    // CESM
     { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401", description: "Detailed course description for Mobile Application Development.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: ["CSE301"], semester: "First Semester", academicYear: "2024/2025" },
     { id: "CSE409_CESM_Y2425_S1", title: "Software Development and OOP", code: "CSE409", description: "Detailed course description for Software Development and OOP.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_CESM_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.CESM, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "CSE405_CESM_Y2425_S1", title: "Embedded Systems", code: "CSE405", description: "Detailed course description for Embedded Systems.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "NES403_CESM_Y2425_S1", title: "Modeling in Information System", code: "NES403", description: "Detailed course description for Modeling in Information System.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "CSE301_CESM_PRE", title: "Introduction to Algorithms", code: "CSE301", description: "Fundamental algorithms and data structures.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2023/2024" }, 
-
-    // Department of network engineering and security (NES)
+    // NES
     { id: "NES405_NES_Y2425_S1", title: "Scripting and Programming", code: "NES405", description: "Detailed course description for Scripting and Programming.", department: DEPARTMENTS.NES, lecturerId: "lect006", lecturerName: "Dr. Oumarou", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "NES409_NES_Y2425_S1", title: "Network Laboratory", code: "NES409", description: "Detailed course description for Network Laboratory.", department: DEPARTMENTS.NES, lecturerId: "lect007", lecturerName: "Prof. Kamga", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_NES_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.NES, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "NES401_NES_Y2425_S1", title: "Network Security", code: "NES401", description: "Detailed course description for Network Security.", department: DEPARTMENTS.NES, lecturerId: "lect008", lecturerName: "Mr. Bakari", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "NES403_NES_Y2425_S1", title: "Modeling in Information System", code: "NES403", description: "Detailed course description for Modeling in Information System.", department: DEPARTMENTS.NES, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-
-    // Department of electrical power systems (EPS)
+    // EPS
     { id: "EPS411_EPS_Y2425_S1", title: "Microcontrollers and Microprocessors", code: "EPS411", description: "Detailed course description for Microcontrollers and Microprocessors.", department: DEPARTMENTS.EPS, lecturerId: "lect009", lecturerName: "Dr. Wato", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "EPS401_EPS_Y2425_S1", title: "Electric Power System I", code: "EPS401", description: "Detailed course description for Electric Power System I.", department: DEPARTMENTS.EPS, lecturerId: "lect010", lecturerName: "Prof. Ndam", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_EPS_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.EPS, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "EPS403_EPS_Y2425_S1", title: "Control Engineering", code: "EPS403", description: "Detailed course description for Control Engineering.", department: DEPARTMENTS.EPS, lecturerId: "lect011", lecturerName: "Mr. Sanda", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "EPS405_EPS_Y2425_S1", title: "Power Electronics", code: "EPS405", description: "Detailed course description for Power Electronics.", department: DEPARTMENTS.EPS, lecturerId: "lect012", lecturerName: "Ms. Zola", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-
-    // Department of logistics and transport management (LTM)
+    // LTM
     { id: "LTM403_LTM_Y2425_S1", title: "Humanitarian Logistics", code: "LTM403", description: "Detailed course description for Humanitarian Logistics.", department: DEPARTMENTS.LTM, lecturerId: "lect013", lecturerName: "Dr. Bello", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "LTM401_LTM_Y2425_S1", title: "Custom Procedures and Clearance Systems", code: "LTM401", description: "Detailed course description for Custom Procedures and Clearance Systems.", department: DEPARTMENTS.LTM, lecturerId: "lect014", lecturerName: "Prof. Issa", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_LTM_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.LTM, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT411_LTM_Y2425_S1", title: "Management Information Systems", code: "MGT411", description: "Detailed course description for Management Information Systems.", department: DEPARTMENTS.LTM, lecturerId: "lect015", lecturerName: "Mr. Adamu", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT413_LTM_Y2425_S1", title: "Business Ethics and Corporate Governance", code: "MGT413", description: "Detailed course description for Business Ethics and Corporate Governance.", department: DEPARTMENTS.LTM, lecturerId: "lect016", lecturerName: "Ms. Amina", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "LTM405_LTM_Y2425_S1", title: "Fundamentals of Supply Chain Management", code: "LTM405", description: "Detailed course description for Fundamentals of Supply Chain Management.", department: DEPARTMENTS.LTM, lecturerId: "lect017", lecturerName: "Dr. Chinedu", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-
-    // Department of project management (PRM)
+    // PRM
     { id: "HRM407_PRM_Y2425_S1", title: "Performance Management and Motivation", code: "HRM407", description: "Detailed course description for Performance Management and Motivation.", department: DEPARTMENTS.PRM, lecturerId: "lect018", lecturerName: "Prof. Etta", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "PRM405_PRM_Y2425_S1", title: "Procurement and Contract Management", code: "PRM405", description: "Detailed course description for Procurement and Contract Management.", department: DEPARTMENTS.PRM, lecturerId: "lect019", lecturerName: "Mr. Okoro", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_PRM_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.PRM, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "PRM403_PRM_Y2425_S1", title: "Project Development and Grant Writing", code: "PRM403", description: "Detailed course description for Project Development and Grant Writing.", department: DEPARTMENTS.PRM, lecturerId: "lect020", lecturerName: "Ms. Ngozi", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT413_PRM_Y2425_S1", title: "Business Ethics and Corporate Governance", code: "MGT413", description: "Detailed course description for Business Ethics and Corporate Governance.", department: DEPARTMENTS.PRM, lecturerId: "lect016", lecturerName: "Ms. Amina", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "LTM405_PRM_Y2425_S1", title: "Fundamentals of Supply Chain Management", code: "LTM405", description: "Detailed course description for Fundamentals of Supply Chain Management.", department: DEPARTMENTS.PRM, lecturerId: "lect017", lecturerName: "Dr. Chinedu", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    
-    // Department of accounting (ACC)
+    // ACC
     { id: "ACC403_ACC_Y2425_S1", title: "Computerized Accounting", code: "ACC403", description: "Detailed course description for Computerized Accounting.", department: DEPARTMENTS.ACC, lecturerId: "lect021", lecturerName: "Dr. Obi", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "FIN411_ACC_Y2425_S1", title: "Financial Management", code: "FIN411", description: "Detailed course description for Financial Management.", department: DEPARTMENTS.ACC, lecturerId: "lect022", lecturerName: "Prof. Eze", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_ACC_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.ACC, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT411_ACC_Y2425_S1", title: "Management Information Systems", code: "MGT411", description: "Detailed course description for Management Information Systems.", department: DEPARTMENTS.ACC, lecturerId: "lect015", lecturerName: "Mr. Adamu", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT413_ACC_Y2425_S1", title: "Business Ethics and Corporate Governance", code: "MGT413", description: "Detailed course description for Business Ethics and Corporate Governance.", department: DEPARTMENTS.ACC, lecturerId: "lect016", lecturerName: "Ms. Amina", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "ACC401_ACC_Y2425_S1", title: "Financial Accounting", code: "ACC401", description: "Detailed course description for Financial Accounting.", department: DEPARTMENTS.ACC, lecturerId: "lect023", lecturerName: "Ms. Ifeoma", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-
-    // Department of hotel management and catering (HMC)
+    // HMC
     { id: "HRM407_HMC_Y2425_S1", title: "Performance Management and Motivation", code: "HRM407", description: "Detailed course description for Performance Management and Motivation.", department: DEPARTMENTS.HMC, lecturerId: "lect018", lecturerName: "Prof. Etta", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "HMC403_HMC_Y2425_S1", title: "Hotel Account and Financial Management", code: "HMC403", description: "Detailed course description for Hotel Account and Financial Management.", department: DEPARTMENTS.HMC, lecturerId: "lect024", lecturerName: "Dr. Adeleke", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_HMC_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.HMC, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "HMC401_HMC_Y2425_S1", title: "Hotel Operations/Front Office Management", code: "HMC401", description: "Detailed course description for Hotel Operations/Front Office Management.", department: DEPARTMENTS.HMC, lecturerId: "lect025", lecturerName: "Mr. Jean", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT413_HMC_Y2425_S1", title: "Business Ethics and Corporate Governance", code: "MGT413", description: "Detailed course description for Business Ethics and Corporate Governance.", department: DEPARTMENTS.HMC, lecturerId: "lect016", lecturerName: "Ms. Amina", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-
-    // Department of baking and food processing (BFP)
+    // BFP
     { id: "BFP403_BFP_Y2425_S1", title: "Postharvest, Handling, Transformation and Storage", code: "BFP403", description: "Detailed course description for Postharvest, Handling, Transformation and Storage.", department: DEPARTMENTS.BFP, lecturerId: "lect026", lecturerName: "Dr. Yemisi", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "BFP405_BFP_Y2425_S1", title: "Food Technology I", code: "BFP405", description: "Detailed course description for Food Technology I.", department: DEPARTMENTS.BFP, lecturerId: "lect027", lecturerName: "Prof. Tunde", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_BFP_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.BFP, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "BFP40A_BFP_Y2425_S1", title: "Functional Foods and Nutraceuticals", code: "BFP40A", description: "Detailed course description for Functional Foods and Nutraceuticals.", department: DEPARTMENTS.BFP, lecturerId: "lect028", lecturerName: "Mr. Femi", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "BFP401_BFP_Y2425_S1", title: "Food Analysis and Biotechnology", code: "BFP401", description: "Detailed course description for Food Analysis and Biotechnology.", department: DEPARTMENTS.BFP, lecturerId: "lect029", lecturerName: "Ms. Chika", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    
-    // Department of fashion,clothing and textile (FCT)
+    // FCT
     { id: "CCT401_FCT_Y2425_S1", title: "Interior and Exterior Decoration", code: "CCT401", description: "Detailed course description for Interior and Exterior Decoration.", department: DEPARTMENTS.FCT, lecturerId: "lect030", lecturerName: "Dr. Aisha", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "CTT409_FCT_Y2425_S1", title: "Industrial Dyeing and Chemical Processing of Textile", code: "CTT409", description: "Detailed course description for Industrial Dyeing and Chemical Processing of Textile.", department: DEPARTMENTS.FCT, lecturerId: "lect031", lecturerName: "Prof. Garba", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "FCT40A_FCT_Y2425_S1", title: "Techniques of Fabric Production, Analysis and Garment Manufacturing", code: "FCT40A", description: "Detailed course description for Techniques of Fabric Production, Analysis and Garment Manufacturing.", department: DEPARTMENTS.FCT, lecturerId: "lect032", lecturerName: "Mr. Kwame", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_FCT_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.FCT, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "CTT405_FCT_Y2425_S1", title: "Handicraft and Millinery Accessories", code: "CTT405", description: "Detailed course description for Handicraft and Millinery Accessories.", department: DEPARTMENTS.FCT, lecturerId: "lect033", lecturerName: "Ms. Fatimah", credits: 3, type: "Elective", level: 400, schedule: "AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-
-    // Department of nursing (NUS)
+    // NUS
     { id: "NUS405_NUS_Y2425_S1", title: "Traumatology Critical Care & Emergence", code: "NUS405", description: "Detailed course description for Traumatology Critical Care & Emergence.", department: DEPARTMENTS.NUS, lecturerId: "lect034", lecturerName: "Dr. Ibrahim", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "NUS407_NUS_Y2425_S1", title: "Specific of Maternity Nursing & Reproductive Health", code: "NUS407", description: "Detailed course description for Specific of Maternity Nursing & Reproductive Health.", department: DEPARTMENTS.NUS, lecturerId: "lect035", lecturerName: "Prof. Diallo", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_NUS_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.NUS, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "NUS409_NUS_Y2425_S1", title: "Specific of Community/Psychiatric Nursing", code: "NUS409", description: "Detailed course description for Specific of Community/Psychiatric Nursing.", department: DEPARTMENTS.NUS, lecturerId: "lect036", lecturerName: "Mr. Koffi", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "NUS401_NUS_Y2425_S1", title: "Medico-Surgical Nursing Gerontology", code: "NUS401", description: "Detailed course description for Medico-Surgical Nursing Gerontology.", department: DEPARTMENTS.NUS, lecturerId: "lect037", lecturerName: "Ms. Kante", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "NUS403_NUS_Y2425_S1", title: "Pediatric & Adolescent Nursing", code: "NUS403", description: "Detailed course description for Pediatric & Adolescent Nursing.", department: DEPARTMENTS.NUS, lecturerId: "lect038", lecturerName: "Dr. Souleyman", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-
-    // Department of medical laboratory sciences (MLS)
+    // MLS
     { id: "MLS405_MLS_Y2425_S1", title: "Histochemistry and histopathology", code: "MLS405", description: "Detailed course description for Histochemistry and histopathology.", department: DEPARTMENTS.MLS, lecturerId: "lect039", lecturerName: "Dr. Coulibaly", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MLS403_MLS_Y2425_S1", title: "Medical Parasitology and Entomology", code: "MLS403", description: "Detailed course description for Medical Parasitology and Entomology.", department: DEPARTMENTS.MLS, lecturerId: "lect040", lecturerName: "Prof. Diop", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_MLS_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.MLS, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
@@ -126,90 +116,111 @@ async function fetchCourses(): Promise<Course[]> {
     { id: "MLS401_MLS_Y2425_S1", title: "Medical Biochemistry and chemical pathology", code: "MLS401", description: "Detailed course description for Medical Biochemistry and chemical pathology.", department: DEPARTMENTS.MLS, lecturerId: "lect042", lecturerName: "Ms. Keita", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
   
     // --- 400 Level, Second Semester, 2024/2025 Academic Year ---
-
-    // Department of computer engineering and system maintenance (CESM)
+    // CESM
     { id: "CSE406_CESM_Y2425_S2", title: "Algorithm and Data Structure", code: "CSE406", description: "In-depth study of algorithms and data structures.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: ["CSE301", "CSE401"], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "CSE402_CESM_Y2425_S2", title: "Distributed Programming", code: "CSE402", description: "Concepts and practices in distributed programming.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: ["CSE409"], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "CSE408_CESM_Y2425_S2", title: "Emerging Networks", code: "CSE408", description: "Study of new and upcoming network technologies.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "CSE404_CESM_Y2425_S2", title: "Introduction to Artificial Intelligence", code: "CSE404", description: "Fundamentals of Artificial Intelligence.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: ["CSE406"], semester: "Second Semester", academicYear: "2024/2025" },
-
-    // Department of network engineering and security (NES)
+    // NES
     { id: "NES404_NES_Y2425_S2", title: "Information System Security", code: "NES404", description: "Security principles for information systems.", department: DEPARTMENTS.NES, lecturerId: "lect008", lecturerName: "Mr. Bakari", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: ["NES401"], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "NES406_NES_Y2425_S2", title: "Network Security Laboratory", code: "NES406", description: "Practical lab work in network security.", department: DEPARTMENTS.NES, lecturerId: "lect007", lecturerName: "Prof. Kamga", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: ["NES401"], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "CSE408_NES_Y2425_S2", title: "Emerging Networks", code: "CSE408", description: "Study of new and upcoming network technologies (shared).", department: DEPARTMENTS.NES, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" }, // Shared with CESM
+    { id: "CSE408_NES_Y2425_S2", title: "Emerging Networks", code: "CSE408", description: "Study of new and upcoming network technologies (shared).", department: DEPARTMENTS.NES, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" }, 
     { id: "NES402_NES_Y2425_S2", title: "Telecom and Wireless Communication", code: "NES402", description: "Telecommunications and wireless networking.", department: DEPARTMENTS.NES, lecturerId: "lect006", lecturerName: "Dr. Oumarou", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-
-    // Department of electrical power systems (EPS)
+    // EPS
     { id: "EPS404_EPS_Y2425_S2", title: "Industrial Computing", code: "EPS404", description: "Computing applications in industrial settings.", department: DEPARTMENTS.EPS, lecturerId: "lect009", lecturerName: "Dr. Wato", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: ["EPS411"], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "EPS408_EPS_Y2425_S2", title: "Power System Analysis", code: "EPS408", description: "Analysis of electrical power systems.", department: DEPARTMENTS.EPS, lecturerId: "lect010", lecturerName: "Prof. Ndam", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: ["EPS401"], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "EPS406_EPS_Y2425_S2", title: "Power System Laboratory", code: "EPS406", description: "Practical lab work on power systems.", department: DEPARTMENTS.EPS, lecturerId: "lect011", lecturerName: "Mr. Sanda", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: ["EPS401"], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "EPS402_EPS_Y2425_S2", title: "Electrical Power System II", code: "EPS402", description: "Advanced topics in electrical power systems.", department: DEPARTMENTS.EPS, lecturerId: "lect012", lecturerName: "Ms. Zola", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: ["EPS401"], semester: "Second Semester", academicYear: "2024/2025" },
-
-    // Department of logistics and transport management (LTM)
+    // LTM
     { id: "MGT416_LTM_Y2425_S2", title: "Quantitative Methods", code: "MGT416", description: "Quantitative analysis techniques for management.", department: DEPARTMENTS.LTM, lecturerId: "lect013", lecturerName: "Dr. Bello", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "LTM406_LTM_Y2425_S2", title: "Aviation Management and Operations", code: "LTM406", description: "Management of aviation operations.", department: DEPARTMENTS.LTM, lecturerId: "lect014", lecturerName: "Prof. Issa", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "LTM404_LTM_Y2425_S2", title: "Traffic Management and Control", code: "LTM404", description: "Principles of traffic management and control.", department: DEPARTMENTS.LTM, lecturerId: "lect015", lecturerName: "Mr. Adamu", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "LTM402_LTM_Y2425_S2", title: "Manufacturing Logistics", code: "LTM402", description: "Logistics within manufacturing environments.", department: DEPARTMENTS.LTM, lecturerId: "lect017", lecturerName: "Dr. Chinedu", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: ["LTM405"], semester: "Second Semester", academicYear: "2024/2025" },
-
-    // Department of project management (PRM)
+    // PRM
     { id: "MGT416_PRM_Y2425_S2", title: "Quantitative Methods", code: "MGT416", description: "Quantitative analysis techniques for management.", department: DEPARTMENTS.PRM, lecturerId: "lect013", lecturerName: "Dr. Bello", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "PRM406_PRM_Y2425_S2", title: "Project Appraisal and Selection", code: "PRM406", description: "Methods for appraising and selecting projects.", department: DEPARTMENTS.PRM, lecturerId: "lect019", lecturerName: "Mr. Okoro", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: ["PRM403"], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "PRM40A_PRM_Y2425_S2", title: "Project Design, Monitoring and Evaluation", code: "PRM40A", description: "Designing, monitoring, and evaluating projects.", department: DEPARTMENTS.PRM, lecturerId: "lect020", lecturerName: "Ms. Ngozi", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: ["PRM403"], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "PRM404_PRM_Y2425_S2", title: "Managing Project Risks and Changes", code: "PRM404", description: "Techniques for managing project risks and changes.", department: DEPARTMENTS.PRM, lecturerId: "lect018", lecturerName: "Prof. Etta", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-
-    // Department of accounting (ACC)
+    // ACC
     { id: "MGT416_ACC_Y2425_S2", title: "Quantitative Methods", code: "MGT416", description: "Quantitative analysis techniques for management.", department: DEPARTMENTS.ACC, lecturerId: "lect013", lecturerName: "Dr. Bello", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "ACC408_ACC_Y2425_S2", title: "Auditing and Assurance", code: "ACC408", description: "Principles of auditing and assurance services.", department: DEPARTMENTS.ACC, lecturerId: "lect022", lecturerName: "Prof. Eze", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: ["ACC401"], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "ACC40A_ACC_Y2425_S2", title: "Cost and Managerial Accounting", code: "ACC40A", description: "Accounting for costs and managerial decision making.", department: DEPARTMENTS.ACC, lecturerId: "lect021", lecturerName: "Dr. Obi", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: ["ACC401"], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "FIN402_ACC_Y2425_S2", title: "Taxation Accounting II", code: "FIN402", description: "Advanced topics in taxation accounting.", department: DEPARTMENTS.ACC, lecturerId: "lect023", lecturerName: "Ms. Ifeoma", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-
-    // Department of hotel management and catering (HMC)
+    // HMC
     { id: "MGT416_HMC_Y2425_S2", title: "Quantitative Methods", code: "MGT416", description: "Quantitative analysis techniques for management.", department: DEPARTMENTS.HMC, lecturerId: "lect013", lecturerName: "Dr. Bello", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "HMC406_HMC_Y2425_S2", title: "Housekeeping and Laundry Operations", code: "HMC406", description: "Management of housekeeping and laundry.", department: DEPARTMENTS.HMC, lecturerId: "lect024", lecturerName: "Dr. Adeleke", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: ["HMC401"], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "BFP408_HMC_Y2425_S2", title: "Event Planning and Management", code: "BFP408", description: "Planning and management of events (shared).", department: DEPARTMENTS.HMC, lecturerId: "lect027", lecturerName: "Prof. Tunde", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" }, // Shared with BFP
-    { id: "HMC40A_HMC_Y2425_S2", title: "Hospitality Law", code: "HMC401", description: "Legal aspects of the hospitality industry. (Assigned HMC40A to avoid conflict with Front Office Mgt)", department: DEPARTMENTS.HMC, lecturerId: "lect025", lecturerName: "Mr. Jean", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" }, // Note: User provided HMC401, which is already used in S1. Assigned HMC40A.
-
-    // Department of baking and food processing (BFP)
+    { id: "BFP408_HMC_Y2425_S2", title: "Event Planning and Management", code: "BFP408", description: "Planning and management of events (shared).", department: DEPARTMENTS.HMC, lecturerId: "lect027", lecturerName: "Prof. Tunde", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" }, 
+    { id: "HMC40A_HMC_Y2425_S2", title: "Hospitality Law", code: "HMC40A", description: "Legal aspects of the hospitality industry.", department: DEPARTMENTS.HMC, lecturerId: "lect025", lecturerName: "Mr. Jean", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
+    // BFP
     { id: "BFP406_BFP_Y2425_S2", title: "Waste Management and Effluent Treatment", code: "BFP406", description: "Managing waste in food processing.", department: DEPARTMENTS.BFP, lecturerId: "lect026", lecturerName: "Dr. Yemisi", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "MA405_BFP_Y2425_S2", title: "Product Development and Packaging", code: "MA405", description: "Developing and packaging food products.", department: DEPARTMENTS.BFP, lecturerId: "lect028", lecturerName: "Mr. Femi", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "BFP408_BFP_Y2425_S2", title: "Event Planning and Management", code: "BFP408", description: "Planning and management of events (shared).", department: DEPARTMENTS.BFP, lecturerId: "lect027", lecturerName: "Prof. Tunde", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" }, // Shared with HMC
+    { id: "BFP408_BFP_Y2425_S2", title: "Event Planning and Management", code: "BFP408", description: "Planning and management of events (shared).", department: DEPARTMENTS.BFP, lecturerId: "lect027", lecturerName: "Prof. Tunde", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" }, 
     { id: "BFP402_BFP_Y2425_S2", title: "Food Technology II", code: "BFP402", description: "Advanced topics in food technology.", department: DEPARTMENTS.BFP, lecturerId: "lect029", lecturerName: "Ms. Chika", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: ["BFP405"], semester: "Second Semester", academicYear: "2024/2025" },
-    
-    // Department of fashion,clothing and textile (FCT)
+    // FCT
     { id: "CTT402_FCT_Y2425_S2", title: "Computer Aided Design and Printing Techniques of Fabrics", code: "CTT402", description: "CAD and printing for fabrics.", department: DEPARTMENTS.FCT, lecturerId: "lect030", lecturerName: "Dr. Aisha", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "CCT404_FCT_Y2425_S2", title: "Apparel Marketing and Merchandising", code: "CCT404", description: "Marketing and merchandising apparel.", department: DEPARTMENTS.FCT, lecturerId: "lect031", lecturerName: "Prof. Garba", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "CTT408_FCT_Y2425_S2", title: "Creative Design and Working Drawing", code: "CTT408", description: "Creative design and technical drawing for fashion.", department: DEPARTMENTS.FCT, lecturerId: "lect032", lecturerName: "Mr. Kwame", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "CTT406_FCT_Y2425_S2", title: "Techniques of Yarn Manufacturing", code: "CTT406", description: "Techniques in yarn manufacturing.", department: DEPARTMENTS.FCT, lecturerId: "lect033", lecturerName: "Ms. Fatimah", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-
-    // Department of nursing (NUS)
+    // NUS
     { id: "NUS402_NUS_Y2425_S2", title: "Teaching and Learning in Nursing", code: "NUS402", description: "Principles of teaching and learning in nursing.", department: DEPARTMENTS.NUS, lecturerId: "lect034", lecturerName: "Dr. Ibrahim", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    
-    // Department of medical laboratory sciences (MLS)
+    // MLS
     { id: "MLS402_MLS_Y2425_S2", title: "Medical Microbiology, Virology and Molecular Biology", code: "MLS402", description: "Microbiology, virology, and molecular biology for MLS.", department: DEPARTMENTS.MLS, lecturerId: "lect039", lecturerName: "Dr. Coulibaly", credits: 4, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
   ];
   return mockCourses;
 }
 
-
-// Mock registration status
-const registrationMeta = {
+// Default registration meta, can be overridden by specific semester/year settings
+const defaultRegistrationMeta = {
   isOpen: true,
-  deadline: "2024-09-15", // Example deadline for first semester
+  deadline: "2024-09-15", 
   academicYear: "2024/2025", 
   semester: "First Semester",   
 };
 
 export default function CoursesPage() {
+  const { role, profile } = useAuth();
+  const isStudent = role === 'student';
+
+  // MOCK student's academic context. In a real app, this would come from profile.
+  // These specific values should ideally be part of the student's profile data.
+  const studentAcademicContext = useMemo(() => {
+    if (isStudent) {
+      return {
+        // Example: Student from CESM, 400 Level. 
+        // These should be dynamically fetched or part of the student's profile.
+        department: profile?.department || DEPARTMENTS.CESM, 
+        level: profile?.level || 400,        
+        currentAcademicYear: profile?.currentAcademicYear || defaultRegistrationMeta.academicYear,
+        currentSemester: profile?.currentSemester || defaultRegistrationMeta.semester,
+      };
+    }
+    return null;
+  }, [isStudent, profile]);
+
   const [allCourses, setAllCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filters, setFilters] = useState({
-    academicYear: registrationMeta.academicYear,
-    semester: registrationMeta.semester,
-    department: "all",
-    level: "400", 
-    courseType: "all",
-  });
+  
+  const initialFilters = useMemo(() => {
+    if (isStudent && studentAcademicContext) {
+      return {
+        academicYear: studentAcademicContext.currentAcademicYear,
+        semester: studentAcademicContext.currentSemester,
+        department: studentAcademicContext.department,
+        level: studentAcademicContext.level.toString(),
+        courseType: "all",
+      };
+    }
+    return {
+      academicYear: defaultRegistrationMeta.academicYear,
+      semester: defaultRegistrationMeta.semester,
+      department: "all",
+      level: "400", // Default level for non-students or if student level not set
+      courseType: "all",
+    };
+  }, [isStudent, studentAcademicContext]);
+
+  const [filters, setFilters] = useState(initialFilters);
   const [registeredCourseIds, setRegisteredCourseIds] = useState<string[]>([]);
   const [selectedCourseForDetail, setSelectedCourseForDetail] = useState<Course | null>(null);
   const { toast } = useToast();
@@ -223,19 +234,46 @@ export default function CoursesPage() {
     }
     loadCourses();
   }, []);
+  
+   useEffect(() => {
+    if (isStudent && studentAcademicContext) {
+      setFilters({
+        academicYear: studentAcademicContext.currentAcademicYear,
+        semester: studentAcademicContext.currentSemester,
+        department: studentAcademicContext.department,
+        level: studentAcademicContext.level.toString(),
+        courseType: "all",
+      });
+    }
+  }, [isStudent, studentAcademicContext]);
+
 
   const staticDepartments = useMemo(() => ["all", ...Object.values(DEPARTMENTS)], []);
-  const staticLevels = useMemo(() => ["all", "200", "300", "400", "600", "700", "800"], []);
+  const staticLevels = useMemo(() => ["all", "200", "300", "400", "600", "700", "800"], []); // All levels for general filtering
   const courseTypes = ["all", "Compulsory", "Elective", "General"];
   const academicYears = ["all", "2023/2024", "2024/2025", "2025/2026"]; 
   const semesters = ["all", "First Semester", "Second Semester", "Resit Semester"];
 
   const handleFilterChange = (filterName: keyof typeof filters, value: string) => {
+    // Students should not be able to change department or level filters
+    if (isStudent && (filterName === "department" || filterName === "level")) {
+      return;
+    }
     setFilters(prev => ({ ...prev, [filterName]: value }));
   };
 
   const filteredCourses = useMemo(() => {
     return allCourses
+      .filter(course => 
+        isStudent && studentAcademicContext
+          ? course.department === studentAcademicContext.department
+          : (filters.department === "all" || course.department === filters.department)
+      )
+      .filter(course => 
+        isStudent && studentAcademicContext
+          ? course.level === studentAcademicContext.level
+          : (filters.level === "all" || course.level.toString() === filters.level)
+      )
       .filter(course => 
         filters.academicYear === "all" || course.academicYear === filters.academicYear
       )
@@ -246,45 +284,31 @@ export default function CoursesPage() {
         course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         course.code.toLowerCase().includes(searchTerm.toLowerCase())
       )
-      .filter(course => filters.department === "all" || course.department === filters.department)
-      .filter(course => filters.level === "all" || course.level.toString() === filters.level)
       .filter(course => filters.courseType === "all" || course.type === filters.courseType);
-  }, [allCourses, searchTerm, filters]);
+  }, [allCourses, searchTerm, filters, isStudent, studentAcademicContext]);
 
   const registeredCoursesList = useMemo(() => {
     return allCourses.filter(course => registeredCourseIds.includes(course.id));
   }, [allCourses, registeredCourseIds]);
 
   const totalRegisteredCredits = useMemo(() => {
-    return registeredCoursesList.reduce((sum, course) => sum + course.credits, 0);
-  }, [registeredCoursesList]);
+    // Calculate credits only for the courses matching the student's current academic context or the selected filters
+    const relevantCourses = registeredCoursesList.filter(course => 
+      course.academicYear === filters.academicYear && course.semester === filters.semester
+    );
+    return relevantCourses.reduce((sum, course) => sum + course.credits, 0);
+  }, [registeredCoursesList, filters.academicYear, filters.semester]);
   
   const currentRegistrationMeta = useMemo(() => {
-    // This could be fetched from a backend or dynamically set
-    // For now, it's static but could change if filters change
+    // This logic determines if registration is open for the *selected* semester/year in filters
     if (filters.academicYear === "2024/2025" && filters.semester === "First Semester") {
-      return {
-        isOpen: true,
-        deadline: "2024-09-15",
-        academicYear: "2024/2025",
-        semester: "First Semester",
-      };
+      return { isOpen: true, deadline: "2024-09-15", academicYear: "2024/2025", semester: "First Semester" };
     }
     if (filters.academicYear === "2024/2025" && filters.semester === "Second Semester") {
-      return {
-        isOpen: false, // Example: Second semester registration not open yet
-        deadline: "2025-02-15",
-        academicYear: "2024/2025",
-        semester: "Second Semester",
-      };
+      return { isOpen: true, deadline: "2025-02-15", academicYear: "2024/2025", semester: "Second Semester" }; // Assuming second sem is also open for mock
     }
     // Default or for "all" filters - could show current system-wide status
-    return {
-        isOpen: true, // Fallback, consider making this more dynamic
-        deadline: "N/A",
-        academicYear: filters.academicYear,
-        semester: filters.semester,
-    };
+    return { isOpen: false, deadline: "N/A", academicYear: filters.academicYear, semester: filters.semester };
   }, [filters.academicYear, filters.semester]);
 
 
@@ -294,11 +318,11 @@ export default function CoursesPage() {
       return;
     }
      if (course.academicYear !== currentRegistrationMeta.academicYear || course.semester !== currentRegistrationMeta.semester) {
-        toast({ title: "Registration Mismatch", description: `You can only register for courses in the currently selected/open registration period: ${currentRegistrationMeta.semester}, ${currentRegistrationMeta.academicYear}.`, variant: "destructive" });
+        toast({ title: "Registration Mismatch", description: `You can only register for courses in the currently open registration period: ${currentRegistrationMeta.semester}, ${currentRegistrationMeta.academicYear}.`, variant: "destructive" });
         return;
     }
     if (totalRegisteredCredits + course.credits > MAX_CREDITS) {
-      toast({ title: "Credit Limit Exceeded", description: `Cannot register. Exceeds maximum credit load of ${MAX_CREDITS}.`, variant: "destructive" });
+      toast({ title: "Credit Limit Exceeded", description: `Cannot register. Exceeds maximum credit load of ${MAX_CREDITS}. Current credits: ${totalRegisteredCredits}. Course credits: ${course.credits}`, variant: "destructive" });
       return;
     }
     if (registeredCourseIds.includes(course.id)) {
@@ -307,31 +331,27 @@ export default function CoursesPage() {
     }
 
     const unmetPrerequisites = course.prerequisites?.filter(prereqCode => {
-        const potentialPrereqCourses = allCourses.filter(c => c.code === prereqCode && c.academicYear < course.academicYear); // Basic check: prereq must be from a previous year
-        if (potentialPrereqCourses.length === 0 && course.prerequisites && course.prerequisites.includes(prereqCode) ) { 
-            // This means a defined prerequisite string does not map to any known course code, which is an issue with data consistency.
-            console.warn(`Prerequisite code ${prereqCode} for course ${course.code} not found in allCourses.`);
-            return true; // Treat as unmet if not found, or handle as per policy
-        }
-        // A more robust check would verify if the student *passed* the prerequisite. For now, we check if registered.
-        // This simplistic check implies prerequisites must be registered *in a previous semester/year*, not concurrently.
-        const isPrereqMet = potentialPrereqCourses.some(pc => {
-            // This part is tricky with mock data. In a real system, you'd check student's academic record.
-            // For now, we can't truly validate if a *past* prereq was met.
-            // We assume if a course with this code exists in a prior year, it could have been taken.
-            // A simple version might check if ANY course with that code (regardless of year) is registered, which is flawed for true prereqs.
-            // Let's assume prereqs are met if they are not blocking registration by being in `registeredCourseIds` from *current* registration.
-            return registeredCourseIds.includes(pc.id); // This is still a simplification.
+        const potentialPrereqCourses = allCourses.filter(c => c.code === prereqCode && (c.academicYear < course.academicYear || (c.academicYear === course.academicYear && c.semester < course.semester)));
+        
+        const isPrereqMetOnRecord = registeredCourseIds.some(regId => {
+            const registeredPrereq = allCourses.find(c => c.id === regId && c.code === prereqCode);
+            // This is a basic check assuming any prior registration of the code means it's met.
+            // A real system would check for a passing grade in a completed prerequisite.
+            return !!registeredPrereq; 
         });
-        // If course.prerequisites.includes(prereqCode) is true, but no matching potentialPrereqCourses were found, it's an issue.
-        // The logic here assumes prerequisite codes *should* exist in allCourses if they are defined.
-        return !isPrereqMet && course.prerequisites?.includes(prereqCode);
+
+        if (potentialPrereqCourses.length === 0 && course.prerequisites?.includes(prereqCode)) {
+            console.warn(`Prerequisite code ${prereqCode} for course ${course.code} not found in a prior term in allCourses.`);
+            // If not found in records and no potential prior course, it's unmet if not already on student record
+            return !isPrereqMetOnRecord; 
+        }
+        return !isPrereqMetOnRecord && course.prerequisites?.includes(prereqCode);
       });
 
     if (unmetPrerequisites && unmetPrerequisites.length > 0) {
       toast({
         title: "Prerequisites Not Met",
-        description: `Cannot register ${course.code}. Missing prerequisites: ${unmetPrerequisites.join(', ')}. Prerequisites must be completed in a prior academic session.`,
+        description: `Cannot register ${course.code}. Missing prerequisites: ${unmetPrerequisites.join(', ')}. Prerequisites must be completed in a prior academic session and reflected in your record.`,
         variant: "destructive",
       });
       return;
@@ -349,7 +369,7 @@ export default function CoursesPage() {
       return;
     }
     if (courseToDrop.academicYear !== currentRegistrationMeta.academicYear || courseToDrop.semester !== currentRegistrationMeta.semester) {
-        toast({ title: "Drop Mismatch", description: `You can only drop courses from the currently selected/open registration period: ${currentRegistrationMeta.semester}, ${currentRegistrationMeta.academicYear}.`, variant: "destructive" });
+        toast({ title: "Drop Mismatch", description: `You can only drop courses from the currently open registration period: ${currentRegistrationMeta.semester}, ${currentRegistrationMeta.academicYear}.`, variant: "destructive" });
         return;
     }
 
@@ -358,16 +378,20 @@ export default function CoursesPage() {
   };
   
   const getCreditStatus = () => {
-    const relevantRegisteredCourses = registeredCoursesList.filter(
-      c => c.academicYear === filters.academicYear && c.semester === filters.semester
-    );
-    const currentSemesterCredits = relevantRegisteredCourses.reduce((sum, course) => sum + course.credits, 0);
+    const currentSemesterCredits = totalRegisteredCredits; // totalRegisteredCredits is already filtered for current filters.academicYear & filters.semester
 
     if (filters.academicYear === "all" || filters.semester === "all") {
          return {
-            message: `Showing courses across multiple periods. Select a specific Academic Year and Semester to see credit status for that period.`,
+            message: `Showing courses across multiple periods. Select a specific Academic Year and Semester to see credit status for that period. Total registered across all shown: ${registeredCoursesList.reduce((sum, c) => sum + c.credits,0)}`,
             variant: "info" as const,
-            credits: totalRegisteredCredits // This would be sum of all registered courses across all time
+            credits: registeredCoursesList.reduce((sum, c) => sum + c.credits,0)
+        };
+    }
+     if (!currentRegistrationMeta.isOpen) {
+        return {
+            message: `Registration for ${filters.semester}, ${filters.academicYear} is closed. Credit load: ${currentSemesterCredits}.`,
+            variant: "info" as const,
+            credits: currentSemesterCredits
         };
     }
 
@@ -446,13 +470,21 @@ export default function CoursesPage() {
               {semesters.map(sem => <SelectItem key={sem} value={sem}>{sem === "all" ? "All Semesters" : sem}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select value={filters.department} onValueChange={(value) => handleFilterChange("department", value)}>
+          <Select 
+            value={filters.department} 
+            onValueChange={(value) => handleFilterChange("department", value)}
+            disabled={isStudent}
+          >
             <SelectTrigger><School className="mr-2 h-4 w-4 text-muted-foreground inline-block" />Department</SelectTrigger>
             <SelectContent>
               {staticDepartments.map(dept => <SelectItem key={dept} value={dept}>{dept === "all" ? "All Departments" : dept}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select value={filters.level} onValueChange={(value) => handleFilterChange("level", value)}>
+          <Select 
+            value={filters.level} 
+            onValueChange={(value) => handleFilterChange("level", value)}
+            disabled={isStudent}
+          >
             <SelectTrigger><BookUser className="mr-2 h-4 w-4 text-muted-foreground inline-block" />Level</SelectTrigger>
             <SelectContent>
               {staticLevels.map(lvl => <SelectItem key={lvl} value={lvl}>{lvl === "all" ? "All Levels" : `${lvl} Level`}</SelectItem>)}
@@ -481,7 +513,10 @@ export default function CoursesPage() {
           <CardHeader>
             <CardTitle>Available Courses</CardTitle>
             <CardDescription>
-              Select courses to register for {filters.semester === "all" ? "the filtered semester" : filters.semester}, {filters.academicYear === "all" ? "the filtered year" : filters.academicYear}.
+              {isStudent && studentAcademicContext 
+                ? `Courses for ${studentAcademicContext.department}, Level ${studentAcademicContext.level}`
+                : `Select courses to register for ${filters.semester === "all" ? "the filtered semester" : filters.semester}, ${filters.academicYear === "all" ? "the filtered year" : filters.academicYear}.`
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -557,7 +592,12 @@ export default function CoursesPage() {
               <div className="text-center py-12">
                 <Image src="https://placehold.co/300x200.png" alt="No courses found" width={200} height={133} className="mx-auto mb-4 rounded-lg" data-ai-hint="empty state education" />
                 <h3 className="text-xl font-semibold">No Courses Found</h3>
-                <p className="text-muted-foreground mt-1">Try adjusting your search or filter criteria for the selected Academic Year and Semester.</p>
+                <p className="text-muted-foreground mt-1">
+                  {isStudent && studentAcademicContext 
+                    ? `No courses available for ${studentAcademicContext.department}, Level ${studentAcademicContext.level} matching your current filters.`
+                    : "Try adjusting your search or filter criteria for the selected Academic Year and Semester."
+                  }
+                </p>
               </div>
             )}
           </CardContent>
@@ -601,7 +641,7 @@ export default function CoursesPage() {
                     creditStatus.variant === "warning" || creditStatus.variant === "destructive" ? "text-destructive" : "text-green-600 dark:text-green-400"
                 }>{creditStatus.credits}</span>
                 </p>
-                { creditStatus.variant !== "info" && currentRegistrationMeta.isOpen && (
+                { creditStatus.variant !== "info" && (currentRegistrationMeta.isOpen || creditStatus.credits > 0) && ( // Show status if registration is open OR if credits are registered even if closed
                    <Alert variant={creditStatus.variant === "success" ? "default" : creditStatus.variant} className="mt-2">
                     {creditStatus.variant === "success" ? <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" /> : <AlertCircle className="h-4 w-4" />}
                     <AlertTitle>{creditStatus.variant === "warning" ? "Warning" : creditStatus.variant === "destructive" ? "Error" : "Status"}</AlertTitle>
@@ -653,3 +693,4 @@ export default function CoursesPage() {
   );
 }
 
+    

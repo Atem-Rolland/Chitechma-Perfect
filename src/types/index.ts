@@ -1,3 +1,4 @@
+
 import type { User as FirebaseUser } from 'firebase/auth';
 
 export type Role = "student" | "lecturer" | "admin" | "finance" | null;
@@ -8,6 +9,10 @@ export interface UserProfile {
   displayName: string | null;
   photoURL?: string | null;
   role: Role;
+  department?: string; // Student's department
+  level?: number; // Student's current level
+  currentAcademicYear?: string; // Student's current academic year
+  currentSemester?: string; // Student's current semester
   createdAt?: any; // Firestore Timestamp
   updatedAt?: any; // Firestore Timestamp
 }
@@ -73,3 +78,5 @@ export interface Payment {
 //   password: z.string().min(6),
 // });
 // export type LoginFormData = z.infer<typeof LoginSchema>;
+
+    
