@@ -5,19 +5,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { BookOpen, GraduationCap, CreditCard, FileText, Download, User, Edit3, Settings, LogOut, HelpCircle, History, ChevronDown, Info, Phone, Mail, MapPin, Smartphone, Building, Users as GuardianIcon, Briefcase, CalendarDays, ShieldAlert, Award, Globe, School } from "lucide-react";
+import { BookOpen, GraduationCap, CreditCard, FileText, Download, User, Edit3, Settings, LogOut, HelpCircle, History, ChevronDown, Info, Phone, Mail, MapPin, Smartphone, Building, Users as GuardianIcon, Briefcase, CalendarDays, ShieldAlert, Award, Globe, School, Loader2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
+import { useState, useEffect, useMemo } from "react";
+import type { Course } from "@/types";
+import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS } from "@/config/data";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Mock data - some of this will be superseded by profile data
-const enrolledCourses = [
-  { id: 'CSE101', name: 'Introduction to Programming', credits: 3, grade: 'A' },
-  { id: 'MTH202', name: 'Calculus II', credits: 4, grade: 'B+' },
-  { id: 'PHY210', name: 'University Physics I', credits: 4, grade: 'In Progress' },
-];
-
+// Mock data for tuition status - this can remain as is or be fetched if needed
 const tuitionStatus = {
   totalDue: 1250000, 
   paid: 1000000,  
@@ -46,19 +44,70 @@ const studentMockPersonalData = { // For details not yet in UserProfile
   phone: "+237 6YY YYY YYY"
 };
 
+// Copied and adapted from courses/page.tsx for mock course data source
+const MOCK_ALL_COURSES_SOURCE: Course[] = [
+  { id: "CSE301_CESM_Y2324_S1", title: "Introduction to Algorithms", code: "CSE301", description: "Fundamental algorithms and data structures. Prerequisite course.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2023/2024" },
+  { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401", description: "Detailed course description for Mobile Application Development. Covers native and cross-platform development.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 10-12, Wed 10-11, Lab Hall 1", prerequisites: ["CSE301"], semester: "First Semester", academicYear: "2024/2025" },
+  { id: "CSE409_CESM_Y2425_S1", title: "Software Development and OOP", code: "CSE409", description: "Detailed course description for Software Development and OOP. Focuses on object-oriented principles and design patterns.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Tue 14-16, Fri 8-9", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
+  { id: "MGT403_CESM_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology. Introduction to research methods and academic writing.", department: DEPARTMENTS.CESM, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "AMPHI200, Wed 14-17", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
+  { id: "CSE405_CESM_Y2425_S1", title: "Embedded Systems", code: "CSE405", description: "Detailed course description for Embedded Systems. Design and programming of embedded systems.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Thu 8-11", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
+  { id: "NES403_CESM_Y2425_S1", title: "Modeling in Information System", code: "NES403", description: "Detailed course description for Modeling in Information System. Techniques for system modeling.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Elective", level: 400, schedule: "Fri 11-13, CR10", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
+  // ... (Add more courses if needed for variety, or keep it concise for dashboard)
+  // Second semester courses for CESM Level 400
+  { id: "CSE406_CESM_Y2425_S2", title: "Algorithm and Data Structure", code: "CSE406", description: "In-depth study of algorithms and data structures.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 8-10, CR1", prerequisites: ["CSE301", "CSE401"], semester: "Second Semester", academicYear: "2024/2025" },
+  { id: "CSE402_CESM_Y2425_S2", title: "Distributed Programming", code: "CSE402", description: "Concepts and practices in distributed programming.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "Tue 10-12, CR1", prerequisites: ["CSE409"], semester: "Second Semester", academicYear: "2024/2025" },
+];
+
 export function StudentDashboard() {
   const { profile, logout } = useAuth();
+  const [isLoadingCourses, setIsLoadingCourses] = useState(true);
+  const [displayedEnrolledCourses, setDisplayedEnrolledCourses] = useState<Course[]>([]);
+
+  useEffect(() => {
+    async function loadRegisteredCourses() {
+      setIsLoadingCourses(true);
+      // Simulate fetching all courses and then filtering
+      // In a real app, you'd fetch the student's actual registered courses
+      await new Promise(resolve => setTimeout(resolve, 700)); // Simulate delay
+
+      if (profile) {
+        // These are the IDs of courses Atem Rolland (CESM, L400, 2024/2025 S1) is "registered" for in this mock.
+        const mockRegisteredCourseIdsForDashboard = [
+          "CSE401_CESM_Y2425_S1", // Mobile Application Development
+          "CSE409_CESM_Y2425_S1", // Software Development and OOP
+          "MGT403_CESM_Y2425_S1", // Research Methodology
+          // Add more if needed for the demo, ensuring they match student's current academic context (year/semester)
+        ];
+        
+        const studentCurrentYear = profile.currentAcademicYear || ACADEMIC_YEARS[1]; // Default to 2024/2025
+        const studentCurrentSemester = profile.currentSemester || SEMESTERS[0]; // Default to First Semester
+
+        const filtered = MOCK_ALL_COURSES_SOURCE.filter(course => 
+            mockRegisteredCourseIdsForDashboard.includes(course.id) &&
+            course.academicYear === studentCurrentYear &&
+            course.semester === studentCurrentSemester &&
+            course.department === profile.department && // Ensure department matches
+            course.level === profile.level // Ensure level matches
+        );
+        setDisplayedEnrolledCourses(filtered);
+      } else {
+        setDisplayedEnrolledCourses([]);
+      }
+      setIsLoadingCourses(false);
+    }
+    loadRegisteredCourses();
+  }, [profile]);
+
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return "U";
     const names = name.split(' ');
-    if (names.length > 1) {
+    if (names.length > 1 && names[0] && names[names.length - 1]) {
       return names[0][0] + names[names.length - 1][0];
     }
     return name.substring(0, 2);
   };
 
-  // Use profile data for academic context, with fallbacks or clear "N/A"
   const academicProgram = profile?.program || "Program Not Set"; 
   const studentDepartment = profile?.department || "Department Not Set";
   const studentLevel = profile?.level ? `Level ${profile.level}` : "Level Not Set";
@@ -79,7 +128,7 @@ export function StudentDashboard() {
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <Link href="/profile" className="relative group">
               <Avatar className="h-28 w-28 ring-4 ring-primary ring-offset-background ring-offset-2 group-hover:ring-accent transition-all duration-300">
-                <AvatarImage src={profile?.photoURL || undefined} alt={profile?.displayName || "User"} />
+                <AvatarImage src={profile?.photoURL || undefined} alt={profile?.displayName || "User"} data-ai-hint="user avatar" />
                 <AvatarFallback className="text-4xl bg-muted">{getInitials(profile?.displayName)}</AvatarFallback>
               </Avatar>
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -195,29 +244,37 @@ export function StudentDashboard() {
         </CardContent>
       </Card>
 
-      {/* Existing Modules - Retained for now, can be refactored into separate pages/components later */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.2 }}>
           <Card className="lg:col-span-2 h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><BookOpen className="text-primary"/>Enrolled Courses</CardTitle>
-              <CardDescription>Your current and recently completed courses.</CardDescription>
+              <CardTitle className="flex items-center gap-2"><BookOpen className="text-primary"/>Registered Courses</CardTitle>
+              <CardDescription>Your courses for {currentSemester}, {currentAcademicYear}.</CardDescription>
             </CardHeader>
             <CardContent>
-              {enrolledCourses.length > 0 ? (
+              {isLoadingCourses ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ) : displayedEnrolledCourses.length > 0 ? (
                 <ul className="space-y-3">
-                  {enrolledCourses.map(course => (
+                  {displayedEnrolledCourses.map(course => (
                     <li key={course.id} className="flex justify-between items-center p-3 bg-secondary/30 rounded-md hover:bg-secondary/50 transition-colors">
                       <div>
-                        <h3 className="font-medium">{course.name} ({course.id})</h3>
+                        <h3 className="font-medium">{course.title} ({course.code})</h3>
                         <p className="text-sm text-muted-foreground">{course.credits} Credits</p>
                       </div>
-                      <span className={`px-2 py-1 text-xs rounded-full ${course.grade === 'In Progress' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'}`}>{course.grade}</span>
+                      <span className={`px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300`}>Registered</span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-muted-foreground">No courses enrolled yet.</p>
+                 <div className="text-center py-6">
+                    <Image src="https://placehold.co/200x150.png" alt="No courses registered" width={100} height={75} className="mx-auto mb-3 rounded-md opacity-70" data-ai-hint="empty list book" />
+                    <p className="text-muted-foreground">No courses registered for the current period.</p>
+                </div>
               )}
             </CardContent>
             <CardFooter>
@@ -237,7 +294,7 @@ export function StudentDashboard() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-md">
                 <p className="font-medium">Overall GPA</p>
-                <p className="text-xl font-semibold text-primary">3.75</p> {/* Mock GPA */}
+                <p className="text-xl font-semibold text-primary">3.15</p> {/* Mock GPA for Atem Rolland */}
               </div>
               <p className="text-sm text-muted-foreground">Detailed results and transcripts are in "Results".</p>
               <Button className="w-full" asChild>
@@ -296,8 +353,8 @@ export function StudentDashboard() {
               <Image src="https://placehold.co/600x200.png" alt="University Event" width={600} height={200} className="rounded-md mb-4" data-ai-hint="university campus event" />
               <p className="text-muted-foreground">Stay updated with the latest news and events from the university.</p>
               <ul className="space-y-2 mt-3">
-                <li className="text-sm p-2 bg-secondary/30 rounded-md hover:bg-secondary/50 transition-colors flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-accent"/>Mid-term exams start next week!</li>
-                <li className="text-sm p-2 bg-secondary/30 rounded-md hover:bg-secondary/50 transition-colors flex items-center gap-2"><CalendarDays className="h-4 w-4 text-accent"/>Guest lecture on AI in Education - Oct 25th.</li>
+                <li className="text-sm p-2 bg-secondary/30 rounded-md hover:bg-secondary/50 transition-colors flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-accent"/>Second semester registration deadline approaching!</li>
+                <li className="text-sm p-2 bg-secondary/30 rounded-md hover:bg-secondary/50 transition-colors flex items-center gap-2"><CalendarDays className="h-4 w-4 text-accent"/>Career fair - Nov 15th.</li>
               </ul>
             </CardContent>
           </Card>
