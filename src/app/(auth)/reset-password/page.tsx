@@ -1,9 +1,10 @@
+
 import { ResetPasswordForm } from '@/components/auth/ResetPasswordForm';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Reset Password',
-  description: 'Reset your password for Academia Interface',
+  description: 'Reset your password for Chitechma University',
 };
 
 export default function ResetPasswordPage() {

@@ -1,3 +1,4 @@
+
 export type NavItem = {
   title: string;
   href: string;
@@ -22,10 +23,10 @@ export type SiteConfig = {
 };
 
 export const siteConfig: SiteConfig = {
-  name: "Academia Interface",
+  name: "Chitechma University",
   description: "CHITECHMA University School Management System (CUSMS)",
-  url: "https://academia-interface.example.com", // Replace with your actual URL
-  ogImage: "https://academia-interface.example.com/og.jpg", // Replace with your OG image URL
+  url: "https://chitechma-university.example.com", // Replace with your actual URL
+  ogImage: "https://chitechma-university.example.com/og.jpg", // Replace with your OG image URL
   mainNav: [
     {
       title: "Home",

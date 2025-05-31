@@ -1,9 +1,10 @@
+
 import { LoginForm } from '@/components/auth/LoginForm';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Login',
-  description: 'Login to Academia Interface',
+  description: 'Login to Chitechma University',
 };
 
 export default function LoginPage() {
