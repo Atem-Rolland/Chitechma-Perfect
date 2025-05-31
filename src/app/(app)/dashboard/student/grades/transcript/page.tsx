@@ -11,7 +11,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import type { Grade } from "@/types";
+import type { Grade, CaDetails } from "@/types";
 
 const GRADE_POINTS: Record<string, number> = {
   "A+": 4.0, "A": 4.0, 
@@ -38,7 +38,7 @@ async function fetchMockGrades(studentId: string): Promise<Grade[]> {
   
   const mockRawScores: { 
     studentId: string, courseId: string, courseCode: string, courseName: string, credits: number, 
-    caDetails: { assignments: number, groupWork: number, attendance: number, writtenCA: number, totalCaScore: number }, 
+    caDetails: CaDetails, 
     examScore: number, academicYear: string, semester: string 
   }[] = [
     // 2023/2024 - First Semester
