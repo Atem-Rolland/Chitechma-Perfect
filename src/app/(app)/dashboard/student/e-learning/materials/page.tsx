@@ -116,7 +116,7 @@ export default function CourseMaterialsPage() {
             <FolderArchive className="h-6 w-6 text-primary" />
             Course Materials
           </CardTitle>
-          <CardDescription>Select a course to view and download its materials. In a real application, these files would be sourced from a secure storage like Supabase.</CardDescription>
+          <CardDescription>Access lecture notes, presentations, syllabi, and other resources uploaded by your lecturers for each course.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
@@ -194,5 +194,7 @@ export default function CourseMaterialsPage() {
     </motion.div>
   );
 }
+
+    
 
     
