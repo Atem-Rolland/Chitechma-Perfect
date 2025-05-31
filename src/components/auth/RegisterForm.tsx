@@ -24,6 +24,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Separator } from '../ui/separator';
 
 const registerSchema = z.object({
   displayName: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -31,33 +32,45 @@ const registerSchema = z.object({
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
   confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters." }),
   role: z.enum(["student", "lecturer", "admin", "finance"]),
+  
+  // Student specific fields - made optional in base schema, refined later
   department: z.string().optional(),
   level: z.coerce.number().optional(),
+  gender: z.string().optional(), // Using string for SelectValue compatibility, can be enum "Male" | "Female" | "Other"
+  dateOfBirth: z.string().optional(), // Consider using a date picker or specific format validation
+  placeOfBirth: z.string().optional(),
+  regionOfOrigin: z.string().optional(),
+  maritalStatus: z.string().optional(), // Can be enum
+  nidOrPassport: z.string().optional(),
+  nationality: z.string().optional(),
+  phone: z.string().optional(), // Consider more specific phone validation
+  address: z.string().optional(),
+  guardianName: z.string().optional(),
+  guardianPhone: z.string().optional(),
+  guardianAddress: z.string().optional(),
+
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
 }).superRefine((data, ctx) => {
   if (data.role === "student") {
     if (!data.department) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Department is required for students.",
-        path: ["department"],
-      });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Department is required for students.", path: ["department"] });
     }
     if (data.level === undefined || Number.isNaN(data.level)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Level is required for students.",
-        path: ["level"],
-      });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Level is required for students.", path: ["level"] });
     } else if (!VALID_LEVELS.includes(data.level)) {
-         ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Invalid level selected.",
-            path: ["level"],
-        });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid level selected.", path: ["level"] });
     }
+    // Add conditional requirements for other student fields if necessary
+    if (!data.gender) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Gender is required.", path: ["gender"] });
+    if (!data.dateOfBirth) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Date of Birth is required.", path: ["dateOfBirth"] });
+    if (!data.placeOfBirth) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Place of Birth is required.", path: ["placeOfBirth"] });
+    if (!data.nationality) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Nationality is required.", path: ["nationality"] });
+    if (!data.phone) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Phone number is required.", path: ["phone"] });
+    if (!data.address) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Address is required.", path: ["address"] });
+    if (!data.guardianName) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Guardian Name is required.", path: ["guardianName"] });
+    if (!data.guardianPhone) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Guardian Phone is required.", path: ["guardianPhone"] });
   }
 });
 
@@ -77,8 +90,20 @@ export function RegisterForm() {
       password: "",
       confirmPassword: "",
       role: "student",
-      department: "",
+      department: undefined,
       level: undefined,
+      gender: undefined,
+      dateOfBirth: "",
+      placeOfBirth: "",
+      regionOfOrigin: "",
+      maritalStatus: undefined,
+      nidOrPassport: "",
+      nationality: "",
+      phone: "",
+      address: "",
+      guardianName: "",
+      guardianPhone: "",
+      guardianAddress: "",
     },
   });
 
@@ -88,14 +113,7 @@ export function RegisterForm() {
     setIsLoading(true);
     setError(null);
     try {
-      await register(
-        data.email, 
-        data.password, 
-        data.displayName, 
-        data.role as Role,
-        data.department,
-        data.level
-      );
+      await register(data); // Pass the whole data object
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || "Failed to register. Please try again.");
@@ -192,6 +210,8 @@ export function RegisterForm() {
 
         {selectedRole === 'student' && (
           <>
+            <Separator className="my-6" />
+            <h3 className="text-lg font-medium text-foreground">Academic Information</h3>
             <FormField
               control={form.control}
               name="department"
@@ -236,6 +256,144 @@ export function RegisterForm() {
                 </FormItem>
               )}
             />
+            
+            <Separator className="my-6" />
+            <h3 className="text-lg font-medium text-foreground">Identity Details</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField control={form.control} name="gender"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Gender</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger></FormControl>
+                        <SelectContent>
+                            <SelectItem value="Male">Male</SelectItem>
+                            <SelectItem value="Female">Female</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField control={form.control} name="dateOfBirth"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Date of Birth</FormLabel>
+                        <FormControl><Input type="date" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField control={form.control} name="placeOfBirth"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Place of Birth</FormLabel>
+                        <FormControl><Input placeholder="e.g., Buea" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField control={form.control} name="regionOfOrigin"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Region of Origin (Optional)</FormLabel>
+                        <FormControl><Input placeholder="e.g., South-West" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField control={form.control} name="maritalStatus"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Marital Status (Optional)</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl>
+                        <SelectContent>
+                            <SelectItem value="Single">Single</SelectItem>
+                            <SelectItem value="Married">Married</SelectItem>
+                            <SelectItem value="Divorced">Divorced</SelectItem>
+                            <SelectItem value="Widowed">Widowed</SelectItem>
+                        </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField control={form.control} name="nidOrPassport"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>NID or Passport No. (Optional)</FormLabel>
+                        <FormControl><Input placeholder="National ID or Passport Number" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField control={form.control} name="nationality"
+                    render={({ field }) => (
+                    <FormItem className="sm:col-span-2">
+                        <FormLabel>Nationality</FormLabel>
+                        <FormControl><Input placeholder="e.g., Cameroonian" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+            </div>
+
+            <Separator className="my-6" />
+            <h3 className="text-lg font-medium text-foreground">Contact Information</h3>
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField control={form.control} name="phone"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Phone Number</FormLabel>
+                        <FormControl><Input type="tel" placeholder="+237 XXXXXXXXX" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField control={form.control} name="address"
+                    render={({ field }) => (
+                    <FormItem className="sm:col-span-2">
+                        <FormLabel>Residential Address</FormLabel>
+                        <FormControl><Input placeholder="e.g., UB Junction, Molyko" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+            </div>
+
+            <Separator className="my-6" />
+            <h3 className="text-lg font-medium text-foreground">Guardian Information</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField control={form.control} name="guardianName"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Guardian's Full Name</FormLabel>
+                        <FormControl><Input placeholder="Guardian's name" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField control={form.control} name="guardianPhone"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Guardian's Phone</FormLabel>
+                        <FormControl><Input type="tel" placeholder="+237 YYYYYYYYY" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField control={form.control} name="guardianAddress"
+                    render={({ field }) => (
+                    <FormItem className="sm:col-span-2">
+                        <FormLabel>Guardian's Address (Optional)</FormLabel>
+                        <FormControl><Input placeholder="Guardian's address" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+            </div>
           </>
         )}
 

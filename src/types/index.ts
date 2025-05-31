@@ -9,6 +9,8 @@ export interface UserProfile {
   displayName: string | null;
   photoURL?: string | null;
   role: Role;
+  
+  // Student-specific fields (can be optional for other roles)
   department?: string; 
   level?: number; 
   program?: string; 
@@ -16,6 +18,24 @@ export interface UserProfile {
   currentSemester?: string; 
   isNewStudent?: boolean; 
   isGraduating?: boolean; 
+  matricule?: string;
+
+  // New fields for detailed student profile
+  gender?: "Male" | "Female" | "Other" | string;
+  dateOfBirth?: string; // YYYY-MM-DD
+  placeOfBirth?: string;
+  regionOfOrigin?: string;
+  maritalStatus?: "Single" | "Married" | "Divorced" | "Widowed" | string;
+  nidOrPassport?: string;
+  nationality?: string;
+  
+  phone?: string;
+  address?: string;
+  
+  guardianName?: string;
+  guardianPhone?: string;
+  guardianAddress?: string;
+  
   createdAt?: any; 
   updatedAt?: any; 
 }

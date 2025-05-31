@@ -15,33 +15,13 @@ import type { Course } from "@/types";
 import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS } from "@/config/data";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Mock data for tuition status - this can remain as is or be fetched if needed
+// Mock data for tuition status
 const tuitionStatus = {
   totalDue: 1250000, 
   paid: 1000000,  
   balance: 250000, 
   currency: 'XAF',
   dueDate: '2024-09-15',
-};
-
-const studentMockPersonalData = { // For details not yet in UserProfile
-  matricule: "CUSMS/S00123",
-  gender: "Female",
-  dateOfBirth: "1999-08-25",
-  placeOfBirth: "Douala, Cameroon",
-  regionOfOrigin: "Littoral",
-  maritalStatus: "Single",
-  nidOrPassport: "123456789CM",
-  nationality: "Cameroonian",
-  admissionDate: "2022-09-01",
-  studentStatus: "Cameroonian (National)", 
-  address: "123 University Avenue, Buea, SW Region",
-  emergencyContactName: "John Doe (Father)",
-  emergencyContactPhone: "+237 6XX XXX XXX",
-  guardianName: "John Doe",
-  guardianAddress: "BP 456, Douala",
-  guardianPhone: "+237 6XX XXX XXX",
-  phone: "+237 6YY YYY YYY"
 };
 
 // Copied and adapted from courses/page.tsx for mock course data source
@@ -69,7 +49,7 @@ export function StudentDashboard() {
   useEffect(() => {
     async function loadRegisteredCoursesForDashboard() {
       setIsLoadingCourses(true);
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate some delay
+      await new Promise(resolve => setTimeout(resolve, 500)); 
 
       if (profile && user?.uid && typeof window !== 'undefined') {
         const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
@@ -77,7 +57,12 @@ export function StudentDashboard() {
         if (storageKey) {
             const storedIds = localStorage.getItem(storageKey);
             if (storedIds) {
-                studentRegisteredIds = JSON.parse(storedIds);
+                try {
+                    const parsedIds = JSON.parse(storedIds);
+                    if (Array.isArray(parsedIds)) studentRegisteredIds = parsedIds;
+                } catch (e) {
+                    console.error("Failed to parse registered courses from localStorage for dashboard:", e);
+                }
             }
         }
         
@@ -97,7 +82,11 @@ export function StudentDashboard() {
       }
       setIsLoadingCourses(false);
     }
-    loadRegisteredCoursesForDashboard();
+    if (profile) { // Only load if profile is available
+        loadRegisteredCoursesForDashboard();
+    } else {
+        setIsLoadingCourses(false); // If no profile, no courses to load
+    }
   }, [profile, user?.uid]);
 
 
@@ -115,6 +104,28 @@ export function StudentDashboard() {
   const studentLevel = profile?.level ? `Level ${profile.level}` : "Level Not Set";
   const currentAcademicYear = profile?.currentAcademicYear || "Academic Year Not Set";
   const currentSemester = profile?.currentSemester || "Semester Not Set";
+
+  // Placeholder for student specific details not directly in UserProfile
+  // In a real app, this would come from a more detailed student record or profile expansion.
+  const studentMockPersonalData = {
+    matricule: profile?.matricule || "N/A",
+    gender: profile?.gender || "N/A",
+    dateOfBirth: profile?.dateOfBirth || "N/A",
+    placeOfBirth: profile?.placeOfBirth || "N/A",
+    regionOfOrigin: profile?.regionOfOrigin || "N/A",
+    maritalStatus: profile?.maritalStatus || "N/A",
+    nidOrPassport: profile?.nidOrPassport || "N/A",
+    nationality: profile?.nationality || "N/A",
+    admissionDate: "2022-09-01", // Example, could be part of extended profile
+    studentStatus: "Cameroonian (National)", 
+    address: profile?.address || "N/A",
+    emergencyContactName: "John Doe (Father)", // Example
+    emergencyContactPhone: "+237 6XX XXX XXX", // Example
+    guardianName: profile?.guardianName || "N/A",
+    guardianAddress: profile?.guardianAddress || "N/A",
+    guardianPhone: profile?.guardianPhone || "N/A",
+    phone: profile?.phone || "N/A"
+  };
 
 
   return (
@@ -155,13 +166,13 @@ export function StudentDashboard() {
                 <Link href="/profile" passHref>
                   <DropdownMenuItem>
                     <User className="mr-2 h-4 w-4" />
-                    Update Profile Photo
+                    Update Profile
                   </DropdownMenuItem>
                 </Link>
                 <Link href="/settings" passHref>
                   <DropdownMenuItem>
                     <Settings className="mr-2 h-4 w-4" />
-                    Change Password
+                    Settings
                   </DropdownMenuItem>
                 </Link>
                 <Link href="/dashboard/student/payments/history" passHref> 
@@ -191,7 +202,7 @@ export function StudentDashboard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-headline text-2xl"><Info className="text-primary h-6 w-6"/>Personal & Academic Information</CardTitle>
           <CardDescription>
-            Your registered details. Academic information (Department, Level) is used for course display. Contact administration for corrections.
+            Your registered details. Academic information is used for course display. Contact administration for corrections.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 pt-2">
@@ -200,20 +211,20 @@ export function StudentDashboard() {
             <h3 className="font-semibold text-lg text-foreground/90 mt-2 mb-3 border-b pb-2 flex items-center gap-2"><User className="h-5 w-5 text-accent"/>Identity Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
               <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Full Name:</strong> <span className="text-foreground/90">{profile?.displayName || "N/A"}</span></div>
-              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Gender:</strong> <span className="text-foreground/90">{studentMockPersonalData.gender}</span></div>
-              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Date of Birth:</strong> <span className="text-foreground/90">{studentMockPersonalData.dateOfBirth}</span></div>
-              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Place of Birth:</strong> <span className="text-foreground/90">{studentMockPersonalData.placeOfBirth}</span></div>
-              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Region of Origin:</strong> <span className="text-foreground/90">{studentMockPersonalData.regionOfOrigin}</span></div>
-              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Marital Status:</strong> <span className="text-foreground/90">{studentMockPersonalData.maritalStatus}</span></div>
-              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">NID/Passport:</strong> <span className="text-foreground/90">{studentMockPersonalData.nidOrPassport}</span></div>
-              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Nationality:</strong> <span className="text-foreground/90">{studentMockPersonalData.nationality}</span></div>
+              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Gender:</strong> <span className="text-foreground/90">{profile?.gender || "N/A"}</span></div>
+              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Date of Birth:</strong> <span className="text-foreground/90">{profile?.dateOfBirth || "N/A"}</span></div>
+              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Place of Birth:</strong> <span className="text-foreground/90">{profile?.placeOfBirth || "N/A"}</span></div>
+              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Region of Origin:</strong> <span className="text-foreground/90">{profile?.regionOfOrigin || "N/A"}</span></div>
+              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Marital Status:</strong> <span className="text-foreground/90">{profile?.maritalStatus || "N/A"}</span></div>
+              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">NID/Passport:</strong> <span className="text-foreground/90">{profile?.nidOrPassport || "N/A"}</span></div>
+              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Nationality:</strong> <span className="text-foreground/90">{profile?.nationality || "N/A"}</span></div>
             </div>
           </div>
 
           <div>
             <h3 className="font-semibold text-lg text-foreground/90 mt-6 mb-3 border-b pb-2 flex items-center gap-2"><School className="h-5 w-5 text-accent"/>Academic Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Matricule:</strong> <span className="font-mono text-foreground/90">{(profile as any)?.matricule || studentMockPersonalData.matricule}</span></div>
+                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Matricule:</strong> <span className="font-mono text-foreground/90">{profile?.matricule || "N/A"}</span></div>
                 <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Degree Program:</strong> <span className="text-foreground/90">{academicProgram}</span></div>
                 <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Department:</strong> <span className="text-foreground/90">{studentDepartment}</span></div>
                 <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Current Level:</strong> <span className="text-foreground/90">{studentLevel}</span></div>
@@ -227,18 +238,18 @@ export function StudentDashboard() {
           <div>
             <h3 className="font-semibold text-lg text-foreground/90 mt-6 mb-3 border-b pb-2 flex items-center gap-2"><Mail className="h-5 w-5 text-accent"/>Contact Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-              <div className="flex items-start gap-2"><Phone className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Phone:</strong> <span className="text-foreground/90">{(profile as any)?.phone || studentMockPersonalData.phone}</span></div>
+              <div className="flex items-start gap-2"><Phone className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Phone:</strong> <span className="text-foreground/90">{profile?.phone || "N/A"}</span></div>
               <div className="flex items-start gap-2"><Mail className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Email:</strong> <span className="text-foreground/90">{profile?.email || "N/A"}</span></div>
-              <div className="md:col-span-2 flex items-start gap-2"><MapPin className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Address:</strong> <span className="text-foreground/90">{(profile as any)?.address || studentMockPersonalData.address}</span></div>
+              <div className="md:col-span-2 flex items-start gap-2"><MapPin className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Address:</strong> <span className="text-foreground/90">{profile?.address || "N/A"}</span></div>
             </div>
           </div>
           
           <div>
             <h3 className="font-semibold text-lg text-foreground/90 mt-6 mb-3 border-b pb-2 flex items-center gap-2"><GuardianIcon className="h-5 w-5 text-accent"/>Guardian Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-              <div className="flex items-start gap-2"><User className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-32 text-muted-foreground">Guardian Name:</strong> <span className="text-foreground/90">{(profile as any)?.guardianName || studentMockPersonalData.guardianName}</span></div>
-              <div className="flex items-start gap-2"><Phone className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Phone:</strong> <span className="text-foreground/90">{(profile as any)?.guardianPhone || studentMockPersonalData.guardianPhone}</span></div>
-              <div className="md:col-span-2 flex items-start gap-2"><MapPin className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Address:</strong> <span className="text-foreground/90">{(profile as any)?.guardianAddress || studentMockPersonalData.guardianAddress}</span></div>
+              <div className="flex items-start gap-2"><User className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-32 text-muted-foreground">Guardian Name:</strong> <span className="text-foreground/90">{profile?.guardianName || "N/A"}</span></div>
+              <div className="flex items-start gap-2"><Phone className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Phone:</strong> <span className="text-foreground/90">{profile?.guardianPhone || "N/A"}</span></div>
+              <div className="md:col-span-2 flex items-start gap-2"><MapPin className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Address:</strong> <span className="text-foreground/90">{profile?.guardianAddress || "N/A"}</span></div>
             </div>
           </div>
         </CardContent>
@@ -294,7 +305,7 @@ export function StudentDashboard() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-md">
                 <p className="font-medium">Overall GPA</p>
-                <p className="text-xl font-semibold text-primary">3.15</p> {/* Mock GPA for Atem Rolland */}
+                <p className="text-xl font-semibold text-primary">3.15</p> 
               </div>
               <p className="text-sm text-muted-foreground">Detailed results and transcripts are in "Results".</p>
               <Button className="w-full" asChild>

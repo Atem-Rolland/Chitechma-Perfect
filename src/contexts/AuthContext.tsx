@@ -17,6 +17,28 @@ import type { AppUser, UserProfile, Role } from '@/types';
 import { useRouter } from 'next/navigation';
 import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS } from '@/config/data';
 
+// Define the shape of the registration data, including new fields
+interface RegistrationData {
+  email: string;
+  password?: string; // Password only needed for actual registration
+  displayName: string;
+  role?: Role;
+  department?: string;
+  level?: number;
+  gender?: string;
+  dateOfBirth?: string;
+  placeOfBirth?: string;
+  regionOfOrigin?: string;
+  maritalStatus?: string;
+  nidOrPassport?: string;
+  nationality?: string;
+  phone?: string;
+  address?: string;
+  guardianName?: string;
+  guardianPhone?: string;
+  guardianAddress?: string;
+}
+
 
 interface AuthContextType {
   user: AppUser | null;
@@ -24,10 +46,10 @@ interface AuthContextType {
   loading: boolean;
   role: Role;
   login: (email: string, pass: string) => Promise<AppUser>;
-  register: (email: string, pass: string, displayName: string, role?: Role, department?: string, level?: number) => Promise<AppUser>;
+  register: (data: RegistrationData) => Promise<AppUser>; // Updated signature
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
-  fetchUserProfile: (firebaseUser: FirebaseUser) => Promise<UserProfile | null>; // Exposed for refresh
+  fetchUserProfile: (firebaseUser: FirebaseUser) => Promise<UserProfile | null>; 
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,16 +58,16 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Fallback details if not provided or fetched, especially for initial setup or missing profile data
 const FALLBACK_STUDENT_DETAILS = {
-  displayName: "New Student",
-  department: DEPARTMENTS.CESM, // Default department
-  level: VALID_LEVELS[0], // Default to the first valid level (e.g., 200)
-  program: "B.Eng. Computer Engineering and System Maintenance", // Generic program
-  currentAcademicYear: ACADEMIC_YEARS[1], // e.g., 2024/2025
-  currentSemester: SEMESTERS[0], // e.g., First Semester
-  isNewStudent: true,
-  isGraduating: false,
+  displayName: "Atem Rolland",
+  department: DEPARTMENTS.CESM, 
+  level: 400, 
+  program: "B.Eng. Computer Engineering and System Maintenance",
+  currentAcademicYear: ACADEMIC_YEARS[1], 
+  currentSemester: SEMESTERS[0], 
+  isNewStudent: false, 
+  isGraduating: true, 
+  matricule: `CUSMS/S/${new Date().getFullYear().toString().slice(-2)}${Math.floor(1000 + Math.random() * 9000)}`
 };
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
@@ -61,14 +83,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     if (userDocSnap.exists()) {
       const userProfileData = userDocSnap.data() as UserProfile;
       
-      // Ensure all fields are present, provide defaults if necessary
       const completeProfile: UserProfile = {
         uid: firebaseUser.uid,
-        email: firebaseUser.email,
+        email: firebaseUser.email, // Always source email from FirebaseUser
         ...userProfileData, // Spread fetched data first
         displayName: userProfileData.displayName || firebaseUser.displayName || (userProfileData.role === 'student' ? FALLBACK_STUDENT_DETAILS.displayName : "User"),
-        role: userProfileData.role || null, // Ensure role exists
-        // For students, ensure academic details have fallbacks if not present
+        role: userProfileData.role || null, 
+        // For students, ensure academic details have fallbacks if not explicitly set during registration
         department: userProfileData.role === 'student' ? (userProfileData.department || FALLBACK_STUDENT_DETAILS.department) : userProfileData.department,
         level: userProfileData.role === 'student' ? (userProfileData.level || FALLBACK_STUDENT_DETAILS.level) : userProfileData.level,
         program: userProfileData.role === 'student' ? (userProfileData.program || FALLBACK_STUDENT_DETAILS.program) : userProfileData.program,
@@ -76,6 +97,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         currentSemester: userProfileData.role === 'student' ? (userProfileData.currentSemester || FALLBACK_STUDENT_DETAILS.currentSemester) : userProfileData.currentSemester,
         isNewStudent: userProfileData.role === 'student' ? (userProfileData.isNewStudent === undefined ? (userProfileData.level === VALID_LEVELS[0]) : userProfileData.isNewStudent) : userProfileData.isNewStudent,
         isGraduating: userProfileData.role === 'student' ? (userProfileData.isGraduating === undefined ? (userProfileData.level === VALID_LEVELS[VALID_LEVELS.length -1]) : userProfileData.isGraduating) : userProfileData.isGraduating,
+        matricule: userProfileData.role === 'student' ? (userProfileData.matricule || FALLBACK_STUDENT_DETAILS.matricule) : userProfileData.matricule,
       };
       setProfile(completeProfile);
       setRole(completeProfile.role);
@@ -112,46 +134,61 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return appUser;
   };
 
-  const register = async (
-    email: string, 
-    password: string, 
-    displayName: string, 
-    userRole: Role = 'student',
-    department?: string,
-    level?: number
-  ): Promise<AppUser> => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  const register = async (data: RegistrationData): Promise<AppUser> => {
+    if (!data.password) {
+      throw new Error("Password is required for registration.");
+    }
+    const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
     const firebaseUser = userCredential.user;
     
-    let roleSpecificDetails: Partial<UserProfile> = { displayName };
+    const userRole = data.role || 'student'; // Default to student if not provided
 
-    if (userRole === 'student') {
-      roleSpecificDetails = {
-        ...roleSpecificDetails,
-        department: department || FALLBACK_STUDENT_DETAILS.department,
-        level: level || FALLBACK_STUDENT_DETAILS.level,
-        program: FALLBACK_STUDENT_DETAILS.program, // Default program
-        currentAcademicYear: FALLBACK_STUDENT_DETAILS.currentAcademicYear, // Default academic year
-        currentSemester: FALLBACK_STUDENT_DETAILS.currentSemester, // Default semester
-        isNewStudent: level === VALID_LEVELS[0] || level === undefined, // True if lowest level or undefined
-        isGraduating: level === VALID_LEVELS[VALID_LEVELS.length - 1] // True if highest level (e.g. 400 for a 4-year program)
-      };
-    }
+    const userProfileData: Partial<UserProfile> = {
+      displayName: data.displayName,
+      // Academic Info (if student)
+      department: userRole === 'student' ? (data.department || FALLBACK_STUDENT_DETAILS.department) : undefined,
+      level: userRole === 'student' ? (data.level || FALLBACK_STUDENT_DETAILS.level) : undefined,
+      program: userRole === 'student' ? FALLBACK_STUDENT_DETAILS.program : undefined,
+      currentAcademicYear: userRole === 'student' ? FALLBACK_STUDENT_DETAILS.currentAcademicYear : undefined,
+      currentSemester: userRole === 'student' ? FALLBACK_STUDENT_DETAILS.currentSemester : undefined,
+      isNewStudent: userRole === 'student' ? (data.level === VALID_LEVELS[0] || data.level === undefined) : undefined,
+      isGraduating: userRole === 'student' ? (data.level === VALID_LEVELS[VALID_LEVELS.length - 1]) : undefined,
+      matricule: userRole === 'student' ? (data.level ? `CUSMS/S/${new Date().getFullYear().toString().slice(-2)}${String(data.level).charAt(0)}${Math.floor(1000 + Math.random() * 9000)}` : FALLBACK_STUDENT_DETAILS.matricule ) : undefined,
 
-    const userProfile: UserProfile = {
+      // Identity Details (if student)
+      gender: userRole === 'student' ? data.gender : undefined,
+      dateOfBirth: userRole === 'student' ? data.dateOfBirth : undefined,
+      placeOfBirth: userRole === 'student' ? data.placeOfBirth : undefined,
+      regionOfOrigin: userRole === 'student' ? data.regionOfOrigin : undefined,
+      maritalStatus: userRole === 'student' ? data.maritalStatus : undefined,
+      nidOrPassport: userRole === 'student' ? data.nidOrPassport : undefined,
+      nationality: userRole === 'student' ? data.nationality : undefined,
+
+      // Contact Info (if student)
+      phone: userRole === 'student' ? data.phone : undefined,
+      address: userRole === 'student' ? data.address : undefined,
+
+      // Guardian Info (if student)
+      guardianName: userRole === 'student' ? data.guardianName : undefined,
+      guardianPhone: userRole === 'student' ? data.guardianPhone : undefined,
+      guardianAddress: userRole === 'student' ? data.guardianAddress : undefined,
+    };
+
+    const finalProfile: UserProfile = {
       uid: firebaseUser.uid,
       email: firebaseUser.email,
       role: userRole,
-      photoURL: firebaseUser.photoURL,
+      photoURL: firebaseUser.photoURL, // Initially null, user can update later
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      ...roleSpecificDetails, // displayName is included here
+      ...userProfileData,
     };
-    await setDoc(doc(db, "users", firebaseUser.uid), userProfile);
+    
+    await setDoc(doc(db, "users", firebaseUser.uid), finalProfile);
 
-    setProfile(userProfile);
+    setProfile(finalProfile);
     setRole(userRole);
-    const appUser = { ...firebaseUser, profile: userProfile };
+    const appUser = { ...firebaseUser, profile: finalProfile };
     setUser(appUser);
     return appUser;
   };
