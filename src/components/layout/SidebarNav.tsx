@@ -46,7 +46,7 @@ const iconMap: Record<string, React.ElementType> = {
 const defaultSidebarNav: Record<Role | "guest", NavItem[]> = {
   student: [
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { title: 'My Courses', href: '/dashboard/student/courses', icon: BookOpen },
+    { title: 'My Courses', href: '/courses', icon: BookOpen }, // Changed href
     { title: 'My Grades', href: '/dashboard/student/grades', icon: GraduationCap },
     { title: 'Tuition & Payments', href: '/dashboard/student/payments', icon: CreditCard },
   ],
@@ -87,7 +87,7 @@ interface SidebarNavItemProps {
 
 const SidebarNavItem: React.FC<SidebarNavItemProps> = ({ item, pathname }) => {
   const Icon = item.icon ? iconMap[item.icon.displayName || item.icon.name] || item.icon : null;
-  const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+  const isActive = pathname === item.href || (item.href !== '/dashboard' && item.href !== '#' && pathname.startsWith(item.href));
   const [isSubmenuOpen, setIsSubmenuOpen] = useState(isActive && !!item.subItems);
 
   const handleToggleSubmenu = (e: React.MouseEvent) => {
@@ -137,7 +137,7 @@ const SidebarNavItem: React.FC<SidebarNavItemProps> = ({ item, pathname }) => {
                 <SidebarMenuSubItem key={subItem.href}>
                   <Link href={subItem.href} passHref legacyBehavior>
                     <SidebarMenuSubButton 
-                      isActive={pathname === subItem.href || (subItem.href !== '/dashboard' && pathname.startsWith(subItem.href))}
+                      isActive={pathname === subItem.href || (subItem.href !== '/dashboard' && subItem.href !== '#' && pathname.startsWith(subItem.href))}
                       className="pl-6"
                     >
                        {subItem.icon && React.createElement(iconMap[subItem.icon.displayName || subItem.icon.name] || subItem.icon, { className: "h-4 w-4 mr-2"})}
