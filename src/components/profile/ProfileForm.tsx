@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -13,9 +14,9 @@ import { Loader2, AlertTriangle, CheckCircle, UploadCloud } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import type { UserProfile } from '@/types';
 import { doc, updateDoc } from 'firebase/firestore';
-import { db, auth } from '@/lib/firebase'; // Assuming auth is exported for updateEmail if needed
+import { db, auth } from '@/lib/firebase'; 
 import { supabase } from '@/lib/supabase';
-import { updateProfile as updateFirebaseProfile, updateEmail as updateFirebaseAuthEmail } from 'firebase/auth'; // For updating Firebase Auth user
+import { updateProfile as updateFirebaseProfile, updateEmail as updateFirebaseAuthEmail } from 'firebase/auth'; 
 import {
   Form,
   FormControl,
@@ -28,7 +29,7 @@ import {
 
 const profileSchema = z.object({
   displayName: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  email: z.string().email({ message: "Invalid email address." }), // Email update might need re-authentication
+  email: z.string().email({ message: "Invalid email address." }), 
   photoFile: z.instanceof(File).optional().nullable(),
 });
 
@@ -43,7 +44,7 @@ export function ProfileForm({ userProfile }: ProfileFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(userProfile.photoURL || null);
-  const { user: authUser, profile: currentProfile, fetchUserProfile } = useAuth(); // Assuming fetchUserProfile updates context
+  const { user: authUser, profile: currentProfile, fetchUserProfile } = useAuth(); 
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -57,6 +58,11 @@ export function ProfileForm({ userProfile }: ProfileFormProps) {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        form.setError("photoFile", { type: "manual", message: "File size should not exceed 2MB." });
+        setAvatarPreview(currentProfile?.photoURL || null); // Revert preview
+        return;
+      }
       form.setValue("photoFile", file);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -79,12 +85,14 @@ export function ProfileForm({ userProfile }: ProfileFormProps) {
     try {
       let photoURL = currentProfile.photoURL;
 
-      // Upload new profile picture if provided
       if (data.photoFile) {
         const file = data.photoFile;
-        const filePath = `users/avatars/${authUser.uid}/${file.name}`;
+        const fileExtension = file.name.split('.').pop();
+        const fileName = `${authUser.uid}-${Date.now()}.${fileExtension}`;
+        const filePath = `users/avatars/${fileName}`;
+        
         const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('cusms-files') // Bucket name
+          .from('cusms-files') 
           .upload(filePath, file, { upsert: true });
 
         if (uploadError) throw uploadError;
@@ -95,33 +103,27 @@ export function ProfileForm({ userProfile }: ProfileFormProps) {
       
       const updates: Partial<UserProfile> = {
         displayName: data.displayName,
-        // Email update is more complex and usually requires re-authentication or verification
-        // For now, we'll keep it simple and not update email directly here unless explicitly handled
         photoURL: photoURL,
-        updatedAt: new Date(), // Or serverTimestamp() from firebase
+        updatedAt: new Date(), 
       };
 
-      // Update Firestore document
       const userDocRef = doc(db, "users", authUser.uid);
       await updateDoc(userDocRef, updates);
 
-      // Update Firebase Auth profile (name, photoURL)
       if (auth.currentUser) {
         await updateFirebaseProfile(auth.currentUser, {
           displayName: data.displayName,
           photoURL: photoURL,
         });
-        // To update email: await updateFirebaseAuthEmail(auth.currentUser, data.email);
-        // This requires recent login or re-authentication.
       }
       
-      // Refresh user profile in AuthContext
       if (fetchUserProfile && auth.currentUser) {
          await fetchUserProfile(auth.currentUser);
       }
 
       setSuccess("Profile updated successfully!");
-      form.reset({ ...data, photoFile: null }); // Reset form, clear file input state
+      form.reset({ ...data, photoFile: null }); 
+      // No need to reset avatarPreview here if fetchUserProfile updates the context's photoURL
 
     } catch (err: any) {
       console.error(err);
@@ -134,10 +136,10 @@ export function ProfileForm({ userProfile }: ProfileFormProps) {
   const getInitials = (name: string | null | undefined) => {
     if (!name) return "U";
     const names = name.split(' ');
-    if (names.length > 1) {
+    if (names.length > 1 && names[0] && names[names.length -1]) {
       return names[0][0] + names[names.length - 1][0];
     }
-    return name.substring(0, 2);
+    return name.substring(0, 2).toUpperCase();
   };
 
 
@@ -162,24 +164,24 @@ export function ProfileForm({ userProfile }: ProfileFormProps) {
         <FormField
           control={form.control}
           name="photoFile"
-          render={({ field }) => ( // field prop is not directly used for input type="file" value
+          render={({ field }) => ( 
             <FormItem className="flex flex-col items-center sm:flex-row sm:items-start gap-4">
               <Avatar className="h-24 w-24 sm:h-32 sm:w-32 ring-2 ring-primary ring-offset-2 ring-offset-background">
-                <AvatarImage src={avatarPreview || undefined} alt={userProfile.displayName || "User"} />
-                <AvatarFallback className="text-3xl">{getInitials(userProfile.displayName)}</AvatarFallback>
+                <AvatarImage src={avatarPreview || undefined} alt={currentProfile?.displayName || "User"} />
+                <AvatarFallback className="text-3xl">{getInitials(currentProfile?.displayName)}</AvatarFallback>
               </Avatar>
-              <div className="flex-grow">
+              <div className="flex-grow w-full sm:w-auto">
                 <FormLabel htmlFor="photoFile" className="block text-sm font-medium mb-1">Profile Picture</FormLabel>
                 <FormControl>
                   <Input 
                     id="photoFile" 
                     type="file" 
-                    accept="image/*"
-                    onChange={handleFileChange} // Use custom handler
+                    accept="image/png, image/jpeg, image/gif"
+                    onChange={handleFileChange}
                     className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                   />
                 </FormControl>
-                <FormDescription>Upload a new profile picture (max 2MB).</FormDescription>
+                <FormDescription>Upload a new profile picture (max 2MB). JPG, PNG, GIF accepted.</FormDescription>
                 <FormMessage />
               </div>
             </FormItem>
@@ -215,15 +217,40 @@ export function ProfileForm({ userProfile }: ProfileFormProps) {
           )}
         />
         
-        {/* Add other profile fields as needed, e.g., matricule for students */}
-        {userProfile.role === 'student' && (
+        {userProfile.role === 'student' && 'matricule' in userProfile && (
           <FormItem>
             <FormLabel>Matricule Number</FormLabel>
             <FormControl>
-              {/* This would typically come from student specific data, not user profile directly */}
-              <Input value={(currentProfile as any)?.matricule || "N/A"} disabled /> 
+              <Input value={(userProfile as any).matricule || "N/A"} disabled /> 
             </FormControl>
             <FormDescription>Your unique student identification number.</FormDescription>
+          </FormItem>
+        )}
+         {userProfile.role === 'student' && 'program' in userProfile && (
+          <FormItem>
+            <FormLabel>Program</FormLabel>
+            <FormControl>
+              <Input value={userProfile.program || "N/A"} disabled /> 
+            </FormControl>
+             <FormDescription>Your enrolled academic program.</FormDescription>
+          </FormItem>
+        )}
+         {userProfile.role === 'student' && 'department' in userProfile && (
+          <FormItem>
+            <FormLabel>Department</FormLabel>
+            <FormControl>
+              <Input value={userProfile.department || "N/A"} disabled /> 
+            </FormControl>
+            <FormDescription>Your assigned department.</FormDescription>
+          </FormItem>
+        )}
+         {userProfile.role === 'student' && 'level' in userProfile && (
+          <FormItem>
+            <FormLabel>Current Level</FormLabel>
+            <FormControl>
+              <Input value={userProfile.level?.toString() || "N/A"} disabled /> 
+            </FormControl>
+            <FormDescription>Your current academic level.</FormDescription>
           </FormItem>
         )}
 
@@ -236,3 +263,5 @@ export function ProfileForm({ userProfile }: ProfileFormProps) {
     </Form>
   );
 }
+
+    
