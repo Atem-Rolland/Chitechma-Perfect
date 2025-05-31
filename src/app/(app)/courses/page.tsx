@@ -42,6 +42,9 @@ async function fetchCourses(): Promise<Course[]> {
   await new Promise(resolve => setTimeout(resolve, 1000));
   
   const mockCourses: Course[] = [
+    // --- Prerequisite Example Course ---
+    { id: "CSE301_CESM_Y2324_S1", title: "Introduction to Algorithms", code: "CSE301", description: "Fundamental algorithms and data structures. Prerequisite course.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2023/2024" },
+    
     // --- 400 Level, First Semester, 2024/2025 Academic Year ---
     // CESM
     { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401", description: "Detailed course description for Mobile Application Development. Covers native and cross-platform development.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 10-12, Wed 10-11, Lab Hall 1", prerequisites: ["CSE301"], semester: "First Semester", academicYear: "2024/2025" },
@@ -49,7 +52,6 @@ async function fetchCourses(): Promise<Course[]> {
     { id: "MGT403_CESM_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology. Introduction to research methods and academic writing.", department: DEPARTMENTS.CESM, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "AMPHI200, Wed 14-17", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "CSE405_CESM_Y2425_S1", title: "Embedded Systems", code: "CSE405", description: "Detailed course description for Embedded Systems. Design and programming of embedded systems.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Thu 8-11", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "NES403_CESM_Y2425_S1", title: "Modeling in Information System", code: "NES403", description: "Detailed course description for Modeling in Information System. Techniques for system modeling.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Elective", level: 400, schedule: "Fri 11-13, CR10", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "CSE301_CESM_PRE", title: "Introduction to Algorithms", code: "CSE301", description: "Fundamental algorithms and data structures. Prerequisite course.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2023/2024" }, 
     // NES
     { id: "NES405_NES_Y2425_S1", title: "Scripting and Programming", code: "NES405", description: "Detailed course description for Scripting and Programming.", department: DEPARTMENTS.NES, lecturerId: "lect006", lecturerName: "Dr. Oumarou", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 8-10, CR22", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "NES409_NES_Y2425_S1", title: "Network Laboratory", code: "NES409", description: "Detailed course description for Network Laboratory.", department: DEPARTMENTS.NES, lecturerId: "lect007", lecturerName: "Prof. Kamga", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Wed 8-10 (Lab), Fri 14-15 (Lecture)", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
@@ -233,19 +235,23 @@ export default function CoursesPage() {
   }, []);
   
    useEffect(() => {
+    // This effect updates filters IF the student's core context (department, level, current semester/year) changes.
+    // However, it allows the student to manually change filters for exploration.
+    // If their actual profile details change (e.g. promoted to next level), this will reset their default view.
     if (isStudent && studentAcademicContext) {
       setFilters(prevFilters => ({
         ...prevFilters,
-        academicYear: studentAcademicContext.currentAcademicYear,
-        semester: studentAcademicContext.currentSemester,
-        // If department and level filters are still the initial "all" or match the *new* context, update them.
-        // This allows student to change filters for viewing, but updates if their core context changes.
+        // If department and level filters are still the initial "all" OR match the student's *new* context, update them.
+        // This prioritizes student's actual context for defaults but allows exploration.
         department: (prevFilters.department === "all" || prevFilters.department === studentAcademicContext.department) 
                       ? studentAcademicContext.department 
                       : prevFilters.department,
         level: (prevFilters.level === "all" || prevFilters.level === studentAcademicContext.level.toString())
                       ? studentAcademicContext.level.toString()
                       : prevFilters.level,
+        // Always default academic year and semester to student's current ones for the initial view
+        academicYear: studentAcademicContext.currentAcademicYear,
+        semester: studentAcademicContext.currentSemester,
       }));
     }
   }, [isStudent, studentAcademicContext]);
@@ -262,6 +268,8 @@ export default function CoursesPage() {
   };
 
   const filteredCourses = useMemo(() => {
+    // Students can filter to view courses from other departments/levels,
+    // but registration will be restricted to their own program.
     return allCourses
       .filter(course => filters.department === "all" || course.department === filters.department)
       .filter(course => filters.level === "all" || course.level.toString() === filters.level)
@@ -279,6 +287,7 @@ export default function CoursesPage() {
   }, [allCourses, registeredCourseIds]);
 
   const totalRegisteredCredits = useMemo(() => {
+    // Calculate credits only for courses matching the currently selected Academic Year and Semester in filters
     const relevantCourses = registeredCoursesList.filter(course => 
       course.academicYear === filters.academicYear && course.semester === filters.semester
     );
@@ -286,25 +295,32 @@ export default function CoursesPage() {
   }, [registeredCoursesList, filters.academicYear, filters.semester]);
   
   const currentRegistrationMeta = useMemo(() => {
+    // This determines if registration is open for the *selected* Academic Year and Semester in the filters
     if (filters.academicYear === "2024/2025" && filters.semester === "First Semester") {
       return { isOpen: true, deadline: "2024-09-15", academicYear: "2024/2025", semester: "First Semester" };
     }
     if (filters.academicYear === "2024/2025" && filters.semester === "Second Semester") {
       return { isOpen: true, deadline: "2025-02-15", academicYear: "2024/2025", semester: "Second Semester" }; 
     }
+    // Default to closed for other selections or "all"
     return { isOpen: false, deadline: "N/A", academicYear: filters.academicYear, semester: filters.semester };
   }, [filters.academicYear, filters.semester]);
 
 
   const handleRegisterCourse = (course: Course) => {
+    // Check if registration is open for the *course's* specific academic year and semester
     if (!currentRegistrationMeta.isOpen) {
       toast({ title: "Registration Closed", description: `Course registration for ${currentRegistrationMeta.semester}, ${currentRegistrationMeta.academicYear} is currently closed.`, variant: "destructive" });
       return;
     }
+
+    // A student must register for courses that match the *current open registration period*
      if (course.academicYear !== currentRegistrationMeta.academicYear || course.semester !== currentRegistrationMeta.semester) {
         toast({ title: "Registration Mismatch", description: `You can only register for courses in the currently open registration period: ${currentRegistrationMeta.semester}, ${currentRegistrationMeta.academicYear}.`, variant: "destructive" });
         return;
     }
+
+    // Student-specific restrictions: must match their own department and level
     if (isStudent && studentAcademicContext) {
       if (course.department !== studentAcademicContext.department) {
         toast({ title: "Registration Not Allowed", description: `You can only register for courses within your department (${studentAcademicContext.department}). This course is for ${course.department}.`, variant: "destructive" });
@@ -315,19 +331,39 @@ export default function CoursesPage() {
         return;
       }
     }
+
+    // Credit limit check (uses totalRegisteredCredits which is already filtered by current filters.academicYear/semester)
     if (totalRegisteredCredits + course.credits > MAX_CREDITS) {
-      toast({ title: "Credit Limit Exceeded", description: `Cannot register. Exceeds maximum credit load of ${MAX_CREDITS}. Current credits: ${totalRegisteredCredits}. Course credits: ${course.credits}`, variant: "destructive" });
+      toast({ title: "Credit Limit Exceeded", description: `Cannot register. Exceeds maximum credit load of ${MAX_CREDITS}. Current credits for ${filters.semester}, ${filters.academicYear}: ${totalRegisteredCredits}. Course credits: ${course.credits}`, variant: "destructive" });
       return;
     }
+
     if (registeredCourseIds.includes(course.id)) {
       toast({ title: "Already Registered", description: `You are already registered for ${course.code} - ${course.title}.`, variant: "default" });
       return;
     }
 
+    // Prerequisite check
     const unmetPrerequisites = course.prerequisites?.filter(prereqCode => {
+        // A prerequisite is met if a course with that code exists in registeredCourseIds 
+        // AND that registered course is from a *prior* academic year/semester than the course being registered.
         const isPrereqMetOnRecord = registeredCourseIds.some(regId => {
-            const registeredPrereq = allCourses.find(c => c.id === regId && c.code === prereqCode);
-            return !!registeredPrereq; 
+            const registeredPrereqCourse = allCourses.find(c => c.id === regId && c.code === prereqCode);
+            if (!registeredPrereqCourse) return false;
+
+            // Simple check: prerequisite must be from a strictly earlier academic year, or same year but earlier semester.
+            // This is a basic check. A more robust system might involve checking grades or specific completion status.
+            const targetYear = parseInt(course.academicYear.split('/')[0]);
+            const prereqYear = parseInt(registeredPrereqCourse.academicYear.split('/')[0]);
+
+            if (prereqYear < targetYear) return true;
+            if (prereqYear === targetYear) {
+                // Define semester order for comparison
+                const semesterOrder = {"First Semester": 1, "Second Semester": 2, "Resit Semester": 3};
+                return (semesterOrder[registeredPrereqCourse.semester as keyof typeof semesterOrder] || 0) < 
+                       (semesterOrder[course.semester as keyof typeof semesterOrder] || 0);
+            }
+            return false;
         });
         return !isPrereqMetOnRecord;
       });
@@ -340,6 +376,7 @@ export default function CoursesPage() {
       });
       return;
     }
+
     setRegisteredCourseIds(prev => [...prev, course.id]);
     toast({ title: "Course Registered", description: `${course.code} - ${course.title} has been successfully registered for ${course.semester}, ${course.academicYear}.`, variant: "default" });
   };
@@ -348,10 +385,12 @@ export default function CoursesPage() {
      const courseToDrop = allCourses.find(c => c.id === courseId);
      if (!courseToDrop) return;
 
+    // Check if registration is open for the *course's* specific academic year and semester
      if (!currentRegistrationMeta.isOpen) {
       toast({ title: "Registration Closed", description: `Cannot drop courses for ${currentRegistrationMeta.semester}, ${currentRegistrationMeta.academicYear} as registration is closed.`, variant: "destructive" });
       return;
     }
+    // You can only drop courses from the currently open registration period
     if (courseToDrop.academicYear !== currentRegistrationMeta.academicYear || courseToDrop.semester !== currentRegistrationMeta.semester) {
         toast({ title: "Drop Mismatch", description: `You can only drop courses from the currently open registration period: ${currentRegistrationMeta.semester}, ${currentRegistrationMeta.academicYear}.`, variant: "destructive" });
         return;
@@ -362,35 +401,40 @@ export default function CoursesPage() {
   };
   
   const getCreditStatus = () => {
+    // Credits are calculated based on the `filters.academicYear` and `filters.semester`
     const currentSemesterCredits = totalRegisteredCredits; 
 
+    // If filters are "all", it's hard to give specific credit status for a single period.
     if (filters.academicYear === "all" || filters.semester === "all") {
          return {
             message: `Showing courses across multiple periods. Select a specific Academic Year and Semester to see credit status for that period. Total registered across all shown: ${registeredCoursesList.reduce((sum, c) => sum + c.credits,0)}`,
             variant: "info" as const,
-            credits: registeredCoursesList.reduce((sum, c) => sum + c.credits,0)
+            credits: registeredCoursesList.reduce((sum, c) => sum + c.credits,0) // Show total for all visible if "all" is selected
         };
     }
+
+    // If registration is closed for the selected period
      if (!currentRegistrationMeta.isOpen) {
         return {
-            message: `Registration for ${filters.semester}, ${filters.academicYear} is closed. Credit load: ${currentSemesterCredits}.`,
+            message: `Registration for ${filters.semester}, ${filters.academicYear} is closed. Credit load for this period: ${currentSemesterCredits}.`,
             variant: "info" as const,
             credits: currentSemesterCredits
         };
     }
 
+    // If registration is open for the selected period
     if (currentSemesterCredits < MIN_CREDITS) return {
-      message: `You are under the minimum credit load (${MIN_CREDITS} credits) for ${filters.semester}, ${filters.academicYear}.`,
+      message: `You are under the minimum credit load (${MIN_CREDITS} credits) for ${filters.semester}, ${filters.academicYear}. Current: ${currentSemesterCredits}.`,
       variant: "warning" as const,
       credits: currentSemesterCredits
     };
     if (currentSemesterCredits > MAX_CREDITS) return {
-      message: `You are over the maximum credit load (${MAX_CREDITS} credits) for ${filters.semester}, ${filters.academicYear}.`,
+      message: `You are over the maximum credit load (${MAX_CREDITS} credits) for ${filters.semester}, ${filters.academicYear}. Current: ${currentSemesterCredits}.`,
       variant: "destructive" as const,
       credits: currentSemesterCredits
     };
     return {
-      message: `Total credits for ${filters.semester}, ${filters.academicYear} is within the allowed range (${MIN_CREDITS}-${MAX_CREDITS}).`,
+      message: `Total credits for ${filters.semester}, ${filters.academicYear} is within the allowed range (${MIN_CREDITS}-${MAX_CREDITS}). Current: ${currentSemesterCredits}.`,
       variant: "success" as const,
       credits: currentSemesterCredits
     };
@@ -409,7 +453,7 @@ export default function CoursesPage() {
       <header className="space-y-2">
         <h1 className="font-headline text-4xl font-bold">Course Registration</h1>
         <p className="text-lg text-muted-foreground">
-          Register for courses for {filters.semester === "all" ? "selected semester" : filters.semester}, {filters.academicYear === "all" ? "selected year" : filters.academicYear}.
+          Register for courses. Filters apply to the available course list and credit summary.
         </p>
       </header>
 
@@ -458,6 +502,7 @@ export default function CoursesPage() {
           <Select 
             value={filters.department} 
             onValueChange={(value) => handleFilterChange("department", value)}
+            // Department filter is always enabled for exploration
           >
             <SelectTrigger><School className="mr-2 h-4 w-4 text-muted-foreground inline-block" />Department</SelectTrigger>
             <SelectContent>
@@ -467,6 +512,7 @@ export default function CoursesPage() {
           <Select 
             value={filters.level} 
             onValueChange={(value) => handleFilterChange("level", value)}
+             // Level filter is always enabled for exploration
           >
             <SelectTrigger><BookUser className="mr-2 h-4 w-4 text-muted-foreground inline-block" />Level</SelectTrigger>
             <SelectContent>
@@ -526,16 +572,37 @@ export default function CoursesPage() {
                 <TableBody>
                   {filteredCourses.map(course => {
                     const isRegistered = registeredCourseIds.includes(course.id);
-                    // Registration capability check:
-                    let canRegister = !isRegistered && currentRegistrationMeta.isOpen;
-                    canRegister = canRegister && course.academicYear === currentRegistrationMeta.academicYear && course.semester === currentRegistrationMeta.semester;
-                    canRegister = canRegister && (totalRegisteredCredits + course.credits <= MAX_CREDITS);
-                    // If student, further restrict to their actual department and level for registration
+                    
+                    // Determine if student can register THIS specific course
+                    let canRegisterThisCourse = !isRegistered && currentRegistrationMeta.isOpen;
+                    canRegisterThisCourse = canRegisterThisCourse && course.academicYear === currentRegistrationMeta.academicYear && course.semester === currentRegistrationMeta.semester;
+                    canRegisterThisCourse = canRegisterThisCourse && (totalRegisteredCredits + course.credits <= MAX_CREDITS);
+                    // If student, further restrict registration to their actual department and level
                     if (isStudent && studentAcademicContext) {
-                        canRegister = canRegister && course.department === studentAcademicContext.department && course.level === studentAcademicContext.level;
+                        canRegisterThisCourse = canRegisterThisCourse && course.department === studentAcademicContext.department && course.level === studentAcademicContext.level;
+                        // And check prerequisites
+                        const unmetPrerequisites = course.prerequisites?.filter(prereqCode => {
+                            const isPrereqMetOnRecord = registeredCourseIds.some(regId => {
+                                const registeredPrereq = allCourses.find(c => c.id === regId && c.code === prereqCode);
+                                if (!registeredPrereq) return false;
+                                const targetYearVal = parseInt(course.academicYear.split('/')[0]);
+                                const prereqYearVal = parseInt(registeredPrereq.academicYear.split('/')[0]);
+                                if (prereqYearVal < targetYearVal) return true;
+                                if (prereqYearVal === targetYearVal) {
+                                    const semesterOrderVal = {"First Semester": 1, "Second Semester": 2, "Resit Semester": 3};
+                                    return (semesterOrderVal[registeredPrereq.semester as keyof typeof semesterOrderVal] || 0) < 
+                                           (semesterOrderVal[course.semester as keyof typeof semesterOrderVal] || 0);
+                                }
+                                return false;
+                            });
+                            return !isPrereqMetOnRecord;
+                          });
+                        if (unmetPrerequisites && unmetPrerequisites.length > 0) {
+                            canRegisterThisCourse = false;
+                        }
                     }
 
-                    const canDrop = isRegistered && 
+                    const canDropThisCourse = isRegistered && 
                                     currentRegistrationMeta.isOpen &&
                                     course.academicYear === currentRegistrationMeta.academicYear &&
                                     course.semester === currentRegistrationMeta.semester;
@@ -560,11 +627,11 @@ export default function CoursesPage() {
                             </DialogTrigger>
                            </Dialog>
                           {isRegistered ? (
-                            <Button variant="destructive" size="sm" onClick={() => handleDropCourse(course.id)} disabled={!canDrop}>
+                            <Button variant="destructive" size="sm" onClick={() => handleDropCourse(course.id)} disabled={!canDropThisCourse}>
                               <MinusCircle className="mr-1 h-4 w-4"/> Drop
                             </Button>
                           ) : (
-                            <Button variant="default" size="sm" onClick={() => handleRegisterCourse(course)} disabled={!canRegister}>
+                            <Button variant="default" size="sm" onClick={() => handleRegisterCourse(course)} disabled={!canRegisterThisCourse}>
                               <PlusCircle className="mr-1 h-4 w-4"/> Register
                             </Button>
                           )}
@@ -620,10 +687,11 @@ export default function CoursesPage() {
             </CardContent>
             <CardFooter className="flex-col items-start space-y-3">
               <div className="w-full">
-                <p className="text-lg font-semibold">Total Registered Credits for {filters.semester}, {filters.academicYear}: <span className={
+                <p className="text-lg font-semibold">Total Registered Credits for {filters.semester === "all" ? "current view" : `${filters.semester}, ${filters.academicYear}`}: <span className={
                     creditStatus.variant === "warning" || creditStatus.variant === "destructive" ? "text-destructive" : "text-green-600 dark:text-green-400"
                 }>{creditStatus.credits}</span>
                 </p>
+                { /* Only show credit status alert if not "info" (i.e. specific period selected) AND (registration is open OR there are credits) */ }
                 { creditStatus.variant !== "info" && (currentRegistrationMeta.isOpen || creditStatus.credits > 0) && ( 
                    <Alert variant={creditStatus.variant === "success" ? "default" : creditStatus.variant} className="mt-2">
                     {creditStatus.variant === "success" ? <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" /> : <AlertCircle className="h-4 w-4" />}
@@ -631,6 +699,7 @@ export default function CoursesPage() {
                     <AlertDescription>{creditStatus.message}</AlertDescription>
                   </Alert>
                 )}
+                 { /* Show info alert if filters are "all" or registration is closed with no credits */ }
                  { creditStatus.variant === "info" && (
                     <Alert variant="default" className="mt-2">
                         <Info className="h-4 w-4" />
@@ -640,12 +709,14 @@ export default function CoursesPage() {
               </div>
               <Button 
                 className="w-full" 
-                disabled={filters.academicYear === "all" || filters.semester === "all" || creditStatus.credits === 0}
+                disabled={filters.academicYear === "all" || filters.semester === "all" || creditStatus.credits === 0 || registeredCoursesList.filter(c => c.academicYear === filters.academicYear && c.semester === filters.semester).length === 0}
                 onClick={() => {
-                  if (filters.academicYear !== "all" && filters.semester !== "all" && creditStatus.credits > 0) {
+                  const coursesForFormB = registeredCoursesList.filter(c => c.academicYear === filters.academicYear && c.semester === filters.semester);
+                  const totalCreditsForFormB = coursesForFormB.reduce((sum, course) => sum + course.credits, 0);
+                  if (coursesForFormB.length > 0) {
                     toast({ 
                       title: "Form B Download", 
-                      description: `Generating Form B for ${filters.semester}, ${filters.academicYear}. (This is a simulation - PDF generation is under development.) Courses: ${coursesForSelectedPeriod.map(c => c.code).join(', ')}. Credits: ${creditStatus.credits}.`,
+                      description: `Generating Form B for ${filters.semester}, ${filters.academicYear}. (This is a simulation - PDF generation is under development.) Courses: ${coursesForFormB.map(c => c.code).join(', ')}. Credits: ${totalCreditsForFormB}.`,
                       duration: 5000,
                     });
                   }
@@ -707,7 +778,15 @@ export default function CoursesPage() {
               <p><strong>Semester:</strong> {selectedCourseForDetail.semester}, {selectedCourseForDetail.academicYear}</p>
               {selectedCourseForDetail.schedule && <p><strong>Schedule:</strong> {selectedCourseForDetail.schedule}</p>}
               {selectedCourseForDetail.prerequisites && selectedCourseForDetail.prerequisites.length > 0 && (
-                <p><strong>Prerequisites:</strong> {selectedCourseForDetail.prerequisites.join(', ')}</p>
+                <div>
+                  <strong>Prerequisites:</strong>
+                  <ul className="list-disc list-inside ml-4">
+                    {selectedCourseForDetail.prerequisites.map(prereqCode => {
+                      const prereqCourse = allCourses.find(c => c.code === prereqCode);
+                      return <li key={prereqCode}>{prereqCourse ? `${prereqCourse.code} - ${prereqCourse.title}` : prereqCode}</li>;
+                    })}
+                  </ul>
+                </div>
               )}
             </div>
              <DialogClose asChild>
@@ -722,3 +801,5 @@ export default function CoursesPage() {
     </motion.div>
   );
 }
+
+    
