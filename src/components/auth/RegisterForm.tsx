@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -28,7 +29,7 @@ const registerSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
   confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters." }),
-  role: z.enum(["student", "lecturer"]), // Simplified roles for registration form
+  role: z.enum(["student", "lecturer", "admin", "finance"]),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -143,6 +144,8 @@ export function RegisterForm() {
                 <SelectContent>
                   <SelectItem value="student">Student</SelectItem>
                   <SelectItem value="lecturer">Lecturer</SelectItem>
+                  <SelectItem value="admin">Administrator</SelectItem>
+                  <SelectItem value="finance">Finance Officer</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
