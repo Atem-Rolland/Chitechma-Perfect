@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -12,7 +13,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem
-} from '@/components/ui/sidebar'; // Assuming Sidebar components are correctly exported
+} from '@/components/ui/sidebar';
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -25,7 +26,16 @@ import {
   Settings,
   ShieldCheck,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  BarChart3, // For GPA Analytics
+  DownloadCloud, // For Transcript
+  FileWarning, // For Grade Appeals
+  FolderArchive, // For Course Materials
+  ClipboardCheck, // For Assignments
+  Video, // For Video Lectures
+  MessageSquare, // For Discussion Forum
+  BookCheck, // For View Grades (main results)
+  History // For Payment History
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -40,15 +50,53 @@ const iconMap: Record<string, React.ElementType> = {
   FileText,
   DollarSign,
   Settings,
-  ShieldCheck
+  ShieldCheck,
+  BookCheck, // Main "My Grades" icon
+  BarChart3,
+  DownloadCloud,
+  FileWarning,
+  FolderArchive,
+  ClipboardCheck,
+  Video,
+  MessageSquare,
+  History,
 };
 
 const defaultSidebarNav: Record<Role | "guest", NavItem[]> = {
   student: [
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { title: 'My Courses', href: '/courses', icon: BookOpen }, // Changed href
-    { title: 'My Grades', href: '/dashboard/student/grades', icon: GraduationCap },
-    { title: 'Tuition & Payments', href: '/dashboard/student/payments', icon: CreditCard },
+    { title: 'My Courses', href: '/courses', icon: BookOpen },
+    { 
+      title: 'Results', 
+      href: '#', // Parent item, not a direct link
+      icon: GraduationCap, // Or BookCheck for a more direct "grades" feel
+      subItems: [
+        { title: 'View Grades', href: '/dashboard/student/grades', icon: BookCheck },
+        { title: 'GPA Analytics', href: '/dashboard/student/grades/gpa-analytics', icon: BarChart3 },
+        { title: 'Download Transcript', href: '/dashboard/student/grades/transcript', icon: DownloadCloud },
+        { title: 'Grade Appeals', href: '/dashboard/student/grades/appeals', icon: FileWarning },
+      ]
+    },
+    { 
+      title: 'Tuition & Payments', 
+      href: '#', // Parent item
+      icon: CreditCard,
+      subItems: [
+        { title: 'Overview & Pay', href: '/dashboard/student/payments', icon: CreditCard },
+        { title: 'Payment History', href: '/dashboard/student/payments/history', icon: History },
+      ]
+    },
+    {
+      title: 'E-Learning',
+      href: '#', // Parent item
+      icon: FolderArchive, // Or a more generic e-learning icon
+      subItems: [
+        { title: 'Course Materials', href: '/dashboard/student/e-learning/materials', icon: FolderArchive },
+        { title: 'Assignments', href: '/dashboard/student/e-learning/assignments', icon: ClipboardCheck },
+        { title: 'Video Lectures', href: '/dashboard/student/e-learning/lectures', icon: Video },
+        { title: 'Discussion Forum', href: '/dashboard/student/e-learning/forum', icon: MessageSquare },
+      ]
+    }
   ],
   lecturer: [
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -76,8 +124,8 @@ const defaultSidebarNav: Record<Role | "guest", NavItem[]> = {
     { title: 'Payment Records', href: '/dashboard/finance/payments', icon: DollarSign },
     { title: 'Financial Reports', href: '/dashboard/finance/reports', icon: FileText },
   ],
-  guest: [], // No specific nav for guests in sidebar, they'd be redirected
-  null: [], // Same as guest
+  guest: [], 
+  null: [], 
 };
 
 interface SidebarNavItemProps {
@@ -87,7 +135,13 @@ interface SidebarNavItemProps {
 
 const SidebarNavItem: React.FC<SidebarNavItemProps> = ({ item, pathname }) => {
   const Icon = item.icon ? iconMap[item.icon.displayName || item.icon.name] || item.icon : null;
-  const isActive = pathname === item.href || (item.href !== '/dashboard' && item.href !== '#' && pathname.startsWith(item.href));
+  
+  // For parent items with subItems, isActive should also check if any subItem is active
+  let isActive = pathname === item.href || (item.href !== '/dashboard' && item.href !== '#' && pathname.startsWith(item.href));
+  if (item.subItems && !isActive) {
+    isActive = item.subItems.some(sub => pathname === sub.href || (sub.href !== '/dashboard' && sub.href !== '#' && pathname.startsWith(sub.href)));
+  }
+
   const [isSubmenuOpen, setIsSubmenuOpen] = useState(isActive && !!item.subItems);
 
   const handleToggleSubmenu = (e: React.MouseEvent) => {
@@ -133,19 +187,22 @@ const SidebarNavItem: React.FC<SidebarNavItemProps> = ({ item, pathname }) => {
             className="overflow-hidden group-data-[collapsible=icon]:hidden"
           >
             <SidebarMenuSub>
-              {item.subItems.map(subItem => (
-                <SidebarMenuSubItem key={subItem.href}>
-                  <Link href={subItem.href} passHref legacyBehavior>
-                    <SidebarMenuSubButton 
-                      isActive={pathname === subItem.href || (subItem.href !== '/dashboard' && subItem.href !== '#' && pathname.startsWith(subItem.href))}
-                      className="pl-6"
-                    >
-                       {subItem.icon && React.createElement(iconMap[subItem.icon.displayName || subItem.icon.name] || subItem.icon, { className: "h-4 w-4 mr-2"})}
-                      {subItem.title}
-                    </SidebarMenuSubButton>
-                  </Link>
-                </SidebarMenuSubItem>
-              ))}
+              {item.subItems.map(subItem => {
+                const SubIcon = subItem.icon ? iconMap[subItem.icon.displayName || subItem.icon.name] || subItem.icon : null;
+                return (
+                  <SidebarMenuSubItem key={subItem.href}>
+                    <Link href={subItem.href} passHref legacyBehavior>
+                      <SidebarMenuSubButton 
+                        isActive={pathname === subItem.href || (subItem.href !== '/dashboard' && subItem.href !== '#' && pathname.startsWith(subItem.href))}
+                        className="pl-6" // Indent sub-items
+                      >
+                        {SubIcon && <SubIcon className="h-4 w-4 mr-2" />}
+                        {subItem.title}
+                      </SidebarMenuSubButton>
+                    </Link>
+                  </SidebarMenuSubItem>
+                );
+              })}
             </SidebarMenuSub>
           </motion.div>
         )}
@@ -174,13 +231,13 @@ export function SidebarNav() {
   const navItems = role ? defaultSidebarNav[role] : [];
 
   if (!navItems.length) {
-    return null; // Or a loading/skeleton state
+    return null; 
   }
 
   return (
     <SidebarMenu>
       {navItems.map((item) => (
-        <SidebarNavItem key={item.href} item={item} pathname={pathname} />
+        <SidebarNavItem key={item.href + (item.title || Math.random())} item={item} pathname={pathname} />
       ))}
     </SidebarMenu>
   );
