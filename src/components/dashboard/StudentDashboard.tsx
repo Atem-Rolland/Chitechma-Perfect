@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { BookOpen, GraduationCap, CreditCard, FileText, Download, User, Edit3, Settings, LogOut, HelpCircle, History, ChevronDown, Info, Phone, Mail, MapPin, Smartphone } from "lucide-react";
+import { BookOpen, GraduationCap, CreditCard, FileText, Download, User, Edit3, Settings, LogOut, HelpCircle, History, ChevronDown, Info, Phone, Mail, MapPin, Smartphone, Building, Users as GuardianIcon, Briefcase, CalendarDays, ShieldAlert, Award, Globe } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,9 +19,9 @@ const enrolledCourses = [
 ];
 
 const tuitionStatus = {
-  totalDue: 1250000, // Example amount in XAF
-  paid: 1000000,   // Example amount in XAF
-  balance: 250000,  // Example amount in XAF
+  totalDue: 1250000, 
+  paid: 1000000,  
+  balance: 250000, 
   currency: 'XAF',
   dueDate: '2024-09-15',
 };
@@ -29,14 +29,24 @@ const tuitionStatus = {
 const studentMockData = {
   semester: "Fall 2024",
   academicYear: "2024/2025",
-  matricule: "CUSMS/001",
+  matricule: "CUSMS/S00123",
   program: "B.Sc. Computer Science",
-  department: "Computer Science",
-  dateOfBirth: "1998-05-15",
+  department: "Computer Science & Engineering",
+  gender: "Female",
+  dateOfBirth: "1999-08-25",
+  placeOfBirth: "Douala, Cameroon",
+  regionOfOrigin: "Littoral",
+  maritalStatus: "Single",
+  nidOrPassport: "123456789CM",
   nationality: "Cameroonian",
-  address: "123 University Street, Buea",
-  emergencyContactName: "Jane Doe",
+  admissionDate: "2022-09-01",
+  studentStatus: "Cameroonian (National)", // e.g. Cameroonian/Foreign
+  address: "123 University Avenue, Buea, SW Region",
+  emergencyContactName: "John Doe (Father)",
   emergencyContactPhone: "+237 6XX XXX XXX",
+  guardianName: "John Doe",
+  guardianAddress: "BP 456, Douala",
+  guardianPhone: "+237 6XX XXX XXX",
 };
 
 export function StudentDashboard() {
@@ -52,42 +62,41 @@ export function StudentDashboard() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Student Home Overview */}
+    <div className="space-y-8">
+      {/* Student Identity Card & Profile Settings */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <Card className="overflow-hidden shadow-lg">
+        <Card className="overflow-hidden shadow-xl">
           <CardHeader className="bg-gradient-to-r from-primary/10 via-card to-card p-6">
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="relative">
-                <Avatar className="h-24 w-24 ring-2 ring-primary ring-offset-background ring-offset-2">
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+              <Link href="/profile" className="relative group">
+                <Avatar className="h-28 w-28 ring-4 ring-primary ring-offset-background ring-offset-2 group-hover:ring-accent transition-all duration-300">
                   <AvatarImage src={profile?.photoURL || undefined} alt={profile?.displayName || "User"} />
-                  <AvatarFallback className="text-3xl">{getInitials(profile?.displayName)}</AvatarFallback>
+                  <AvatarFallback className="text-4xl bg-muted">{getInitials(profile?.displayName)}</AvatarFallback>
                 </Avatar>
-                <Button variant="outline" size="icon" className="absolute bottom-0 right-0 h-8 w-8 rounded-full" asChild>
-                  <Link href="/profile" title="Edit Profile Photo">
-                    <Edit3 className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <Edit3 className="h-8 w-8 text-white" />
+                </div>
+              </Link>
               <div className="flex-grow text-center sm:text-left">
-                <CardTitle className="font-headline text-3xl">Hi, {profile?.displayName || "Student"}!</CardTitle>
-                <CardDescription className="text-md">
-                  {profile?.displayName} &bull; {studentMockData.semester} &bull; {studentMockData.academicYear}
+                <CardTitle className="font-headline text-4xl text-foreground">Hi, {profile?.displayName || "Student"}!</CardTitle>
+                <CardDescription className="text-lg text-muted-foreground mt-1">
+                  {studentMockData.program} <br />
+                  {studentMockData.academicYear} &bull; {studentMockData.semester}
                 </CardDescription>
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="ml-auto shrink-0">
-                    Account Options <ChevronDown className="ml-2 h-4 w-4" />
+                    Profile & Settings <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-60">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <Link href="/profile" passHref>
                     <DropdownMenuItem>
                       <User className="mr-2 h-4 w-4" />
-                      Update Profile
+                      Update Profile Photo
                     </DropdownMenuItem>
                   </Link>
                   <Link href="/settings" passHref>
@@ -96,17 +105,17 @@ export function StudentDashboard() {
                       Change Password
                     </DropdownMenuItem>
                   </Link>
-                  <Link href="/dashboard/student/transactions" passHref>
+                  <Link href="/dashboard/student/transactions" passHref> {/* Placeholder link */}
                      <DropdownMenuItem>
                       <History className="mr-2 h-4 w-4" />
-                      Transaction History
+                      View Transaction History
                     </DropdownMenuItem>
                   </Link>
                   <DropdownMenuSeparator />
-                  <Link href="/help" passHref>
+                  <Link href="/help" passHref> {/* Placeholder link */}
                     <DropdownMenuItem>
                       <HelpCircle className="mr-2 h-4 w-4" />
-                      Help & Support
+                      Contact Support
                     </DropdownMenuItem>
                   </Link>
                   <DropdownMenuItem onClick={logout} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
@@ -120,49 +129,65 @@ export function StudentDashboard() {
         </Card>
       </motion.div>
 
-      {/* Student Info Section */}
+      {/* Personal Info Section (Read-only) */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
-        <Card>
+        <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Info className="text-primary"/>Student Information</CardTitle>
-            <CardDescription>Your personal and contact details. <Link href="/profile" className="text-primary hover:underline text-sm">Edit Profile</Link></CardDescription>
+            <CardTitle className="flex items-center gap-2 font-headline text-2xl"><Info className="text-primary h-6 w-6"/>Personal Information</CardTitle>
+            <CardDescription>Your registered personal and academic details. Contact administration for corrections.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="font-semibold mb-2 text-lg text-foreground/90">General Information</h3>
-                <div className="space-y-2 text-sm p-4 bg-secondary/30 rounded-md">
-                  <p><strong className="w-32 inline-block text-muted-foreground">Full Name:</strong> {profile?.displayName || "N/A"}</p>
-                  <p><strong className="w-32 inline-block text-muted-foreground">Matricule:</strong> {studentMockData.matricule}</p>
-                  <p><strong className="w-32 inline-block text-muted-foreground">Program:</strong> {studentMockData.program}</p>
-                  <p><strong className="w-32 inline-block text-muted-foreground">Department:</strong> {studentMockData.department}</p>
-                </div>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2 text-lg text-foreground/90">Basic Information</h3>
-                <div className="space-y-2 text-sm p-4 bg-secondary/30 rounded-md">
-                  <p><strong className="w-32 inline-block text-muted-foreground">Date of Birth:</strong> {studentMockData.dateOfBirth}</p>
-                  <p><strong className="w-32 inline-block text-muted-foreground">Nationality:</strong> {studentMockData.nationality}</p>
-                  <p><strong className="w-32 inline-block text-muted-foreground">Email:</strong> {profile?.email || "N/A"}</p>
-                  <p><strong className="w-32 inline-block text-muted-foreground">Phone:</strong> (Placeholder)</p>
-                </div>
+          <CardContent className="space-y-6 pt-2">
+            
+            <div>
+              <h3 className="font-semibold text-lg text-foreground/90 mb-3 border-b pb-2 flex items-center gap-2"><User className="h-5 w-5 text-accent"/>Personal Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm">
+                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Full Name:</strong> <span className="text-foreground/90">{profile?.displayName || "N/A"}</span></div>
+                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Gender:</strong> <span className="text-foreground/90">{studentMockData.gender}</span></div>
+                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Date of Birth:</strong> <span className="text-foreground/90">{studentMockData.dateOfBirth}</span></div>
+                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Place of Birth:</strong> <span className="text-foreground/90">{studentMockData.placeOfBirth}</span></div>
+                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Region of Origin:</strong> <span className="text-foreground/90">{studentMockData.regionOfOrigin}</span></div>
+                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Marital Status:</strong> <span className="text-foreground/90">{studentMockData.maritalStatus}</span></div>
               </div>
             </div>
+
             <div>
-              <h3 className="font-semibold mb-2 text-lg text-foreground/90">Contact Information</h3>
-              <div className="space-y-2 text-sm p-4 bg-secondary/30 rounded-md">
-                 <p className="flex items-start"><Mail className="h-4 w-4 mr-2 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-32 inline-block text-muted-foreground">Mailing Address:</strong> {studentMockData.address}</p>
-                 <p className="flex items-start"><Phone className="h-4 w-4 mr-2 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-32 inline-block text-muted-foreground">Emergency Contact:</strong> {studentMockData.emergencyContactName} ({studentMockData.emergencyContactPhone})</p>
+              <h3 className="font-semibold text-lg text-foreground/90 mb-3 border-b pb-2 flex items-center gap-2"><Briefcase className="h-5 w-5 text-accent"/>Academic & Identification</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm">
+                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Matricule:</strong> <span className="font-mono text-foreground/90">{studentMockData.matricule}</span></div>
+                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Degree Program:</strong> <span className="text-foreground/90">{studentMockData.program}</span></div>
+                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Department:</strong> <span className="text-foreground/90">{studentMockData.department}</span></div>
+                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">NID/Passport:</strong> <span className="text-foreground/90">{studentMockData.nidOrPassport}</span></div>
+                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Nationality:</strong> <span className="text-foreground/90">{studentMockData.nationality}</span></div>
+                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Admission Date:</strong> <span className="text-foreground/90">{studentMockData.admissionDate}</span></div>
+                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Student Status:</strong> <span className="text-foreground/90">{studentMockData.studentStatus}</span></div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-lg text-foreground/90 mb-3 border-b pb-2 flex items-center gap-2"><Mail className="h-5 w-5 text-accent"/>Contact Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                <div className="flex items-start gap-2"><Phone className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Phone:</strong> <span className="text-foreground/90">(Placeholder)</span></div>
+                <div className="flex items-start gap-2"><Mail className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Email:</strong> <span className="text-foreground/90">{profile?.email || "N/A"}</span></div>
+                <div className="md:col-span-2 flex items-start gap-2"><MapPin className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Address:</strong> <span className="text-foreground/90">{studentMockData.address}</span></div>
+              </div>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold text-lg text-foreground/90 mb-3 border-b pb-2 flex items-center gap-2"><GuardianIcon className="h-5 w-5 text-accent"/>Guardian Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Guardian Name:</strong> <span className="text-foreground/90">{studentMockData.guardianName}</span></div>
+                <div className="flex items-start gap-2"><Phone className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Phone:</strong> <span className="text-foreground/90">{studentMockData.guardianPhone}</span></div>
+                <div className="md:col-span-2 flex items-start gap-2"><MapPin className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Address:</strong> <span className="text-foreground/90">{studentMockData.guardianAddress}</span></div>
               </div>
             </div>
           </CardContent>
         </Card>
       </motion.div>
 
-      {/* Existing Modules - can be refactored into separate pages/components later */}
+      {/* Existing Modules - Retained for now, can be refactored into separate pages/components later */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.2 }}>
-          <Card className="lg:col-span-2 h-full">
+          <Card className="lg:col-span-2 h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><BookOpen className="text-primary"/>Enrolled Courses</CardTitle>
               <CardDescription>Your current and recently completed courses.</CardDescription>
@@ -193,7 +218,7 @@ export function StudentDashboard() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.25 }}>
-          <Card className="h-full">
+          <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><GraduationCap className="text-primary"/>Recent Grades</CardTitle>
               <CardDescription>Summary of your academic performance.</CardDescription>
@@ -219,7 +244,7 @@ export function StudentDashboard() {
         </motion.div>
         
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.3 }}>
-          <Card className="md:col-span-2 lg:col-span-1 h-full">
+          <Card className="md:col-span-2 lg:col-span-1 h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><CreditCard className="text-primary"/>Tuition Status</CardTitle>
               <CardDescription>Overview of your fee payments.</CardDescription>
@@ -252,16 +277,16 @@ export function StudentDashboard() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.35 }}>
-          <Card className="lg:col-span-2 h-full">
+          <Card className="lg:col-span-2 h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
-              <CardTitle>Announcements &amp; Events</CardTitle>
+              <CardTitle className="flex items-center gap-2"><Award className="text-primary"/>Announcements &amp; Events</CardTitle>
             </CardHeader>
             <CardContent>
               <Image src="https://placehold.co/600x200.png" alt="University Event" width={600} height={200} className="rounded-md mb-4" data-ai-hint="university campus event" />
               <p className="text-muted-foreground">Stay updated with the latest news and events from the university.</p>
               <ul className="space-y-2 mt-3">
-                <li className="text-sm p-2 bg-secondary/30 rounded-md">Mid-term exams start next week!</li>
-                <li className="text-sm p-2 bg-secondary/30 rounded-md">Guest lecture on AI in Education - Oct 25th.</li>
+                <li className="text-sm p-2 bg-secondary/30 rounded-md hover:bg-secondary/50 transition-colors flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-accent"/>Mid-term exams start next week!</li>
+                <li className="text-sm p-2 bg-secondary/30 rounded-md hover:bg-secondary/50 transition-colors flex items-center gap-2"><CalendarDays className="h-4 w-4 text-accent"/>Guest lecture on AI in Education - Oct 25th.</li>
               </ul>
             </CardContent>
           </Card>
