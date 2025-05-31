@@ -22,48 +22,48 @@ const MIN_CREDITS = 18;
 const MAX_CREDITS = 24;
 
 const DEPARTMENTS = {
-  CESM: "Computer Engineering and System Maintenance",
-  NES: "Network Engineering and Security",
-  EPS: "Electrical Power Systems",
-  LTM: "Logistics and Transport Management",
-  PRM: "Project Management",
-  ACC: "Accounting",
-  HMC: "Hotel Management and Catering",
-  BFP: "Baking and Food Processing",
-  FCT: "Fashion, Clothing and Textile",
-  NUS: "Nursing",
-  MLS: "Medical Laboratory Sciences",
+  CESM: "Department of computer engineering and system maintenance",
+  NES: "Department of network engineering and security",
+  EPS: "Department of electrical power systems",
+  LTM: "Department of logistics and transport management",
+  PRM: "Department of project management",
+  ACC: "Department of accounting",
+  HMC: "Department of hotel management and catering",
+  BFP: "Department of baking and food processing",
+  FCT: "Department of fashion,clothing and textile",
+  NUS: "Department of nursing",
+  MLS: "Department of medical laboratory sciences",
 };
 
 // Mock data fetching function - replace with actual Firestore query
 async function fetchCourses(): Promise<Course[]> {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1000));
+  // All courses are 400 Level, First Semester, 2024/2025 Academic Year
   const mockCourses: Course[] = [
-    // Computer Engineering and System Maintenance
+    // Department of computer engineering and system maintenance (CESM)
     { id: "CSE401_CESM", title: "Mobile Application Development", code: "CSE401", description: "Detailed course description for Mobile Application Development.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: ["CSE301"], semester: "First Semester", academicYear: "2024/2025" },
     { id: "CSE409_CESM", title: "Software Development and OOP", code: "CSE409", description: "Detailed course description for Software Development and OOP.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_CESM", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.CESM, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "CSE405_CESM", title: "Embedded Systems", code: "CSE405", description: "Detailed course description for Embedded Systems.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "NES403_CESM", title: "Modeling in Information System", code: "NES403", description: "Detailed course description for Modeling in Information System.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "CSE301_CESM", title: "Introduction to Algorithms", code: "CSE301", description: "Fundamental algorithms and data structures.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2023/2024" },
+    { id: "CSE301_CESM_PRE", title: "Introduction to Algorithms", code: "CSE301", description: "Fundamental algorithms and data structures.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2023/2024" }, // Prereq example
 
-
-    // Network Engineering and Security
+    // Department of network engineering and security (NES)
     { id: "NES405_NES", title: "Scripting and Programming", code: "NES405", description: "Detailed course description for Scripting and Programming.", department: DEPARTMENTS.NES, lecturerId: "lect006", lecturerName: "Dr. Oumarou", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "NES409_NES", title: "Network Laboratory", code: "NES409", description: "Detailed course description for Network Laboratory.", department: DEPARTMENTS.NES, lecturerId: "lect007", lecturerName: "Prof. Kamga", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_NES", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.NES, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "NES401_NES", title: "Network Security", code: "NES401", description: "Detailed course description for Network Security.", department: DEPARTMENTS.NES, lecturerId: "lect008", lecturerName: "Mr. Bakari", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "NES403_NES", title: "Modeling in Information System", code: "NES403", description: "Detailed course description for Modeling in Information System.", department: DEPARTMENTS.NES, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
 
-    // Electrical Power Systems
+    // Department of electrical power systems (EPS)
     { id: "EPS411_EPS", title: "Microcontrollers and Microprocessors", code: "EPS411", description: "Detailed course description for Microcontrollers and Microprocessors.", department: DEPARTMENTS.EPS, lecturerId: "lect009", lecturerName: "Dr. Wato", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "EPS401_EPS", title: "Electric Power System I", code: "EPS401", description: "Detailed course description for Electric Power System I.", department: DEPARTMENTS.EPS, lecturerId: "lect010", lecturerName: "Prof. Ndam", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_EPS", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.EPS, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "EPS403_EPS", title: "Control Engineering", code: "EPS403", description: "Detailed course description for Control Engineering.", department: DEPARTMENTS.EPS, lecturerId: "lect011", lecturerName: "Mr. Sanda", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "EPS405_EPS", title: "Power Electronics", code: "EPS405", description: "Detailed course description for Power Electronics.", department: DEPARTMENTS.EPS, lecturerId: "lect012", lecturerName: "Ms. Zola", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
 
-    // Logistics and Transport Management
+    // Department of logistics and transport management (LTM)
     { id: "LTM403_LTM", title: "Humanitarian Logistics", code: "LTM403", description: "Detailed course description for Humanitarian Logistics.", department: DEPARTMENTS.LTM, lecturerId: "lect013", lecturerName: "Dr. Bello", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "LTM401_LTM", title: "Custom Procedures and Clearance Systems", code: "LTM401", description: "Detailed course description for Custom Procedures and Clearance Systems.", department: DEPARTMENTS.LTM, lecturerId: "lect014", lecturerName: "Prof. Issa", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_LTM", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.LTM, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
@@ -71,7 +71,7 @@ async function fetchCourses(): Promise<Course[]> {
     { id: "MGT413_LTM", title: "Business Ethics and Corporate Governance", code: "MGT413", description: "Detailed course description for Business Ethics and Corporate Governance.", department: DEPARTMENTS.LTM, lecturerId: "lect016", lecturerName: "Ms. Amina", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "LTM405_LTM", title: "Fundamentals of Supply Chain Management", code: "LTM405", description: "Detailed course description for Fundamentals of Supply Chain Management.", department: DEPARTMENTS.LTM, lecturerId: "lect017", lecturerName: "Dr. Chinedu", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
 
-    // Project Management
+    // Department of project management (PRM)
     { id: "HRM407_PRM", title: "Performance Management and Motivation", code: "HRM407", description: "Detailed course description for Performance Management and Motivation.", department: DEPARTMENTS.PRM, lecturerId: "lect018", lecturerName: "Prof. Etta", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "PRM405_PRM", title: "Procurement and Contract Management", code: "PRM405", description: "Detailed course description for Procurement and Contract Management.", department: DEPARTMENTS.PRM, lecturerId: "lect019", lecturerName: "Mr. Okoro", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_PRM", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.PRM, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
@@ -79,7 +79,7 @@ async function fetchCourses(): Promise<Course[]> {
     { id: "MGT413_PRM", title: "Business Ethics and Corporate Governance", code: "MGT413", description: "Detailed course description for Business Ethics and Corporate Governance.", department: DEPARTMENTS.PRM, lecturerId: "lect016", lecturerName: "Ms. Amina", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "LTM405_PRM", title: "Fundamentals of Supply Chain Management", code: "LTM405", description: "Detailed course description for Fundamentals of Supply Chain Management.", department: DEPARTMENTS.PRM, lecturerId: "lect017", lecturerName: "Dr. Chinedu", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     
-    // Accounting
+    // Department of accounting (ACC)
     { id: "ACC403_ACC", title: "Computerized Accounting", code: "ACC403", description: "Detailed course description for Computerized Accounting.", department: DEPARTMENTS.ACC, lecturerId: "lect021", lecturerName: "Dr. Obi", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "FIN411_ACC", title: "Financial Management", code: "FIN411", description: "Detailed course description for Financial Management.", department: DEPARTMENTS.ACC, lecturerId: "lect022", lecturerName: "Prof. Eze", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_ACC", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.ACC, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
@@ -87,28 +87,28 @@ async function fetchCourses(): Promise<Course[]> {
     { id: "MGT413_ACC", title: "Business Ethics and Corporate Governance", code: "MGT413", description: "Detailed course description for Business Ethics and Corporate Governance.", department: DEPARTMENTS.ACC, lecturerId: "lect016", lecturerName: "Ms. Amina", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "ACC401_ACC", title: "Financial Accounting", code: "ACC401", description: "Detailed course description for Financial Accounting.", department: DEPARTMENTS.ACC, lecturerId: "lect023", lecturerName: "Ms. Ifeoma", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
 
-    // Hotel Management and Catering
+    // Department of hotel management and catering (HMC)
     { id: "HRM407_HMC", title: "Performance Management and Motivation", code: "HRM407", description: "Detailed course description for Performance Management and Motivation.", department: DEPARTMENTS.HMC, lecturerId: "lect018", lecturerName: "Prof. Etta", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "HMC403_HMC", title: "Hotel Account and Financial Management", code: "HMC403", description: "Detailed course description for Hotel Account and Financial Management.", department: DEPARTMENTS.HMC, lecturerId: "lect024", lecturerName: "Dr. Adeleke", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_HMC", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.HMC, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "HMC401_HMC", title: "Hotel Operations/Front Office Management", code: "HMC401", description: "Detailed course description for Hotel Operations/Front Office Management.", department: DEPARTMENTS.HMC, lecturerId: "lect025", lecturerName: "Mr. Jean", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT413_HMC", title: "Business Ethics and Corporate Governance", code: "MGT413", description: "Detailed course description for Business Ethics and Corporate Governance.", department: DEPARTMENTS.HMC, lecturerId: "lect016", lecturerName: "Ms. Amina", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
 
-    // Baking and Food Processing
+    // Department of baking and food processing (BFP)
     { id: "BFP403_BFP", title: "Postharvest, Handling, Transformation and Storage", code: "BFP403", description: "Detailed course description for Postharvest, Handling, Transformation and Storage.", department: DEPARTMENTS.BFP, lecturerId: "lect026", lecturerName: "Dr. Yemisi", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "BFP405_BFP", title: "Food Technology I", code: "BFP405", description: "Detailed course description for Food Technology I.", department: DEPARTMENTS.BFP, lecturerId: "lect027", lecturerName: "Prof. Tunde", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_BFP", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.BFP, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "BFP40A_BFP", title: "Functional Foods and Nutraceuticals", code: "BFP40A", description: "Detailed course description for Functional Foods and Nutraceuticals.", department: DEPARTMENTS.BFP, lecturerId: "lect028", lecturerName: "Mr. Femi", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "BFP401_BFP", title: "Food Analysis and Biotechnology", code: "BFP401", description: "Detailed course description for Food Analysis and Biotechnology.", department: DEPARTMENTS.BFP, lecturerId: "lect029", lecturerName: "Ms. Chika", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     
-    // Fashion, Clothing and Textile
+    // Department of fashion,clothing and textile (FCT)
     { id: "CCT401_FCT", title: "Interior and Exterior Decoration", code: "CCT401", description: "Detailed course description for Interior and Exterior Decoration.", department: DEPARTMENTS.FCT, lecturerId: "lect030", lecturerName: "Dr. Aisha", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "CTT409_FCT", title: "Industrial Dyeing and Chemical Processing of Textile", code: "CTT409", description: "Detailed course description for Industrial Dyeing and Chemical Processing of Textile.", department: DEPARTMENTS.FCT, lecturerId: "lect031", lecturerName: "Prof. Garba", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "FCT40A_FCT", title: "Techniques of Fabric Production, Analysis and Garment Manufacturing", code: "FCT40A", description: "Detailed course description for Techniques of Fabric Production, Analysis and Garment Manufacturing.", department: DEPARTMENTS.FCT, lecturerId: "lect032", lecturerName: "Mr. Kwame", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_FCT", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.FCT, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "CTT405_FCT", title: "Handicraft and Millinery Accessories", code: "CTT405", description: "Detailed course description for Handicraft and Millinery Accessories.", department: DEPARTMENTS.FCT, lecturerId: "lect033", lecturerName: "Ms. Fatimah", credits: 3, type: "Elective", level: 400, schedule: "AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
 
-    // Nursing
+    // Department of nursing (NUS)
     { id: "NUS405_NUS", title: "Traumatology Critical Care & Emergence", code: "NUS405", description: "Detailed course description for Traumatology Critical Care & Emergence.", department: DEPARTMENTS.NUS, lecturerId: "lect034", lecturerName: "Dr. Ibrahim", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "NUS407_NUS", title: "Specific of Maternity Nursing & Reproductive Health", code: "NUS407", description: "Detailed course description for Specific of Maternity Nursing & Reproductive Health.", department: DEPARTMENTS.NUS, lecturerId: "lect035", lecturerName: "Prof. Diallo", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_NUS", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.NUS, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
@@ -116,12 +116,12 @@ async function fetchCourses(): Promise<Course[]> {
     { id: "NUS401_NUS", title: "Medico-Surgical Nursing Gerontology", code: "NUS401", description: "Detailed course description for Medico-Surgical Nursing Gerontology.", department: DEPARTMENTS.NUS, lecturerId: "lect037", lecturerName: "Ms. Kante", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "NUS403_NUS", title: "Pediatric & Adolescent Nursing", code: "NUS403", description: "Detailed course description for Pediatric & Adolescent Nursing.", department: DEPARTMENTS.NUS, lecturerId: "lect038", lecturerName: "Dr. Souleyman", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
 
-    // Medical Laboratory Sciences
-    { id: "MLS405_MLS", title: "Histochemistry and Histopathology", code: "MLS405", description: "Detailed course description for Histochemistry and Histopathology.", department: DEPARTMENTS.MLS, lecturerId: "lect039", lecturerName: "Dr. Coulibaly", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
+    // Department of medical laboratory sciences (MLS)
+    { id: "MLS405_MLS", title: "Histochemistry and histopathology", code: "MLS405", description: "Detailed course description for Histochemistry and histopathology.", department: DEPARTMENTS.MLS, lecturerId: "lect039", lecturerName: "Dr. Coulibaly", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MLS403_MLS", title: "Medical Parasitology and Entomology", code: "MLS403", description: "Detailed course description for Medical Parasitology and Entomology.", department: DEPARTMENTS.MLS, lecturerId: "lect040", lecturerName: "Prof. Diop", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_MLS", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.MLS, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MLS407_MLS", title: "Immunohaematology and Transfusion Science", code: "MLS407", description: "Detailed course description for Immunohaematology and Transfusion Science.", department: DEPARTMENTS.MLS, lecturerId: "lect041", lecturerName: "Mr. Traore", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "MLS401_MLS", title: "Medical Biochemistry and Chemical Pathology", code: "MLS401", description: "Detailed course description for Medical Biochemistry and Chemical Pathology.", department: DEPARTMENTS.MLS, lecturerId: "lect042", lecturerName: "Ms. Keita", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
+    { id: "MLS401_MLS", title: "Medical Biochemistry and chemical pathology", code: "MLS401", description: "Detailed course description for Medical Biochemistry and chemical pathology.", department: DEPARTMENTS.MLS, lecturerId: "lect042", lecturerName: "Ms. Keita", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
   ];
   return mockCourses;
 }
@@ -143,7 +143,7 @@ export default function CoursesPage() {
     academicYear: registrationMeta.academicYear,
     semester: registrationMeta.semester,
     department: "all",
-    level: "400", // Default to 400 level as per provided data
+    level: "400", 
     courseType: "all",
   });
   const [registeredCourseIds, setRegisteredCourseIds] = useState<string[]>([]);
@@ -212,13 +212,8 @@ export default function CoursesPage() {
     const unmetPrerequisites = course.prerequisites?.filter(prereqCode => {
         const potentialPrereqCourses = allCourses.filter(c => c.code === prereqCode);
         if (potentialPrereqCourses.length === 0 && course.prerequisites && course.prerequisites.includes(prereqCode) ) { 
-            // This implies a prerequisite code is listed but no such course exists in allCourses - data integrity issue or prereq from different non-loaded year/level
-            // For now, consider it unmet if not found, though ideally prereqs should be resolvable to an existing course.
-            // console.warn(`Prerequisite course code ${prereqCode} for ${course.code} not found in available courses.`);
-            // To be strict, if a prereq code doesn't map to any course, it can't be met.
-             return true; 
+            return true; 
         }
-        // Check if any of the potential prerequisite courses (which could be from different departments if codes are reused) are registered.
         const isPrereqMet = potentialPrereqCourses.some(pc => registeredCourseIds.includes(pc.id));
         return !isPrereqMet;
       });
@@ -509,6 +504,3 @@ export default function CoursesPage() {
     </motion.div>
   );
 }
-
-    
-
