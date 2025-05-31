@@ -1,4 +1,3 @@
-
 import type { User as FirebaseUser } from 'firebase/auth';
 
 export type Role = "student" | "lecturer" | "admin" | "finance" | null;
@@ -32,14 +31,15 @@ export interface Course {
   code: string;
   description: string;
   department: string;
-  lecturerId: string; // links to UserProfile.uid of a lecturer
-  lecturerName?: string; // Denormalized for easier display
-  schedule?: string; // e.g., "Mon, Wed 10:00 - 11:30"
+  lecturerId: string; 
+  lecturerName?: string; 
+  schedule?: string; 
   credits: number;
-  type: 'Compulsory' | 'Elective' | 'General'; // Added General as an option
-  level: number; // e.g., 100, 200, 300, 400
-  prerequisites?: string[]; // Array of course codes
-  // Add other course-specific fields
+  type: 'Compulsory' | 'Elective' | 'General';
+  level: number; 
+  prerequisites?: string[]; 
+  semester: string; // e.g., "First Semester", "Second Semester"
+  academicYear: string; // e.g., "2024/2025"
 }
 
 export interface Grade {
@@ -73,5 +73,3 @@ export interface Payment {
 //   password: z.string().min(6),
 // });
 // export type LoginFormData = z.infer<typeof LoginSchema>;
-
-    
