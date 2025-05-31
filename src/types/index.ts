@@ -100,3 +100,40 @@ export interface Assignment {
   submittedText?: string;
   allowsResubmission?: boolean;
 }
+
+// Forum Specific Types
+export interface ForumUser {
+  id: string;
+  name: string;
+  avatarUrl?: string; // URL to user's avatar image
+}
+
+export interface ForumPost {
+  id: string;
+  author: ForumUser;
+  content: string;
+  createdAt: string; // ISO date string
+  replyToId?: string; // ID of the post this is a reply to (for threaded replies)
+}
+
+export interface ForumThread {
+  id: string;
+  courseId: string; // To associate thread with a course
+  courseName?: string; // Optional, for display convenience
+  title: string;
+  originalPost: ForumPost; // The first post in the thread
+  replies: ForumPost[]; // Array of replies to the original post
+  author: ForumUser; // Author of the original post/thread
+  createdAt: string; // ISO date string for thread creation
+  lastActivityAt: string; // ISO date string for the last reply or original post if no replies
+  lastActivityBy?: ForumUser; // User who made the last activity
+  replyCount: number;
+  viewCount: number; // Simulated
+  isPinned?: boolean;
+  isLocked?: boolean;
+}
+
+export interface MockCourseForum { // Simplified course for forum context
+  id: string;
+  name: string;
+}

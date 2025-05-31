@@ -1,31 +1,467 @@
 
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageSquare } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { MessageSquare, PlusCircle, Eye, Reply, UserCircle, CornerDownRight, Send, Search } from "lucide-react";
 import { motion } from "framer-motion";
+import { useState, useMemo, useEffect } from "react";
+import type { ForumThread, ForumPost, ForumUser, MockCourseForum } from "@/types";
+import { useToast } from "@/hooks/use-toast";
+import Image from "next/image";
+import { format, parseISO, formatDistanceToNowStrict } from 'date-fns';
+import { Skeleton } from "@/components/ui/skeleton";
+
+const MOCK_FORUM_USERS: Record<string, ForumUser> = {
+  "user1": { id: "user1", name: "Alice Wonderland", avatarUrl: "https://placehold.co/40x40.png?text=AW" },
+  "user2": { id: "user2", name: "Bob The Builder", avatarUrl: "https://placehold.co/40x40.png?text=BB" },
+  "user3": { id: "user3", name: "Charlie Brown", avatarUrl: "https://placehold.co/40x40.png?text=CB" },
+  "user4": { id: "user4", name: "Diana Prince", avatarUrl: "https://placehold.co/40x40.png?text=DP" },
+};
+
+const MOCK_ENROLLED_COURSES_FORUM: MockCourseForum[] = [
+  { id: "CSE301", name: "Introduction to Algorithms (CSE301)" },
+  { id: "MTH201", name: "Calculus I (MTH201)" },
+  { id: "CSE401", name: "Mobile Application Development (CSE401)" },
+];
+
+const MOCK_FORUM_THREADS: ForumThread[] = [
+  {
+    id: "thread1_cse301", courseId: "CSE301", courseName: "Introduction to Algorithms",
+    title: "Confused about Big O Notation for nested loops",
+    author: MOCK_FORUM_USERS["user1"],
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    lastActivityAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    lastActivityBy: MOCK_FORUM_USERS["user2"],
+    replyCount: 2, viewCount: 15,
+    originalPost: {
+      id: "post1_thread1", author: MOCK_FORUM_USERS["user1"],
+      content: "Hi everyone, I'm struggling to understand how to calculate Big O for a function with two nested loops where the inner loop depends on the outer loop's variable. For example:\n\nfor (i=0; i<n; i++) {\n  for (j=0; j<i; j++) {\n    // constant time operation\n  }\n}\n\nAny help would be appreciated!",
+      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    replies: [
+      { id: "reply1_thread1", author: MOCK_FORUM_USERS["user2"], content: "Great question, Alice! This is a common point of confusion. The inner loop runs i times for each iteration of the outer loop. So you're looking at something like 0 + 1 + 2 + ... + (n-1) operations. This sum is n*(n-1)/2, which simplifies to O(n^2).", createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
+      { id: "reply2_thread1", author: MOCK_FORUM_USERS["user1"], content: "Oh, that makes sense! So the dependency doesn't change it from O(n^2) in this case. Thanks, Bob!", createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), replyToId: "reply1_thread1" },
+    ],
+  },
+  {
+    id: "thread2_cse301", courseId: "CSE301", courseName: "Introduction to Algorithms",
+    title: "Recommended resources for understanding recursion?",
+    author: MOCK_FORUM_USERS["user3"],
+    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    lastActivityAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    lastActivityBy: MOCK_FORUM_USERS["user3"],
+    replyCount: 0, viewCount: 8,
+    originalPost: {
+      id: "post1_thread2", author: MOCK_FORUM_USERS["user3"],
+      content: "I find recursion quite challenging. Does anyone have links to good articles, videos, or practice problems that helped them grasp it better?",
+      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    replies: [],
+  },
+  {
+    id: "thread1_cse401", courseId: "CSE401", courseName: "Mobile Application Development",
+    title: "Choosing between React Native and Flutter for final project",
+    author: MOCK_FORUM_USERS["user4"],
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    lastActivityAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    lastActivityBy: MOCK_FORUM_USERS["user4"],
+    replyCount: 0, viewCount: 5,
+    originalPost: {
+      id: "post1_thread3", author: MOCK_FORUM_USERS["user4"],
+      content: "For our final project, I'm debating whether to use React Native or Flutter. Does anyone have experience with both and can share pros/cons for a relatively complex app?",
+      createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    replies: [],
+    isPinned: true,
+  },
+];
+
+const getInitials = (name: string) => {
+  const names = name.split(' ');
+  if (names.length > 1) return names[0][0] + names[names.length - 1][0];
+  return name.substring(0, 2).toUpperCase();
+};
 
 export default function DiscussionForumPage() {
+  const [allThreads, setAllThreads] = useState<ForumThread[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  const [isViewThreadDialogOpen, setIsViewThreadDialogOpen] = useState(false);
+  const [currentThreadToView, setCurrentThreadToView] = useState<ForumThread | null>(null);
+  
+  const [isNewThreadDialogOpen, setIsNewThreadDialogOpen] = useState(false);
+  const [newThreadTitle, setNewThreadTitle] = useState("");
+  const [newThreadContent, setNewThreadContent] = useState("");
+  const [newThreadCourseId, setNewThreadCourseId] = useState<string>("");
+
+  const [isReplyDialogOpen, setIsReplyDialogOpen] = useState(false);
+  const [replyContent, setReplyContent] = useState("");
+  const [replyingToThreadId, setReplyingToThreadId] = useState<string | null>(null);
+
+
+  useEffect(() => {
+    setIsLoading(true);
+    // Simulate API call
+    setTimeout(() => {
+      setAllThreads(MOCK_FORUM_THREADS);
+      if (MOCK_ENROLLED_COURSES_FORUM.length > 0) {
+        setNewThreadCourseId(MOCK_ENROLLED_COURSES_FORUM[0].id); // Default to first course for new thread
+      }
+      setIsLoading(false);
+    }, 1000);
+  }, []);
+
+  const filteredThreads = useMemo(() => {
+    return allThreads
+      .filter(thread => selectedCourseId === "all" || thread.courseId === selectedCourseId)
+      .filter(thread => 
+        thread.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        thread.originalPost.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        thread.author.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .sort((a,b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0) || new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime());
+  }, [allThreads, selectedCourseId, searchTerm]);
+
+  const handleOpenViewThreadDialog = (thread: ForumThread) => {
+    setCurrentThreadToView(thread);
+    setIsViewThreadDialogOpen(true);
+    // Simulate view count increment
+    setAllThreads(prev => prev.map(t => t.id === thread.id ? {...t, viewCount: (t.viewCount || 0) + 1} : t));
+  };
+
+  const handleOpenNewThreadDialog = () => {
+    if (selectedCourseId === "all" && MOCK_ENROLLED_COURSES_FORUM.length > 0) {
+      setNewThreadCourseId(MOCK_ENROLLED_COURSES_FORUM[0].id);
+    } else if (selectedCourseId !== "all") {
+      setNewThreadCourseId(selectedCourseId);
+    } else if (MOCK_ENROLLED_COURSES_FORUM.length === 0) {
+        toast({ title: "Cannot Create Thread", description: "No courses available to create a thread in.", variant: "destructive" });
+        return;
+    }
+    setIsNewThreadDialogOpen(true);
+  };
+  
+  const handlePostNewThread = () => {
+    if (!newThreadTitle.trim() || !newThreadContent.trim() || !newThreadCourseId) {
+      toast({ title: "Error", description: "Title, content, and course are required.", variant: "destructive" });
+      return;
+    }
+    // Simulate posting
+    const newThread: ForumThread = {
+      id: `thread${Date.now()}_${newThreadCourseId}`,
+      courseId: newThreadCourseId,
+      courseName: MOCK_ENROLLED_COURSES_FORUM.find(c => c.id === newThreadCourseId)?.name,
+      title: newThreadTitle,
+      author: MOCK_FORUM_USERS["user1"], // Assume current user is Alice for mock
+      createdAt: new Date().toISOString(),
+      lastActivityAt: new Date().toISOString(),
+      lastActivityBy: MOCK_FORUM_USERS["user1"],
+      replyCount: 0, viewCount: 0,
+      originalPost: {
+        id: `post${Date.now()}_new`, author: MOCK_FORUM_USERS["user1"],
+        content: newThreadContent, createdAt: new Date().toISOString(),
+      },
+      replies: [],
+    };
+    setAllThreads(prev => [newThread, ...prev]);
+    toast({ title: "Thread Posted!", description: `Your thread "${newThreadTitle}" has been created.` });
+    setIsNewThreadDialogOpen(false);
+    setNewThreadTitle("");
+    setNewThreadContent("");
+  };
+
+  const handleOpenReplyDialog = (threadId: string) => {
+    setReplyingToThreadId(threadId);
+    setIsReplyDialogOpen(true);
+  };
+
+  const handlePostReply = () => {
+    if (!replyContent.trim() || !replyingToThreadId) {
+       toast({ title: "Error", description: "Reply content cannot be empty.", variant: "destructive" });
+      return;
+    }
+    const newReply: ForumPost = {
+      id: `reply${Date.now()}`,
+      author: MOCK_FORUM_USERS["user1"], // Assume current user is Alice
+      content: replyContent,
+      createdAt: new Date().toISOString(),
+    };
+    setAllThreads(prevThreads => prevThreads.map(thread => {
+      if (thread.id === replyingToThreadId) {
+        return {
+          ...thread,
+          replies: [...thread.replies, newReply],
+          replyCount: thread.replyCount + 1,
+          lastActivityAt: new Date().toISOString(),
+          lastActivityBy: MOCK_FORUM_USERS["user1"],
+        };
+      }
+      return thread;
+    }));
+    toast({ title: "Reply Posted!", description: "Your reply has been added to the thread." });
+    setIsReplyDialogOpen(false);
+    setReplyContent("");
+    setReplyingToThreadId(null);
+    // If view dialog was open for this thread, refresh its content (or close and reopen)
+    if (currentThreadToView && currentThreadToView.id === replyingToThreadId) {
+        const updatedThread = allThreads.find(t => t.id === replyingToThreadId);
+        if(updatedThread) {
+            // This is a bit of a hack for deep updates in the dialog.
+            // In a real app with server state, this would refetch or be handled by optimistic updates.
+            setCurrentThreadToView(prev => prev ? ({
+                ...prev,
+                replies: [...prev.replies, newReply],
+                replyCount: prev.replyCount + 1,
+                lastActivityAt: new Date().toISOString(),
+                lastActivityBy: MOCK_FORUM_USERS["user1"],
+            }) : null);
+        }
+    }
+  };
+
+  const renderPost = (post: ForumPost, isOriginalPost = false) => (
+    <motion.div 
+        key={post.id} 
+        className={`p-4 ${isOriginalPost ? 'border-b' : 'ml-4 lg:ml-8 border-l-2 pl-4 py-3 my-2 border-muted'}`}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+    >
+      <div className="flex items-start gap-3">
+        <Avatar className="h-10 w-10 border">
+          <AvatarImage src={post.author.avatarUrl} alt={post.author.name} data-ai-hint="user avatar" />
+          <AvatarFallback>{getInitials(post.author.name)}</AvatarFallback>
+        </Avatar>
+        <div className="flex-1">
+          <div className="flex items-center justify-between">
+            <p className="font-semibold text-sm">{post.author.name}</p>
+            <p className="text-xs text-muted-foreground">
+              {formatDistanceToNowStrict(parseISO(post.createdAt), { addSuffix: true })}
+            </p>
+          </div>
+          <div className="prose prose-sm dark:prose-invert max-w-none mt-1 whitespace-pre-wrap text-muted-foreground">
+            {post.content}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
+      className="space-y-6"
     >
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-headline">
-            <MessageSquare className="h-6 w-6 text-primary" />
-            Discussion Forum
-          </CardTitle>
-          <CardDescription>Participate in class discussions and ask questions.</CardDescription>
+        <CardHeader className="border-b">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2 font-headline text-2xl">
+                <MessageSquare className="h-7 w-7 text-primary" />
+                Discussion Forum
+              </CardTitle>
+              <CardDescription>Engage in course discussions, ask questions, and collaborate with peers.</CardDescription>
+            </div>
+            <Button onClick={handleOpenNewThreadDialog} className="w-full sm:w-auto">
+              <PlusCircle className="mr-2 h-5 w-5" /> Start New Thread
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">A threaded discussion forum with user avatars will be implemented here.</p>
-          {/* Placeholder for forum threads and posting functionality */}
+        <CardContent className="pt-6 space-y-4">
+           <div className="flex flex-col sm:flex-row gap-4">
+             <div className="flex-grow sm:max-w-xs">
+                <Label htmlFor="course-filter-forum" className="sr-only">Filter by Course</Label>
+                <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
+                <SelectTrigger id="course-filter-forum">
+                    <SelectValue placeholder="Filter by course..." />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Courses</SelectItem>
+                    {MOCK_ENROLLED_COURSES_FORUM.map(course => (
+                    <SelectItem key={course.id} value={course.id}>{course.name}</SelectItem>
+                    ))}
+                </SelectContent>
+                </Select>
+             </div>
+             <div className="relative flex-grow">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input 
+                    placeholder="Search threads by title, content, or author..." 
+                    className="pl-10" 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className="space-y-3 pt-4">
+                {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+            </div>
+          ) : filteredThreads.length === 0 ? (
+             <div className="text-center py-12">
+                <Image src="https://placehold.co/300x200.png" alt="No threads" width={180} height={120} className="mx-auto mb-6 rounded-lg opacity-80" data-ai-hint="empty state forum chat" />
+                <h3 className="text-xl font-semibold text-foreground/90">No Threads Yet</h3>
+                <p className="text-muted-foreground mt-1.5 max-w-md mx-auto">
+                  {selectedCourseId === "all" ? "There are no discussion threads started." : `No threads found for ${MOCK_ENROLLED_COURSES_FORUM.find(c => c.id === selectedCourseId)?.name || 'the selected course'}.`}
+                  Be the first to start a discussion!
+                </p>
+              </div>
+          ) : (
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[60%]">Thread / Author</TableHead>
+                    <TableHead className="text-center hidden sm:table-cell">Replies</TableHead>
+                    <TableHead className="text-center hidden md:table-cell">Views</TableHead>
+                    <TableHead className="hidden lg:table-cell">Last Activity</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredThreads.map(thread => (
+                    <TableRow key={thread.id} className="hover:bg-muted/50 transition-colors">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-9 w-9 border hidden sm:flex">
+                            <AvatarImage src={thread.author.avatarUrl} alt={thread.author.name} data-ai-hint="user avatar" />
+                            <AvatarFallback>{getInitials(thread.author.name)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-semibold text-sm text-primary hover:underline cursor-pointer" onClick={() => handleOpenViewThreadDialog(thread)}>
+                              {thread.isPinned && <span title="Pinned Thread" className="mr-1">📌</span>}
+                              {thread.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              By {thread.author.name} in <span className="font-medium">{thread.courseName || thread.courseId}</span>
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center hidden sm:table-cell">{thread.replyCount}</TableCell>
+                      <TableCell className="text-center hidden md:table-cell">{thread.viewCount}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground hidden lg:table-cell">
+                        {thread.lastActivityBy ? 
+                         `By ${thread.lastActivityBy.name} ` : ''} 
+                         {formatDistanceToNowStrict(parseISO(thread.lastActivityAt), { addSuffix: true })}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="outline" size="sm" onClick={() => handleOpenViewThreadDialog(thread)}>
+                          <Eye className="mr-1.5 h-4 w-4" /> View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* View Thread Dialog */}
+      {currentThreadToView && (
+        <Dialog open={isViewThreadDialogOpen} onOpenChange={setIsViewThreadDialogOpen}>
+          <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
+            <DialogHeader className="pb-3 border-b">
+              <DialogTitle className="font-headline text-xl">{currentThreadToView.title}</DialogTitle>
+              <DialogDescription>
+                Started by {currentThreadToView.author.name} in {currentThreadToView.courseName || currentThreadToView.courseId} - {formatDistanceToNowStrict(parseISO(currentThreadToView.createdAt), { addSuffix: true })}
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="flex-grow py-1 pr-3 -mr-2">
+              <div className="space-y-1">
+                {renderPost(currentThreadToView.originalPost, true)}
+                {currentThreadToView.replies.map(reply => renderPost(reply))}
+              </div>
+            </ScrollArea>
+            <DialogFooter className="pt-4 border-t">
+              <Button type="button" variant="outline" onClick={() => setIsViewThreadDialogOpen(false)}>Close</Button>
+              <Button type="button" onClick={() => handleOpenReplyDialog(currentThreadToView.id)}>
+                <Reply className="mr-2 h-4 w-4"/> Reply to Thread
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* New Thread Dialog */}
+      <Dialog open={isNewThreadDialogOpen} onOpenChange={setIsNewThreadDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Start a New Discussion Thread</DialogTitle>
+            <DialogDescription>Share your thoughts or ask a question.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-3">
+            <div>
+              <Label htmlFor="new-thread-course">Course</Label>
+              <Select value={newThreadCourseId} onValueChange={setNewThreadCourseId}>
+                <SelectTrigger id="new-thread-course">
+                  <SelectValue placeholder="Select course for thread" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MOCK_ENROLLED_COURSES_FORUM.map(course => (
+                    <SelectItem key={course.id} value={course.id}>{course.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="new-thread-title">Thread Title</Label>
+              <Input id="new-thread-title" value={newThreadTitle} onChange={(e) => setNewThreadTitle(e.target.value)} placeholder="Enter a clear and concise title" />
+            </div>
+            <div>
+              <Label htmlFor="new-thread-content">Your Post</Label>
+              <Textarea id="new-thread-content" value={newThreadContent} onChange={(e) => setNewThreadContent(e.target.value)} placeholder="Compose your message..." rows={8} />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+            <Button type="button" onClick={handlePostNewThread} disabled={isLoading}>
+             {isLoading ? <Send className="mr-2 h-4 w-4 animate-pulse"/> : <Send className="mr-2 h-4 w-4"/>} Post Thread
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+       {/* Reply Dialog */}
+      <Dialog open={isReplyDialogOpen} onOpenChange={setIsReplyDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Post a Reply</DialogTitle>
+            <DialogDescription>Responding to: {currentThreadToView?.title || "this thread"}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-3">
+            <div>
+              <Label htmlFor="reply-content">Your Reply</Label>
+              <Textarea id="reply-content" value={replyContent} onChange={(e) => setReplyContent(e.target.value)} placeholder="Type your reply here..." rows={6} />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+            <Button type="button" onClick={handlePostReply} disabled={isLoading}>
+              {isLoading ? <Send className="mr-2 h-4 w-4 animate-pulse"/> : <Send className="mr-2 h-4 w-4"/>} Post Reply
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </motion.div>
   );
 }
-
