@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Course } from "@/types";
-import { BookOpen, Search, Filter, Tag, School, Info, CalendarDays, BookUser, PlusCircle, MinusCircle, Download, AlertCircle, XCircle, CheckCircle, Eye, Clock } from "lucide-react";
+import { BookOpen, Search, Filter, Tag, School, Info, CalendarDays, BookUser, PlusCircle, MinusCircle, Download, AlertCircle, XCircle, CheckCircle, Eye, Clock, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
@@ -224,6 +224,9 @@ export default function CoursesPage() {
   const [selectedCourseForDetail, setSelectedCourseForDetail] = useState<Course | null>(null);
   const { toast } = useToast();
 
+  const [isDeadlineApproaching, setIsDeadlineApproaching] = useState(false);
+  const [daysToDeadline, setDaysToDeadline] = useState<number | null>(null);
+
   useEffect(() => {
     async function loadCourses() {
       setIsLoading(true);
@@ -235,26 +238,48 @@ export default function CoursesPage() {
   }, []);
   
    useEffect(() => {
-    // This effect updates filters IF the student's core context (department, level, current semester/year) changes.
-    // However, it allows the student to manually change filters for exploration.
-    // If their actual profile details change (e.g. promoted to next level), this will reset their default view.
     if (isStudent && studentAcademicContext) {
       setFilters(prevFilters => ({
         ...prevFilters,
-        // If department and level filters are still the initial "all" OR match the student's *new* context, update them.
-        // This prioritizes student's actual context for defaults but allows exploration.
-        department: (prevFilters.department === "all" || prevFilters.department === studentAcademicContext.department) 
-                      ? studentAcademicContext.department 
-                      : prevFilters.department,
-        level: (prevFilters.level === "all" || prevFilters.level === studentAcademicContext.level.toString())
-                      ? studentAcademicContext.level.toString()
-                      : prevFilters.level,
-        // Always default academic year and semester to student's current ones for the initial view
+        department: studentAcademicContext.department,
+        level: studentAcademicContext.level.toString(),
         academicYear: studentAcademicContext.currentAcademicYear,
         semester: studentAcademicContext.currentSemester,
       }));
     }
   }, [isStudent, studentAcademicContext]);
+
+  const currentRegistrationMeta = useMemo(() => {
+    if (filters.academicYear === "2024/2025" && filters.semester === "First Semester") {
+      return { isOpen: true, deadline: "2024-09-15", academicYear: "2024/2025", semester: "First Semester" };
+    }
+    if (filters.academicYear === "2024/2025" && filters.semester === "Second Semester") {
+      return { isOpen: true, deadline: "2025-02-15", academicYear: "2024/2025", semester: "Second Semester" }; 
+    }
+    return { isOpen: false, deadline: "N/A", academicYear: filters.academicYear, semester: filters.semester };
+  }, [filters.academicYear, filters.semester]);
+
+  useEffect(() => {
+    if (currentRegistrationMeta.isOpen && currentRegistrationMeta.deadline && currentRegistrationMeta.deadline !== "N/A") {
+      const deadlineDate = new Date(currentRegistrationMeta.deadline);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); 
+
+      const diffTime = deadlineDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      setDaysToDeadline(diffDays);
+
+      if (diffDays >= 0 && diffDays <= 7) { 
+        setIsDeadlineApproaching(true);
+      } else {
+        setIsDeadlineApproaching(false);
+      }
+    } else {
+      setIsDeadlineApproaching(false);
+      setDaysToDeadline(null);
+    }
+  }, [currentRegistrationMeta.isOpen, currentRegistrationMeta.deadline]);
 
 
   const staticDepartments = useMemo(() => ["all", ...Object.values(DEPARTMENTS)], []);
@@ -268,8 +293,6 @@ export default function CoursesPage() {
   };
 
   const filteredCourses = useMemo(() => {
-    // Students can filter to view courses from other departments/levels,
-    // but registration will be restricted to their own program.
     return allCourses
       .filter(course => filters.department === "all" || course.department === filters.department)
       .filter(course => filters.level === "all" || course.level.toString() === filters.level)
@@ -287,40 +310,24 @@ export default function CoursesPage() {
   }, [allCourses, registeredCourseIds]);
 
   const totalRegisteredCredits = useMemo(() => {
-    // Calculate credits only for courses matching the currently selected Academic Year and Semester in filters
     const relevantCourses = registeredCoursesList.filter(course => 
       course.academicYear === filters.academicYear && course.semester === filters.semester
     );
     return relevantCourses.reduce((sum, course) => sum + course.credits, 0);
   }, [registeredCoursesList, filters.academicYear, filters.semester]);
   
-  const currentRegistrationMeta = useMemo(() => {
-    // This determines if registration is open for the *selected* Academic Year and Semester in the filters
-    if (filters.academicYear === "2024/2025" && filters.semester === "First Semester") {
-      return { isOpen: true, deadline: "2024-09-15", academicYear: "2024/2025", semester: "First Semester" };
-    }
-    if (filters.academicYear === "2024/2025" && filters.semester === "Second Semester") {
-      return { isOpen: true, deadline: "2025-02-15", academicYear: "2024/2025", semester: "Second Semester" }; 
-    }
-    // Default to closed for other selections or "all"
-    return { isOpen: false, deadline: "N/A", academicYear: filters.academicYear, semester: filters.semester };
-  }, [filters.academicYear, filters.semester]);
-
 
   const handleRegisterCourse = (course: Course) => {
-    // Check if registration is open for the *course's* specific academic year and semester
     if (!currentRegistrationMeta.isOpen) {
       toast({ title: "Registration Closed", description: `Course registration for ${currentRegistrationMeta.semester}, ${currentRegistrationMeta.academicYear} is currently closed.`, variant: "destructive" });
       return;
     }
 
-    // A student must register for courses that match the *current open registration period*
      if (course.academicYear !== currentRegistrationMeta.academicYear || course.semester !== currentRegistrationMeta.semester) {
         toast({ title: "Registration Mismatch", description: `You can only register for courses in the currently open registration period: ${currentRegistrationMeta.semester}, ${currentRegistrationMeta.academicYear}.`, variant: "destructive" });
         return;
     }
 
-    // Student-specific restrictions: must match their own department and level
     if (isStudent && studentAcademicContext) {
       if (course.department !== studentAcademicContext.department) {
         toast({ title: "Registration Not Allowed", description: `You can only register for courses within your department (${studentAcademicContext.department}). This course is for ${course.department}.`, variant: "destructive" });
@@ -332,7 +339,6 @@ export default function CoursesPage() {
       }
     }
 
-    // Credit limit check (uses totalRegisteredCredits which is already filtered by current filters.academicYear/semester)
     if (totalRegisteredCredits + course.credits > MAX_CREDITS) {
       toast({ title: "Credit Limit Exceeded", description: `Cannot register. Exceeds maximum credit load of ${MAX_CREDITS}. Current credits for ${filters.semester}, ${filters.academicYear}: ${totalRegisteredCredits}. Course credits: ${course.credits}`, variant: "destructive" });
       return;
@@ -343,22 +349,14 @@ export default function CoursesPage() {
       return;
     }
 
-    // Prerequisite check
     const unmetPrerequisites = course.prerequisites?.filter(prereqCode => {
-        // A prerequisite is met if a course with that code exists in registeredCourseIds 
-        // AND that registered course is from a *prior* academic year/semester than the course being registered.
         const isPrereqMetOnRecord = registeredCourseIds.some(regId => {
             const registeredPrereqCourse = allCourses.find(c => c.id === regId && c.code === prereqCode);
             if (!registeredPrereqCourse) return false;
-
-            // Simple check: prerequisite must be from a strictly earlier academic year, or same year but earlier semester.
-            // This is a basic check. A more robust system might involve checking grades or specific completion status.
             const targetYear = parseInt(course.academicYear.split('/')[0]);
             const prereqYear = parseInt(registeredPrereqCourse.academicYear.split('/')[0]);
-
             if (prereqYear < targetYear) return true;
             if (prereqYear === targetYear) {
-                // Define semester order for comparison
                 const semesterOrder = {"First Semester": 1, "Second Semester": 2, "Resit Semester": 3};
                 return (semesterOrder[registeredPrereqCourse.semester as keyof typeof semesterOrder] || 0) < 
                        (semesterOrder[course.semester as keyof typeof semesterOrder] || 0);
@@ -385,12 +383,10 @@ export default function CoursesPage() {
      const courseToDrop = allCourses.find(c => c.id === courseId);
      if (!courseToDrop) return;
 
-    // Check if registration is open for the *course's* specific academic year and semester
      if (!currentRegistrationMeta.isOpen) {
       toast({ title: "Registration Closed", description: `Cannot drop courses for ${currentRegistrationMeta.semester}, ${currentRegistrationMeta.academicYear} as registration is closed.`, variant: "destructive" });
       return;
     }
-    // You can only drop courses from the currently open registration period
     if (courseToDrop.academicYear !== currentRegistrationMeta.academicYear || courseToDrop.semester !== currentRegistrationMeta.semester) {
         toast({ title: "Drop Mismatch", description: `You can only drop courses from the currently open registration period: ${currentRegistrationMeta.semester}, ${currentRegistrationMeta.academicYear}.`, variant: "destructive" });
         return;
@@ -401,19 +397,16 @@ export default function CoursesPage() {
   };
   
   const getCreditStatus = () => {
-    // Credits are calculated based on the `filters.academicYear` and `filters.semester`
     const currentSemesterCredits = totalRegisteredCredits; 
 
-    // If filters are "all", it's hard to give specific credit status for a single period.
     if (filters.academicYear === "all" || filters.semester === "all") {
          return {
             message: `Showing courses across multiple periods. Select a specific Academic Year and Semester to see credit status for that period. Total registered across all shown: ${registeredCoursesList.reduce((sum, c) => sum + c.credits,0)}`,
             variant: "info" as const,
-            credits: registeredCoursesList.reduce((sum, c) => sum + c.credits,0) // Show total for all visible if "all" is selected
+            credits: registeredCoursesList.reduce((sum, c) => sum + c.credits,0)
         };
     }
 
-    // If registration is closed for the selected period
      if (!currentRegistrationMeta.isOpen) {
         return {
             message: `Registration for ${filters.semester}, ${filters.academicYear} is closed. Credit load for this period: ${currentSemesterCredits}.`,
@@ -422,7 +415,6 @@ export default function CoursesPage() {
         };
     }
 
-    // If registration is open for the selected period
     if (currentSemesterCredits < MIN_CREDITS) return {
       message: `You are under the minimum credit load (${MIN_CREDITS} credits) for ${filters.semester}, ${filters.academicYear}. Current: ${currentSemesterCredits}.`,
       variant: "warning" as const,
@@ -461,7 +453,7 @@ export default function CoursesPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Info className="text-primary"/>Registration Status for {currentRegistrationMeta.semester}, {currentRegistrationMeta.academicYear}</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           {currentRegistrationMeta.isOpen ? (
             <Alert variant="default" className="bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300">
               <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400" />
@@ -476,6 +468,19 @@ export default function CoursesPage() {
               <AlertTitle>Registration is CLOSED</AlertTitle>
               <AlertDescription>
                 The deadline for course registration for {currentRegistrationMeta.semester}, {currentRegistrationMeta.academicYear} has passed or is not yet open.
+              </AlertDescription>
+            </Alert>
+          )}
+          {isDeadlineApproaching && currentRegistrationMeta.isOpen && daysToDeadline !== null && (
+            <Alert variant="default" className="bg-amber-50 dark:bg-amber-900/30 border-amber-400 dark:border-amber-600 text-amber-700 dark:text-amber-300">
+              <AlertTriangle className="h-5 w-5 text-amber-500 dark:text-amber-400" />
+              <AlertTitle>Deadline Approaching!</AlertTitle>
+              <AlertDescription>
+                {daysToDeadline === 0 ? "Today is the last day to register or drop courses." :
+                daysToDeadline === 1 ? `The deadline is tomorrow! Only ${daysToDeadline} day remaining.` :
+                `Only ${daysToDeadline} days remaining to register or drop courses.`
+                }
+                {' '}Don't miss the deadline on <strong>{new Date(currentRegistrationMeta.deadline).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' })}</strong>.
               </AlertDescription>
             </Alert>
           )}
@@ -502,7 +507,7 @@ export default function CoursesPage() {
           <Select 
             value={filters.department} 
             onValueChange={(value) => handleFilterChange("department", value)}
-            // Department filter is always enabled for exploration
+            disabled={isStudent}
           >
             <SelectTrigger><School className="mr-2 h-4 w-4 text-muted-foreground inline-block" />Department</SelectTrigger>
             <SelectContent>
@@ -512,7 +517,7 @@ export default function CoursesPage() {
           <Select 
             value={filters.level} 
             onValueChange={(value) => handleFilterChange("level", value)}
-             // Level filter is always enabled for exploration
+            disabled={isStudent}
           >
             <SelectTrigger><BookUser className="mr-2 h-4 w-4 text-muted-foreground inline-block" />Level</SelectTrigger>
             <SelectContent>
@@ -543,11 +548,6 @@ export default function CoursesPage() {
             <CardTitle>Available Courses</CardTitle>
              <CardDescription>
               {`Showing courses for ${filters.department === "all" ? "all departments" : filters.department}, Level ${filters.level === "all" ? "all levels" : filters.level}, ${filters.semester === "all" ? "selected semester" : filters.semester}, ${filters.academicYear === "all" ? "selected year" : filters.academicYear}.`}
-              {isStudent && studentAcademicContext && (filters.department !== studentAcademicContext.department || (filters.level !== "all" && filters.level !== studentAcademicContext.level.toString())) &&
-                <span className="block text-xs text-amber-600 dark:text-amber-400 mt-1">
-                  You are viewing courses outside your primary academic program (Your program: {studentAcademicContext.department}, Level {studentAcademicContext.level}). Registration is restricted to courses matching your program for the open registration period.
-                </span>
-              }
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -573,14 +573,11 @@ export default function CoursesPage() {
                   {filteredCourses.map(course => {
                     const isRegistered = registeredCourseIds.includes(course.id);
                     
-                    // Determine if student can register THIS specific course
                     let canRegisterThisCourse = !isRegistered && currentRegistrationMeta.isOpen;
                     canRegisterThisCourse = canRegisterThisCourse && course.academicYear === currentRegistrationMeta.academicYear && course.semester === currentRegistrationMeta.semester;
                     canRegisterThisCourse = canRegisterThisCourse && (totalRegisteredCredits + course.credits <= MAX_CREDITS);
-                    // If student, further restrict registration to their actual department and level
                     if (isStudent && studentAcademicContext) {
                         canRegisterThisCourse = canRegisterThisCourse && course.department === studentAcademicContext.department && course.level === studentAcademicContext.level;
-                        // And check prerequisites
                         const unmetPrerequisites = course.prerequisites?.filter(prereqCode => {
                             const isPrereqMetOnRecord = registeredCourseIds.some(regId => {
                                 const registeredPrereq = allCourses.find(c => c.id === regId && c.code === prereqCode);
@@ -691,7 +688,6 @@ export default function CoursesPage() {
                     creditStatus.variant === "warning" || creditStatus.variant === "destructive" ? "text-destructive" : "text-green-600 dark:text-green-400"
                 }>{creditStatus.credits}</span>
                 </p>
-                { /* Only show credit status alert if not "info" (i.e. specific period selected) AND (registration is open OR there are credits) */ }
                 { creditStatus.variant !== "info" && (currentRegistrationMeta.isOpen || creditStatus.credits > 0) && ( 
                    <Alert variant={creditStatus.variant === "success" ? "default" : creditStatus.variant} className="mt-2">
                     {creditStatus.variant === "success" ? <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" /> : <AlertCircle className="h-4 w-4" />}
@@ -699,7 +695,6 @@ export default function CoursesPage() {
                     <AlertDescription>{creditStatus.message}</AlertDescription>
                   </Alert>
                 )}
-                 { /* Show info alert if filters are "all" or registration is closed with no credits */ }
                  { creditStatus.variant === "info" && (
                     <Alert variant="default" className="mt-2">
                         <Info className="h-4 w-4" />
