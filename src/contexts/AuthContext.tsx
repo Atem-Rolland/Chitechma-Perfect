@@ -35,11 +35,19 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Mock departments for initial student profile creation if not specified elsewhere
-// In a real app, department/level would likely be set via an admin panel or a more detailed student onboarding.
+// MOCK_INITIAL_STUDENT_DETAILS:
+// This object provides fallback default academic details for students.
+// In a real application:
+// - These details (department, level, program, academicYear, semester) would be 
+//   formally set by university administration when a student record is created or updated in Firestore.
+// - They would not be hardcoded as defaults in the frontend context.
+// - The student profile would be the single source of truth for this information.
+// This mock is purely for development convenience to allow student-specific features 
+// (like course filtering) to function without a full admin backend for managing student records.
 const MOCK_INITIAL_STUDENT_DETAILS = {
   department: "Department of computer engineering and system maintenance", // Example default
-  level: 100, // Example default
+  level: 400, // Example default, changed from 100 to 400 for better testing with 400-level courses
+  program: "B.Eng. Computer Engineering and System Maintenance", // Example default program
   currentAcademicYear: "2024/2025", // Example default
   currentSemester: "First Semester", // Example default
 };
@@ -61,6 +69,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         ...userProfileData,
         department: userProfileData.department || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.department : undefined),
         level: userProfileData.level || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.level : undefined),
+        program: userProfileData.program || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.program : undefined),
         currentAcademicYear: userProfileData.currentAcademicYear || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.currentAcademicYear : undefined),
         currentSemester: userProfileData.currentSemester || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.currentSemester : undefined),
       };
@@ -68,7 +77,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setRole(completeProfile.role);
       return completeProfile;
     } else {
-      console.warn("User profile not found in Firestore for UID:", firebaseUser.uid);
+      console.warn("User profile not found in Firestore for UID:", firebaseUser.uid, "A new profile might be created if this is a new registration.");
+      // For a brand new registration, profile might not exist yet until `register` function creates it.
+      // If it's an existing user and profile is missing, that's an issue.
       setProfile(null);
       setRole(null);
       return null;
@@ -115,6 +126,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       ...(userRole === 'student' && {
         department: MOCK_INITIAL_STUDENT_DETAILS.department,
         level: MOCK_INITIAL_STUDENT_DETAILS.level,
+        program: MOCK_INITIAL_STUDENT_DETAILS.program,
         currentAcademicYear: MOCK_INITIAL_STUDENT_DETAILS.currentAcademicYear,
         currentSemester: MOCK_INITIAL_STUDENT_DETAILS.currentSemester,
       }),

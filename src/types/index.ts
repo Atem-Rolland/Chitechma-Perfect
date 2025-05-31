@@ -11,6 +11,7 @@ export interface UserProfile {
   role: Role;
   department?: string; // Student's department
   level?: number; // Student's current level
+  program?: string; // Student's program of study
   currentAcademicYear?: string; // Student's current academic year
   currentSemester?: string; // Student's current semester
   createdAt?: any; // Firestore Timestamp
