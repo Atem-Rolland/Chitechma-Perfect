@@ -49,14 +49,17 @@ export interface Course {
 }
 
 export interface Grade {
-  id: string;
-  studentId: string;
-  courseId: string;
-  term: string; // e.g., "First Semester 2024/2025"
-  score: number;
+  id: string; // Unique ID for the grade entry
+  studentId: string; // Links to UserProfile.uid // In a real app, this would be fetched based on logged-in user
+  courseId: string; // Links to Course.id
+  courseCode: string;
+  courseName: string;
+  credits: number;
+  score: number; // e.g., 75 (0-100)
   gradeLetter: string; // e.g., "A", "B+", "C"
-  resultPDF_URL?: string;
-  // Add other grade-specific fields
+  gradePoint: number; // e.g., 4.0, 3.5, 2.0 (based on university scale)
+  academicYear: string; // e.g., "2023/2024"
+  semester: string; // e.g., "First Semester"
 }
 
 export interface Payment {
