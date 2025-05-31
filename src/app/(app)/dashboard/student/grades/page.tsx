@@ -92,13 +92,13 @@ export default function ViewGradesPage() {
   const [selectedGradeForDetails, setSelectedGradeForDetails] = useState<Grade | null>(null);
 
   const academicYears = useMemo(() => {
-    const years = new Set(allGrades.map(grade => grade.academicYear));
-    return ["all", ...Array.from(years).sort((a, b) => b.localeCompare(a))]; 
-  }, [allGrades]);
+    // Use a predefined list of academic years for the filter
+    return ["all", "2023/2024", "2024/2025", "2025/2026"];
+  }, []);
 
   const semesters = useMemo(() => {
     const semSet = new Set(allGrades.map(grade => grade.semester));
-    return ["all", "First Semester", "Second Semester", "Resit Semester"].filter(s => s === "all" || semSet.has(s)); // Ensure order and availability
+    return ["all", "First Semester", "Second Semester", "Resit Semester"].filter(s => s === "all" || semSet.has(s)); 
   }, [allGrades]);
 
   useEffect(() => {
@@ -115,7 +115,7 @@ export default function ViewGradesPage() {
         const latestYear = fetchedGrades.reduce((latest, grade) => grade.academicYear > latest ? grade.academicYear : latest, "");
         const gradesInLatestYear = fetchedGrades.filter(g => g.academicYear === latestYear);
         const latestSemesterInYear = gradesInLatestYear.reduce((latest, grade) => {
-            const order = {"First Semester": 3, "Second Semester": 2, "Resit Semester": 1}; // Higher number = more recent for sorting
+            const order = {"First Semester": 3, "Second Semester": 2, "Resit Semester": 1}; 
             return (order[grade.semester as keyof typeof order] || 0) > (order[latest as keyof typeof order] || 0) ? grade.semester : latest;
         }, "");
         
@@ -359,3 +359,4 @@ export default function ViewGradesPage() {
     </motion.div>
   );
 }
+
