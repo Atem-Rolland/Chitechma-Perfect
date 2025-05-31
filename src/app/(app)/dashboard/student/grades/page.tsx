@@ -13,14 +13,30 @@ import Image from "next/image";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
 
-// Simplified Grade Point mapping (Example)
+// Updated Grade Point mapping as per new requirements
+// A pass is from C (C, C+, B, B+, A, A+ are passes). D, D+, F are fails.
 const GRADE_POINTS: Record<string, number> = {
-  "A": 4.0, "A-": 3.7,
-  "B+": 3.3, "B": 3.0, "B-": 2.7,
-  "C+": 2.3, "C": 2.0, "C-": 1.7,
-  "D+": 1.3, "D": 1.0,
-  "F": 0.0,
+  "A+": 4.0, "A": 4.0, 
+  "B+": 3.5, "B": 3.0, 
+  "C+": 2.5, "C": 2.0, 
+  "D+": 0.0, // Fail
+  "D": 0.0,  // Fail
+  "F": 0.0,   // Fail
 };
+
+// Helper to assign grade letter based on score (example boundaries)
+function getGradeLetterFromScore(score: number): string {
+  if (score >= 90) return "A+";
+  if (score >= 80) return "A";
+  if (score >= 75) return "B+";
+  if (score >= 70) return "B";
+  if (score >= 65) return "C+";
+  if (score >= 60) return "C"; // Pass
+  if (score >= 55) return "D+"; // Fail
+  if (score >= 50) return "D";  // Fail
+  return "F"; // Fail
+}
+
 
 // Mock data fetching function
 async function fetchMockGrades(studentId: string): Promise<Grade[]> {
@@ -28,26 +44,41 @@ async function fetchMockGrades(studentId: string): Promise<Grade[]> {
   await new Promise(resolve => setTimeout(resolve, 1000));
   
   // In a real app, studentId would be used to fetch specific student's grades
-  const mockGrades: Grade[] = [
+  const mockScores: { courseId: string, courseCode: string, courseName: string, credits: number, score: number, academicYear: string, semester: string }[] = [
     // 2023/2024 - First Semester
-    { id: "G001", studentId, courseId: "CSE301", courseCode: "CSE301", courseName: "Introduction to Algorithms", credits: 3, score: 85, gradeLetter: "A", gradePoint: GRADE_POINTS["A"], academicYear: "2023/2024", semester: "First Semester" },
-    { id: "G002", studentId, courseId: "MTH201", courseCode: "MTH201", courseName: "Calculus I", credits: 4, score: 78, gradeLetter: "B+", gradePoint: GRADE_POINTS["B+"], academicYear: "2023/2024", semester: "First Semester" },
-    { id: "G003", studentId, courseId: "PHY205", courseCode: "PHY205", courseName: "General Physics I", credits: 3, score: 68, gradeLetter: "C+", gradePoint: GRADE_POINTS["C+"], academicYear: "2023/2024", semester: "First Semester" },
+    { studentId, courseId: "CSE301", courseCode: "CSE301", courseName: "Introduction to Algorithms", credits: 3, score: 85, academicYear: "2023/2024", semester: "First Semester" },
+    { studentId, courseId: "MTH201", courseCode: "MTH201", courseName: "Calculus I", credits: 4, score: 78, academicYear: "2023/2024", semester: "First Semester" },
+    { studentId, courseId: "PHY205", courseCode: "PHY205", courseName: "General Physics I", credits: 3, score: 68, academicYear: "2023/2024", semester: "First Semester" },
 
     // 2023/2024 - Second Semester
-    { id: "G004", studentId, courseId: "CSE302", courseCode: "CSE302", courseName: "Database Systems", credits: 3, score: 92, gradeLetter: "A", gradePoint: GRADE_POINTS["A"], academicYear: "2023/2024", semester: "Second Semester" },
-    { id: "G005", studentId, courseId: "ENG202", courseCode: "ENG202", courseName: "Communication Skills II", credits: 2, score: 75, gradeLetter: "B", gradePoint: GRADE_POINTS["B"], academicYear: "2023/2024", semester: "Second Semester" },
-    
+    { studentId, courseId: "CSE302", courseCode: "CSE302", courseName: "Database Systems", credits: 3, score: 92, academicYear: "2023/2024", semester: "Second Semester" },
+    { studentId, courseId: "ENG202", courseCode: "ENG202", courseName: "Communication Skills II", credits: 2, score: 72, academicYear: "2023/2024", semester: "Second Semester" },
+    { studentId, courseId: "CSE308", courseCode: "CSE308", courseName: "Operating Systems", credits: 3, score: 58, academicYear: "2023/2024", semester: "Second Semester" }, // Example of D+
+
     // 2024/2025 - First Semester
-    { id: "G006", studentId, courseId: "CSE401", courseCode: "CSE401", courseName: "Mobile Application Development", credits: 3, score: 88, gradeLetter: "A", gradePoint: GRADE_POINTS["A"], academicYear: "2024/2025", semester: "First Semester" },
-    { id: "G007", studentId, courseId: "CSE409", courseCode: "CSE409", courseName: "Software Development and OOP", credits: 3, score: 72, gradeLetter: "B-", gradePoint: GRADE_POINTS["B-"], academicYear: "2024/2025", semester: "First Semester" },
-    { id: "G008", studentId, courseId: "MGT403", courseCode: "MGT403", courseName: "Research Methodology", credits: 3, score: 81, gradeLetter: "A-", gradePoint: GRADE_POINTS["A-"], academicYear: "2024/2025", semester: "First Semester" },
-    { id: "G009", studentId, courseId: "CSE405", courseCode: "CSE405", courseName: "Embedded Systems", credits: 3, score: 65, gradeLetter: "C", gradePoint: GRADE_POINTS["C"], academicYear: "2024/2025", semester: "First Semester" },
-    
-    // Example for a course not yet graded or in progress for the current semester
-    // { id: "G010", studentId, courseId: "NES403", courseCode: "NES403", courseName: "Modeling in Information System", credits: 3, score: 0, gradeLetter: "NG", gradePoint: 0, academicYear: "2024/2025", semester: "First Semester" },
+    { studentId, courseId: "CSE401", courseCode: "CSE401", courseName: "Mobile Application Development", credits: 3, score: 88, academicYear: "2024/2025", semester: "First Semester" },
+    { studentId, courseId: "CSE409", courseCode: "CSE409", courseName: "Software Development and OOP", credits: 3, score: 72, academicYear: "2024/2025", semester: "First Semester" },
+    { studentId, courseId: "MGT403", courseCode: "MGT403", courseName: "Research Methodology", credits: 3, score: 81, academicYear: "2024/2025", semester: "First Semester" },
+    { studentId, courseId: "CSE405", courseCode: "CSE405", courseName: "Embedded Systems", credits: 3, score: 62, academicYear: "2024/2025", semester: "First Semester" }, // Example of C
+    { studentId, courseId: "NES403", courseCode: "NES403", courseName: "Modeling in Information System", credits: 3, score: 45, academicYear: "2024/2025", semester: "First Semester" }, // Example of F
   ];
-  return mockGrades;
+
+  return mockScores.map((gradeData, index) => {
+    const gradeLetter = getGradeLetterFromScore(gradeData.score);
+    return {
+      id: `G${String(index + 1).padStart(3, '0')}`,
+      studentId: studentId,
+      courseId: gradeData.courseId,
+      courseCode: gradeData.courseCode,
+      courseName: gradeData.courseName,
+      credits: gradeData.credits,
+      score: gradeData.score,
+      gradeLetter: gradeLetter,
+      gradePoint: GRADE_POINTS[gradeLetter] !== undefined ? GRADE_POINTS[gradeLetter] : 0.0,
+      academicYear: gradeData.academicYear,
+      semester: gradeData.semester,
+    };
+  });
 }
 
 export default function ViewGradesPage() {
@@ -55,13 +86,13 @@ export default function ViewGradesPage() {
   const [allGrades, setAllGrades] = useState<Grade[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState({
-    academicYear: "2024/2025", // Default to a recent year
-    semester: "First Semester",  // Default to a recent semester
+    academicYear: "2024/2025", 
+    semester: "First Semester",  
   });
 
   const academicYears = useMemo(() => {
     const years = new Set(allGrades.map(grade => grade.academicYear));
-    return ["all", ...Array.from(years).sort((a, b) => b.localeCompare(a))]; // Sort descending
+    return ["all", ...Array.from(years).sort((a, b) => b.localeCompare(a))]; 
   }, [allGrades]);
 
   const semesters = useMemo(() => {
@@ -72,19 +103,17 @@ export default function ViewGradesPage() {
   useEffect(() => {
     async function loadGrades() {
       if (!user?.uid) {
-        setIsLoading(false); // Stop loading if no user
+        setIsLoading(false); 
         return;
       }
       setIsLoading(true);
-      const fetchedGrades = await fetchMockGrades(user.uid); // Pass studentId
+      const fetchedGrades = await fetchMockGrades(user.uid); 
       setAllGrades(fetchedGrades);
 
-      // Set initial filters to the most recent available if data exists
       if (fetchedGrades.length > 0) {
         const latestYear = fetchedGrades.reduce((latest, grade) => grade.academicYear > latest ? grade.academicYear : latest, "");
         const gradesInLatestYear = fetchedGrades.filter(g => g.academicYear === latestYear);
         const latestSemester = gradesInLatestYear.reduce((latest, grade) => {
-            // Simple semester preference: First > Second > Resit
             const order = {"First Semester": 3, "Second Semester": 2, "Resit Semester": 1};
             return (order[grade.semester as keyof typeof order] || 0) > (order[latest as keyof typeof order] || 0) ? grade.semester : latest;
         }, "");
@@ -113,8 +142,12 @@ export default function ViewGradesPage() {
 
   const calculateGpa = (gradesList: Grade[]): number => {
     if (!gradesList || gradesList.length === 0) return 0;
-    const totalQualityPoints = gradesList.reduce((sum, grade) => sum + (grade.gradePoint * grade.credits), 0);
-    const totalCreditsAttempted = gradesList.reduce((sum, grade) => sum + grade.credits, 0);
+    // Filter out grades that are 'NG' (Not Graded) or similar, if applicable, before calculation
+    const gradedCourses = gradesList.filter(grade => grade.gradeLetter && grade.gradeLetter !== "NG" && grade.gradePoint !== undefined);
+    if (gradedCourses.length === 0) return 0;
+
+    const totalQualityPoints = gradedCourses.reduce((sum, grade) => sum + (grade.gradePoint * grade.credits), 0);
+    const totalCreditsAttempted = gradedCourses.reduce((sum, grade) => sum + grade.credits, 0);
     return totalCreditsAttempted > 0 ? parseFloat((totalQualityPoints / totalCreditsAttempted).toFixed(2)) : 0;
   };
 
@@ -132,8 +165,8 @@ export default function ViewGradesPage() {
     if (gpa === null) return null;
     if (gpa >= 3.5) return { variant: "success", title: "Excellent Standing", icon: <TrendingUp className="h-5 w-5 text-green-500" /> };
     if (gpa >= 2.5) return { variant: "default", title: "Good Standing", icon: <CheckCircle className="h-5 w-5 text-primary" /> };
-    if (gpa >= 2.0) return { variant: "warning", title: "Academic Probation Watch", icon: <AlertCircle className="h-5 w-5 text-yellow-500" /> };
-    return { variant: "destructive", title: "Academic Warning", icon: <TrendingDown className="h-5 w-5 text-destructive" /> };
+    if (gpa >= 2.0) return { variant: "warning", title: "Satisfactory Standing", icon: <AlertCircle className="h-5 w-5 text-yellow-500" /> }; // Pass is C (2.0)
+    return { variant: "destructive", title: "Academic Warning", icon: <TrendingDown className="h-5 w-5 text-destructive" /> }; // Below 2.0
   };
 
   const semesterGpaAlert = getGpaAlert(semesterGpa);
@@ -153,14 +186,14 @@ export default function ViewGradesPage() {
           My Grades
         </h1>
         <p className="text-muted-foreground text-lg">
-          View your grades by academic year and semester.
+          View your grades by academic year and semester. The displayed score (/100) is the total mark used for grading.
         </p>
       </header>
 
       <Card>
         <CardHeader>
           <CardTitle>Filter Grades</CardTitle>
-          <CardDescription>Select academic year and semester to view specific results.</CardDescription>
+          <CardDescription>Select academic year and semester to view specific results. A pass grade starts from 'C'.</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Select value={filters.academicYear} onValueChange={(value) => handleFilterChange("academicYear", value)}>
@@ -208,12 +241,12 @@ export default function ViewGradesPage() {
                     </TableHeader>
                     <TableBody>
                         {filteredGrades.map(grade => (
-                        <TableRow key={grade.id}>
+                        <TableRow key={grade.id} className={GRADE_POINTS[grade.gradeLetter] === 0.0 ? "bg-destructive/10 dark:bg-destructive/20" : ""}>
                             <TableCell className="font-medium">{grade.courseCode}</TableCell>
                             <TableCell>{grade.courseName}</TableCell>
                             <TableCell className="text-center">{grade.credits}</TableCell>
                             <TableCell className="text-center">{grade.score !== null ? grade.score : "NG"}</TableCell>
-                            <TableCell className="text-center font-semibold">{grade.gradeLetter}</TableCell>
+                            <TableCell className={`text-center font-semibold ${GRADE_POINTS[grade.gradeLetter] === 0.0 ? "text-destructive" : ""}`}>{grade.gradeLetter}</TableCell>
                             <TableCell className="text-center">{grade.gradePoint.toFixed(1)}</TableCell>
                         </TableRow>
                         ))}
@@ -260,7 +293,7 @@ export default function ViewGradesPage() {
                   </Alert>
                 )}
               </div>
-              {semesterGpa !== null && ( // Show CGPA separately if a specific semester is selected
+              {semesterGpa !== null && ( 
                 <div className="pt-3 border-t">
                     <h3 className="text-sm font-medium text-muted-foreground">Cumulative GPA (CGPA)</h3>
                     <p className={`text-2xl font-bold ${cumulativeGpaAlert?.variant === 'destructive' ? 'text-destructive' : cumulativeGpaAlert?.variant === 'warning' ? 'text-yellow-500' : 'text-primary'}`}>{cumulativeGpa.toFixed(2)}</p>
@@ -275,7 +308,7 @@ export default function ViewGradesPage() {
             </CardContent>
             <CardFooter>
                 <p className="text-xs text-muted-foreground">
-                    GPA calculations are based on the CHITECHMA University grading scale. Contact administration for discrepancies.
+                    GPA calculations are based on the CHITECHMA University grading scale. 'C' is the minimum pass grade. Contact administration for discrepancies.
                 </p>
             </CardFooter>
           </Card>
@@ -284,3 +317,4 @@ export default function ViewGradesPage() {
     </motion.div>
   );
 }
+
