@@ -115,7 +115,7 @@ export default function GradeAppealsPage() {
               rows={6}
               value={appealReason}
               onChange={(e) => setAppealReason(e.target.value)}
-              disabled // Keep textarea disabled for now
+              // Removed disabled attribute
             />
           </div>
           
@@ -148,7 +148,7 @@ export default function GradeAppealsPage() {
           </Button>
           <p className="text-sm text-muted-foreground text-center">
             Note: The grade appeal submission system is currently under development. 
-            This page demonstrates the UI for selecting a file.
+            This page demonstrates the UI for inputting reasons and selecting a file.
           </p>
         </CardContent>
       </Card>
