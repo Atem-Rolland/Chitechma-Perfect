@@ -16,6 +16,7 @@ import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
+import { useToast } from "@/hooks/use-toast";
 
 const MIN_CREDITS = 18;
 const MAX_CREDITS = 24;
@@ -40,11 +41,13 @@ async function fetchCourses(): Promise<Course[]> {
   await new Promise(resolve => setTimeout(resolve, 1000));
   const mockCourses: Course[] = [
     // Computer Engineering and System Maintenance
-    { id: "CSE401_CESM", title: "Mobile Application Development", code: "CSE401", description: "Detailed course description for Mobile Application Development.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
+    { id: "CSE401_CESM", title: "Mobile Application Development", code: "CSE401", description: "Detailed course description for Mobile Application Development.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: ["CSE301"], semester: "First Semester", academicYear: "2024/2025" },
     { id: "CSE409_CESM", title: "Software Development and OOP", code: "CSE409", description: "Detailed course description for Software Development and OOP.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_CESM", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.CESM, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "CSE405_CESM", title: "Embedded Systems", code: "CSE405", description: "Detailed course description for Embedded Systems.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "NES403_CESM", title: "Modeling in Information System", code: "NES403", description: "Detailed course description for Modeling in Information System.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
+    { id: "CSE301_CESM", title: "Introduction to Algorithms", code: "CSE301", description: "Fundamental algorithms and data structures.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2023/2024" },
+
 
     // Network Engineering and Security
     { id: "NES405_NES", title: "Scripting and Programming", code: "NES405", description: "Detailed course description for Scripting and Programming.", department: DEPARTMENTS.NES, lecturerId: "lect006", lecturerName: "Dr. Oumarou", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
@@ -145,6 +148,7 @@ export default function CoursesPage() {
   });
   const [registeredCourseIds, setRegisteredCourseIds] = useState<string[]>([]);
   const [selectedCourseForDetail, setSelectedCourseForDetail] = useState<Course | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     async function loadCourses() {
@@ -193,33 +197,53 @@ export default function CoursesPage() {
 
   const handleRegisterCourse = (course: Course) => {
     if (!registrationMeta.isOpen) {
-      alert("Registration is currently closed."); // Replace with Toaster
+      toast({ title: "Registration Closed", description: "Course registration is currently closed.", variant: "destructive" });
       return;
     }
     if (totalRegisteredCredits + course.credits > MAX_CREDITS) {
-      alert(`Cannot register. Exceeds maximum credit load of ${MAX_CREDITS}.`); // Replace with Toaster
+      toast({ title: "Credit Limit Exceeded", description: `Cannot register. Exceeds maximum credit load of ${MAX_CREDITS}.`, variant: "destructive" });
       return;
     }
-    if (!registeredCourseIds.includes(course.id)) {
-      const unmetPrerequisites = course.prerequisites?.filter(prereqCode => 
-        !registeredCourseIds.includes(allCourses.find(c => c.code === prereqCode)?.id || "") &&
-        !allCourses.find(c => c.code === prereqCode && registeredCourseIds.includes(c.id)) 
-      );
-
-      if (unmetPrerequisites && unmetPrerequisites.length > 0) {
-        alert(`Cannot register ${course.code}. Missing prerequisites: ${unmetPrerequisites.join(', ')}.`);
-        return;
-      }
-      setRegisteredCourseIds(prev => [...prev, course.id]);
+    if (registeredCourseIds.includes(course.id)) {
+      toast({ title: "Already Registered", description: `You are already registered for ${course.code} - ${course.title}.`, variant: "default" });
+      return;
     }
+
+    const unmetPrerequisites = course.prerequisites?.filter(prereqCode => {
+        const potentialPrereqCourses = allCourses.filter(c => c.code === prereqCode);
+        if (potentialPrereqCourses.length === 0 && course.prerequisites && course.prerequisites.includes(prereqCode) ) { 
+            // This implies a prerequisite code is listed but no such course exists in allCourses - data integrity issue or prereq from different non-loaded year/level
+            // For now, consider it unmet if not found, though ideally prereqs should be resolvable to an existing course.
+            // console.warn(`Prerequisite course code ${prereqCode} for ${course.code} not found in available courses.`);
+            // To be strict, if a prereq code doesn't map to any course, it can't be met.
+             return true; 
+        }
+        const isPrereqMet = potentialPrereqCourses.some(pc => registeredCourseIds.includes(pc.id));
+        return !isPrereqMet;
+      });
+
+    if (unmetPrerequisites && unmetPrerequisites.length > 0) {
+      toast({
+        title: "Prerequisites Not Met",
+        description: `Cannot register ${course.code}. Missing prerequisites: ${unmetPrerequisites.join(', ')}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    setRegisteredCourseIds(prev => [...prev, course.id]);
+    toast({ title: "Course Registered", description: `${course.code} - ${course.title} has been successfully registered.`, variant: "default" });
   };
 
   const handleDropCourse = (courseId: string) => {
      if (!registrationMeta.isOpen) {
-      alert("Cannot drop courses, registration is closed."); // Replace with Toaster
+      toast({ title: "Registration Closed", description: "Cannot drop courses, registration is closed.", variant: "destructive" });
       return;
     }
+    const courseToDrop = allCourses.find(c => c.id === courseId);
     setRegisteredCourseIds(prev => prev.filter(id => id !== courseId));
+    if (courseToDrop) {
+        toast({ title: "Course Dropped", description: `${courseToDrop.code} - ${courseToDrop.title} has been dropped.`, variant: "default" });
+    }
   };
 
   const getCreditStatus = () => {
@@ -484,6 +508,5 @@ export default function CoursesPage() {
     </motion.div>
   );
 }
-
 
     
