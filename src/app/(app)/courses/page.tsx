@@ -44,12 +44,12 @@ async function fetchCourses(): Promise<Course[]> {
   const mockCourses: Course[] = [
     // --- 400 Level, First Semester, 2024/2025 Academic Year ---
     // CESM
-    { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401", description: "Detailed course description for Mobile Application Development.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 10-12, Wed 10-11, Lab Hall 1", prerequisites: ["CSE301"], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "CSE409_CESM_Y2425_S1", title: "Software Development and OOP", code: "CSE409", description: "Detailed course description for Software Development and OOP.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Tue 14-16, Fri 8-9", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "MGT403_CESM_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology.", department: DEPARTMENTS.CESM, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "AMPHI200, Wed 14-17", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "CSE405_CESM_Y2425_S1", title: "Embedded Systems", code: "CSE405", description: "Detailed course description for Embedded Systems.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Thu 8-11", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "NES403_CESM_Y2425_S1", title: "Modeling in Information System", code: "NES403", description: "Detailed course description for Modeling in Information System.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Elective", level: 400, schedule: "Fri 11-13, CR10", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "CSE301_CESM_PRE", title: "Introduction to Algorithms", code: "CSE301", description: "Fundamental algorithms and data structures.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2023/2024" }, 
+    { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401", description: "Detailed course description for Mobile Application Development. Covers native and cross-platform development.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 10-12, Wed 10-11, Lab Hall 1", prerequisites: ["CSE301"], semester: "First Semester", academicYear: "2024/2025" },
+    { id: "CSE409_CESM_Y2425_S1", title: "Software Development and OOP", code: "CSE409", description: "Detailed course description for Software Development and OOP. Focuses on object-oriented principles and design patterns.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Tue 14-16, Fri 8-9", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
+    { id: "MGT403_CESM_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology. Introduction to research methods and academic writing.", department: DEPARTMENTS.CESM, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "AMPHI200, Wed 14-17", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
+    { id: "CSE405_CESM_Y2425_S1", title: "Embedded Systems", code: "CSE405", description: "Detailed course description for Embedded Systems. Design and programming of embedded systems.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Thu 8-11", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
+    { id: "NES403_CESM_Y2425_S1", title: "Modeling in Information System", code: "NES403", description: "Detailed course description for Modeling in Information System. Techniques for system modeling.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Elective", level: 400, schedule: "Fri 11-13, CR10", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
+    { id: "CSE301_CESM_PRE", title: "Introduction to Algorithms", code: "CSE301", description: "Fundamental algorithms and data structures. Prerequisite course.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2023/2024" }, 
     // NES
     { id: "NES405_NES_Y2425_S1", title: "Scripting and Programming", code: "NES405", description: "Detailed course description for Scripting and Programming.", department: DEPARTMENTS.NES, lecturerId: "lect006", lecturerName: "Dr. Oumarou", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 8-10, CR22", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "NES409_NES_Y2425_S1", title: "Network Laboratory", code: "NES409", description: "Detailed course description for Network Laboratory.", department: DEPARTMENTS.NES, lecturerId: "lect007", lecturerName: "Prof. Kamga", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Wed 8-10 (Lab), Fri 14-15 (Lecture)", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
@@ -292,7 +292,7 @@ export default function CoursesPage() {
   }, [allCourses, registeredCourseIds]);
 
   const totalRegisteredCredits = useMemo(() => {
-    // Calculate credits only for the courses matching the student's current academic context or the selected filters
+    // Calculate credits only for the courses matching the student's current academic context OR the selected filters
     const relevantCourses = registeredCoursesList.filter(course => 
       course.academicYear === filters.academicYear && course.semester === filters.semester
     );
@@ -331,21 +331,13 @@ export default function CoursesPage() {
     }
 
     const unmetPrerequisites = course.prerequisites?.filter(prereqCode => {
-        const potentialPrereqCourses = allCourses.filter(c => c.code === prereqCode && (c.academicYear < course.academicYear || (c.academicYear === course.academicYear && c.semester < course.semester)));
-        
         const isPrereqMetOnRecord = registeredCourseIds.some(regId => {
             const registeredPrereq = allCourses.find(c => c.id === regId && c.code === prereqCode);
             // This is a basic check assuming any prior registration of the code means it's met.
             // A real system would check for a passing grade in a completed prerequisite.
             return !!registeredPrereq; 
         });
-
-        if (potentialPrereqCourses.length === 0 && course.prerequisites?.includes(prereqCode)) {
-            console.warn(`Prerequisite code ${prereqCode} for course ${course.code} not found in a prior term in allCourses.`);
-            // If not found in records and no potential prior course, it's unmet if not already on student record
-            return !isPrereqMetOnRecord; 
-        }
-        return !isPrereqMetOnRecord && course.prerequisites?.includes(prereqCode);
+        return !isPrereqMetOnRecord;
       });
 
     if (unmetPrerequisites && unmetPrerequisites.length > 0) {
@@ -413,6 +405,7 @@ export default function CoursesPage() {
   };
   
   const creditStatus = getCreditStatus();
+  const coursesForSelectedPeriod = registeredCoursesList.filter(c => c.academicYear === filters.academicYear && c.semester === filters.semester);
 
   return (
     <motion.div
@@ -541,14 +534,12 @@ export default function CoursesPage() {
                 <TableBody>
                   {filteredCourses.map(course => {
                     const isRegistered = registeredCourseIds.includes(course.id);
-                    // Can only register if reg is open for THAT course's semester/year, and credit limits are met
                     const canRegister = !isRegistered && 
                                         currentRegistrationMeta.isOpen &&
                                         course.academicYear === currentRegistrationMeta.academicYear &&
                                         course.semester === currentRegistrationMeta.semester &&
                                         (totalRegisteredCredits + course.credits <= MAX_CREDITS);
                     
-                    // Can only drop if reg is open for THAT course's semester/year
                     const canDrop = isRegistered && 
                                     currentRegistrationMeta.isOpen &&
                                     course.academicYear === currentRegistrationMeta.academicYear &&
@@ -641,7 +632,7 @@ export default function CoursesPage() {
                     creditStatus.variant === "warning" || creditStatus.variant === "destructive" ? "text-destructive" : "text-green-600 dark:text-green-400"
                 }>{creditStatus.credits}</span>
                 </p>
-                { creditStatus.variant !== "info" && (currentRegistrationMeta.isOpen || creditStatus.credits > 0) && ( // Show status if registration is open OR if credits are registered even if closed
+                { creditStatus.variant !== "info" && (currentRegistrationMeta.isOpen || creditStatus.credits > 0) && ( 
                    <Alert variant={creditStatus.variant === "success" ? "default" : creditStatus.variant} className="mt-2">
                     {creditStatus.variant === "success" ? <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" /> : <AlertCircle className="h-4 w-4" />}
                     <AlertTitle>{creditStatus.variant === "warning" ? "Warning" : creditStatus.variant === "destructive" ? "Error" : "Status"}</AlertTitle>
@@ -655,7 +646,21 @@ export default function CoursesPage() {
                     </Alert>
                  )}
               </div>
-              <Button className="w-full" disabled={registeredCoursesList.length === 0 || filters.academicYear === "all" || filters.semester === "all"}>
+              <Button 
+                className="w-full" 
+                disabled={filters.academicYear === "all" || filters.semester === "all" || creditStatus.credits === 0}
+                onClick={() => {
+                  if (filters.academicYear !== "all" && filters.semester !== "all" && creditStatus.credits > 0) {
+                    toast({ 
+                      title: "Form B Download", 
+                      description: `Generating Form B for ${filters.semester}, ${filters.academicYear}. (This is a simulation - PDF generation is under development.) Courses: ${coursesForSelectedPeriod.map(c => c.code).join(', ')}. Credits: ${creditStatus.credits}.`,
+                      duration: 5000,
+                    });
+                    // In a real app, you would trigger PDF generation here.
+                    // e.g., generatePdf(coursesForSelectedPeriod, profile, filters.semester, filters.academicYear);
+                  }
+                }}
+              >
                 <Download className="mr-2 h-4 w-4"/> Download Form B (PDF)
               </Button>
             </CardFooter>
@@ -727,5 +732,7 @@ export default function CoursesPage() {
     </motion.div>
   );
 }
+
+    
 
     
