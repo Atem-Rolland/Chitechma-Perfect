@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { BookOpen, GraduationCap, CreditCard, FileText, Download, User, Edit3, Settings, LogOut, HelpCircle, History, ChevronDown, Info, Phone, Mail, MapPin } from "lucide-react";
+import { BookOpen, GraduationCap, CreditCard, FileText, Download, User, Edit3, Settings, LogOut, HelpCircle, History, ChevronDown, Info, Phone, Mail, MapPin, Smartphone } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,10 +19,10 @@ const enrolledCourses = [
 ];
 
 const tuitionStatus = {
-  totalDue: 2500,
-  paid: 2000,
-  balance: 500,
-  currency: 'USD',
+  totalDue: 1250000, // Example amount in XAF
+  paid: 1000000,   // Example amount in XAF
+  balance: 250000,  // Example amount in XAF
+  currency: 'XAF',
   dueDate: '2024-09-15',
 };
 
@@ -227,15 +227,15 @@ export function StudentDashboard() {
             <CardContent className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Total Due:</span>
-                <span className="font-semibold">{tuitionStatus.currency} {tuitionStatus.totalDue.toFixed(2)}</span>
+                <span className="font-semibold">{tuitionStatus.currency} {tuitionStatus.totalDue.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Amount Paid:</span>
-                <span className="font-semibold">{tuitionStatus.currency} {tuitionStatus.paid.toFixed(2)}</span>
+                <span className="font-semibold">{tuitionStatus.currency} {tuitionStatus.paid.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Balance:</span>
-                <span className="font-semibold text-destructive">{tuitionStatus.currency} {tuitionStatus.balance.toFixed(2)}</span>
+                <span className="font-semibold text-destructive">{tuitionStatus.currency} {tuitionStatus.balance.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Due Date:</span>
@@ -244,6 +244,9 @@ export function StudentDashboard() {
               <Button className="w-full mt-4" asChild>
                 <Link href="/dashboard/student/payments">Make a Payment</Link>
               </Button>
+              <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1 pt-2">
+                <Smartphone className="h-3 w-3" /> Supports MTN Mobile Money & Orange Money.
+              </p>
             </CardContent>
           </Card>
         </motion.div>
@@ -267,3 +270,5 @@ export function StudentDashboard() {
     </div>
   );
 }
+
+    

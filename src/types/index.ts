@@ -1,3 +1,4 @@
+
 import type { User as FirebaseUser } from 'firebase/auth';
 
 export type Role = "student" | "lecturer" | "admin" | "finance" | null;
@@ -53,7 +54,7 @@ export interface Payment {
   id: string;
   studentId: string;
   amount: number;
-  currency: string; // e.g., "USD", "NGN"
+  currency: string; // e.g., "XAF", "USD", "NGN"
   date: any; // Firestore Timestamp
   purpose: string; // e.g., "Tuition Fee - Fall 2024"
   status: "pending" | "completed" | "failed";
@@ -69,3 +70,5 @@ export interface Payment {
 //   password: z.string().min(6),
 // });
 // export type LoginFormData = z.infer<typeof LoginSchema>;
+
+    
