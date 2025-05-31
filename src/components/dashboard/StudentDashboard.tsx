@@ -26,7 +26,7 @@ const tuitionStatus = {
   dueDate: '2024-09-15',
 };
 
-const studentMockPersonalData = { // Renamed to avoid confusion with profile data
+const studentMockPersonalData = { // For details not yet in UserProfile
   matricule: "CUSMS/S00123",
   gender: "Female",
   dateOfBirth: "1999-08-25",
@@ -59,7 +59,7 @@ export function StudentDashboard() {
   };
 
   // Use profile data for academic context, with fallbacks or clear "N/A"
-  const academicProgram = profile?.program || "Program Not Set"; // Assuming program is added to UserProfile
+  const academicProgram = profile?.program || "Program Not Set"; 
   const studentDepartment = profile?.department || "Department Not Set";
   const studentLevel = profile?.level ? `Level ${profile.level}` : "Level Not Set";
   const currentAcademicYear = profile?.currentAcademicYear || "Academic Year Not Set";

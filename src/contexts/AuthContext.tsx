@@ -43,13 +43,15 @@ interface AuthProviderProps {
 // - They would not be hardcoded as defaults in the frontend context.
 // - The student profile would be the single source of truth for this information.
 // This mock is purely for development convenience to allow student-specific features 
-// (like course filtering) to function without a full admin backend for managing student records.
+// (like course filtering, dashboard display) to function without a full admin backend for managing student records.
+// Other personal details like matricule, DOB, POB, etc., are handled by mock data directly
+// in components like StudentDashboard.tsx if not part of the core UserProfile schema.
 const MOCK_INITIAL_STUDENT_DETAILS = {
-  department: "Department of computer engineering and system maintenance", // Example default
-  level: 400, // Example default, changed from 100 to 400 for better testing with 400-level courses
-  program: "B.Eng. Computer Engineering and System Maintenance", // Example default program
-  currentAcademicYear: "2024/2025", // Example default
-  currentSemester: "First Semester", // Example default
+  department: "Department of computer engineering and system maintenance", 
+  level: 400, 
+  program: "B.Eng. Computer Engineering and System Maintenance", 
+  currentAcademicYear: "2024/2025", 
+  currentSemester: "First Semester", 
 };
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
@@ -64,9 +66,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const userDocSnap = await getDoc(userDocRef);
     if (userDocSnap.exists()) {
       const userProfileData = userDocSnap.data() as UserProfile;
-      // Ensure all fields are present, provide defaults if necessary (especially for new fields)
+      // Ensure all fields are present, provide defaults if necessary
       const completeProfile: UserProfile = {
         ...userProfileData,
+        // Populate academic fields only if the role is student and they are missing
         department: userProfileData.department || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.department : undefined),
         level: userProfileData.level || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.level : undefined),
         program: userProfileData.program || (userProfileData.role === 'student' ? MOCK_INITIAL_STUDENT_DETAILS.program : undefined),
@@ -78,8 +81,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return completeProfile;
     } else {
       console.warn("User profile not found in Firestore for UID:", firebaseUser.uid, "A new profile might be created if this is a new registration.");
-      // For a brand new registration, profile might not exist yet until `register` function creates it.
-      // If it's an existing user and profile is missing, that's an issue.
       setProfile(null);
       setRole(null);
       return null;
@@ -122,7 +123,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       photoURL: firebaseUser.photoURL,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      // Add student-specific mock details if role is student
+      // Add student-specific mock details if role is student for immediate use
       ...(userRole === 'student' && {
         department: MOCK_INITIAL_STUDENT_DETAILS.department,
         level: MOCK_INITIAL_STUDENT_DETAILS.level,
