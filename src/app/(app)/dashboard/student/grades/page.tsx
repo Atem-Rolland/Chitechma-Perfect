@@ -7,78 +7,104 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import type { Grade, CaDetails } from "@/types";
-import { BookCheck, CalendarDays, BookOpen as SemesterIcon, BarChart3, TrendingUp, TrendingDown, CheckCircle, AlertCircle, Eye } from "lucide-react";
+import type { Grade, CaDetails, Course } from "@/types";
+import { BookCheck, CalendarDays, BookOpen as SemesterIcon, BarChart3, TrendingUp, TrendingDown, CheckCircle, AlertCircle, Eye, Info, HelpCircle } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
+import { DEPARTMENTS, ACADEMIC_YEARS, SEMESTERS, getGradeDetailsFromScore } from "@/config/data";
 
-const GRADE_POINTS: Record<string, number> = {
-  "A+": 4.0, "A": 4.0, 
-  "B+": 3.5, "B": 3.0, 
-  "C+": 2.5, "C": 2.0, 
-  "D+": 0.0, "D": 0.0, "F": 0.0,   
-};
-
-function getGradeLetterFromScore(score: number): string {
-  if (score >= 90) return "A+";
-  if (score >= 80) return "A";
-  if (score >= 75) return "B+";
-  if (score >= 70) return "B";
-  if (score >= 65) return "C+";
-  if (score >= 60) return "C"; 
-  if (score >= 55) return "D+"; 
-  if (score >= 50) return "D";  
-  return "F"; 
+// Fetch mock courses to get course details like name and credits
+// This simulates having a central course catalog.
+async function fetchAllCoursesMock(): Promise<Course[]> {
+  // In a real app, this would fetch from your actual course data source
+  // For now, using a simplified version of the mock data from courses/page.tsx
+  return [
+    // Level 200 CESM - First Semester
+    { id: "LAW101_CESM_Y2223_S1", title: "Introduction to Law", code: "LAW101", department: DEPARTMENTS.CESM, credits: 1, level: 200, semester: "First Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "General"},
+    { id: "ENG102_CESM_Y2223_S1", title: "English Language", code: "ENG102", department: DEPARTMENTS.CESM, credits: 1, level: 200, semester: "First Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "General"},
+    { id: "SWE111_CESM_Y2223_S1", title: "Introduction to Software Eng", code: "SWE111", department: DEPARTMENTS.CESM, credits: 3, level: 200, semester: "First Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "Compulsory"},
+    // Level 200 CESM - Second Semester
+    { id: "SWE92_CESM_Y2223_S2", title: "Computer Programming I", code: "SWE92", department: DEPARTMENTS.CESM, credits: 3, level: 200, semester: "Second Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "Compulsory"},
+    { id: "SWE94_CESM_Y2223_S2", title: "Data Structures and Algorithms", code: "SWE94", department: DEPARTMENTS.CESM, credits: 3, level: 200, semester: "Second Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "Compulsory"},
+    // Level 300 CESM - First Semester
+    { id: "CSE301_CESM_Y2324_S1", title: "Introduction to Algorithms", code: "CSE301", department: DEPARTMENTS.CESM, credits: 3, level: 300, semester: "First Semester", academicYear: "2023/2024", description: "", lecturerId: "" , type: "Compulsory"},
+    { id: "CSE303_CESM_Y2324_S1", title: "Web Technologies", code: "CSE303", department: DEPARTMENTS.CESM, credits: 3, level: 300, semester: "First Semester", academicYear: "2023/2024", description: "", lecturerId: "" , type: "Compulsory"},
+    // Level 300 CESM - Second Semester
+    { id: "CSE302_CESM_Y2324_S2", title: "Database Systems", code: "CSE302", department: DEPARTMENTS.CESM, credits: 3, level: 300, semester: "Second Semester", academicYear: "2023/2024", description: "", lecturerId: "" , type: "Compulsory"},
+    { id: "CSE308_CESM_Y2324_S2", title: "Operating Systems II", code: "CSE308", department: DEPARTMENTS.CESM, credits: 3, level: 300, semester: "Second Semester", academicYear: "2023/2024", description: "", lecturerId: "" , type: "Compulsory"},
+    // Level 400 CESM - First Semester
+    { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "Compulsory"},
+    { id: "CSE409_CESM_Y2425_S1", title: "Software Development and OOP", code: "CSE409", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "Compulsory"},
+    { id: "MGT403_CESM_Y2425_S1", title: "Research Methodology", code: "MGT403", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "General"},
+    { id: "CSE405_CESM_Y2425_S1", title: "Embedded Systems", code: "CSE405", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "Compulsory"},
+    { id: "NES403_CESM_Y2425_S1", title: "Modeling in Information System", code: "NES403", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "Elective"},
+  ];
 }
 
+
 // Mock data fetching function
-async function fetchMockGrades(studentId: string): Promise<Grade[]> {
+async function fetchMockGrades(studentId: string, allCourses: Course[]): Promise<Grade[]> {
   await new Promise(resolve => setTimeout(resolve, 1000));
   
-  const mockRawScores: { 
-    studentId: string, courseId: string, courseCode: string, courseName: string, credits: number, 
-    caDetails: CaDetails, examScore: number, academicYear: string, semester: string 
-  }[] = [
-    // 2023/2024 - First Semester
-    { studentId, courseId: "CSE301", courseCode: "CSE301", courseName: "Introduction to Algorithms", credits: 3, caDetails: { assignments: 5, groupWork: 4, attendance: 5, writtenCA: 13, totalCaScore: 27 }, examScore: 58, academicYear: "2023/2024", semester: "First Semester" }, // 27+58 = 85 (A)
-    { studentId, courseId: "MTH201", courseCode: "MTH201", courseName: "Calculus I", credits: 4, caDetails: { assignments: 4, groupWork: 3, attendance: 4, writtenCA: 12, totalCaScore: 23 }, examScore: 55, academicYear: "2023/2024", semester: "First Semester" }, // 23+55 = 78 (B+)
-    { studentId, courseId: "PHY205", courseCode: "PHY205", courseName: "General Physics I", credits: 3, caDetails: { assignments: 3, groupWork: 4, attendance: 5, writtenCA: 10, totalCaScore: 22 }, examScore: 46, academicYear: "2023/2024", semester: "First Semester" }, // 22+46 = 68 (C+)
+  const studentProfile = { department: DEPARTMENTS.CESM, level: 400 }; // Simulating Atem Rolland
 
-    // 2023/2024 - Second Semester
-    { studentId, courseId: "CSE302", courseCode: "CSE302", courseName: "Database Systems", credits: 3, caDetails: { assignments: 5, groupWork: 5, attendance: 5, writtenCA: 15, totalCaScore: 30 }, examScore: 62, academicYear: "2023/2024", semester: "Second Semester" }, // 30+62 = 92 (A+)
-    { studentId, courseId: "ENG202", courseCode: "ENG202", courseName: "Communication Skills II", credits: 2, caDetails: { assignments: 3, groupWork: 3, attendance: 4, writtenCA: 11, totalCaScore: 21 }, examScore: 51, academicYear: "2023/2024", semester: "Second Semester" }, // 21+51 = 72 (B)
-    { studentId, courseId: "CSE308", courseCode: "CSE308", courseName: "Operating Systems", credits: 3, caDetails: { assignments: 2, groupWork: 3, attendance: 3, writtenCA: 8, totalCaScore: 16 }, examScore: 42, academicYear: "2023/2024", semester: "Second Semester" }, // 16+42 = 58 (D+)
+  const grades: Grade[] = [];
+  let gradeIdCounter = 1;
 
-    // 2024/2025 - First Semester
-    { studentId, courseId: "CSE401", courseCode: "CSE401", courseName: "Mobile Application Development", credits: 3, caDetails: { assignments: 4, groupWork: 4, attendance: 5, writtenCA: 14, totalCaScore: 27 }, examScore: 61, academicYear: "2024/2025", semester: "First Semester" }, // 27+61 = 88 (A)
-    { studentId, courseId: "CSE409", courseCode: "CSE409", courseName: "Software Development and OOP", credits: 3, caDetails: { assignments: 3, groupWork: 4, attendance: 4, writtenCA: 11, totalCaScore: 22 }, examScore: 50, academicYear: "2024/2025", semester: "First Semester" }, // 22+50 = 72 (B)
-    { studentId, courseId: "MGT403", courseCode: "MGT403", courseName: "Research Methodology", credits: 3, caDetails: { assignments: 4, groupWork: 5, attendance: 5, writtenCA: 13, totalCaScore: 27 }, examScore: 54, academicYear: "2024/2025", semester: "First Semester" }, // 27+54 = 81 (A)
-    { studentId, courseId: "CSE405", courseCode: "CSE405", courseName: "Embedded Systems", credits: 3, caDetails: { assignments: 3, groupWork: 3, attendance: 3, writtenCA: 9, totalCaScore: 18 }, examScore: 44, academicYear: "2024/2025", semester: "First Semester" }, // 18+44 = 62 (C)
-    { studentId, courseId: "NES403", courseCode: "NES403", courseName: "Modeling in Information System", credits: 3, caDetails: { assignments: 1, groupWork: 2, attendance: 2, writtenCA: 5, totalCaScore: 10 }, examScore: 35, academicYear: "2024/2025", semester: "First Semester" }, // 10+35 = 45 (F)
+  const academicPeriods = [
+    { year: "2022/2023", semester: "First Semester", level: 200 },
+    { year: "2022/2023", semester: "Second Semester", level: 200 },
+    { year: "2023/2024", semester: "First Semester", level: 300 },
+    { year: "2023/2024", semester: "Second Semester", level: 300 },
+    { year: "2024/2025", semester: "First Semester", level: 400 },
+    // Add more periods if needed, e.g., Level 400 Second Semester
   ];
 
-  return mockRawScores.map((gradeData, index) => {
-    const totalScore = (gradeData.caDetails?.totalCaScore || 0) + (gradeData.examScore || 0);
-    const gradeLetter = getGradeLetterFromScore(totalScore);
-    return {
-      id: `G${String(index + 1).padStart(3, '0')}`,
-      studentId: studentId,
-      courseId: gradeData.courseId,
-      courseCode: gradeData.courseCode,
-      courseName: gradeData.courseName,
-      credits: gradeData.credits,
-      score: totalScore,
-      gradeLetter: gradeLetter,
-      gradePoint: GRADE_POINTS[gradeLetter] !== undefined ? GRADE_POINTS[gradeLetter] : 0.0,
-      academicYear: gradeData.academicYear,
-      semester: gradeData.semester,
-      caDetails: gradeData.caDetails,
-      examScore: gradeData.examScore,
-    };
-  });
+  for (const period of academicPeriods) {
+    if (period.level > studentProfile.level) continue; // Don't generate grades for future levels
+
+    const coursesForPeriod = allCourses.filter(
+      c => c.level === period.level && c.department === studentProfile.department && c.semester === period.semester
+    );
+
+    for (const course of coursesForPeriod) {
+      // Simulate CA and Exam scores
+      const totalCaScore = Math.floor(Math.random() * 15) + 15; // Random CA between 15-30
+      const examScore = Math.floor(Math.random() * (period.level === 200 ? 30 : 40)) + (period.level === 200 ? 30 : 30) ; // Random Exam Score, slightly lower for L200 to get varied grades
+      const finalScore = totalCaScore + examScore;
+      const gradeDetails = getGradeDetailsFromScore(finalScore);
+      const isPublished = Math.random() > 0.2; // 80% chance of being published
+
+      grades.push({
+        id: `G${String(gradeIdCounter++).padStart(3, '0')}`,
+        studentId: studentId,
+        courseId: course.id,
+        courseCode: course.code,
+        courseName: course.title,
+        credits: course.credits,
+        score: isPublished ? finalScore : null,
+        gradeLetter: isPublished ? gradeDetails.gradeLetter : null,
+        gradePoint: isPublished ? gradeDetails.points : null,
+        remark: isPublished ? gradeDetails.remark : "Pending Publication",
+        academicYear: period.year,
+        semester: period.semester,
+        caDetails: {
+          assignments: Math.floor(totalCaScore * 0.2), // Example breakdown
+          groupWork: Math.floor(totalCaScore * 0.2),
+          attendance: Math.floor(totalCaScore * 0.1),
+          writtenCA: Math.floor(totalCaScore * 0.5),
+          totalCaScore: totalCaScore,
+        },
+        examScore: isPublished ? examScore : null,
+        isPass: isPublished ? gradeDetails.isPass : false,
+        isPublished: isPublished,
+      });
+    }
+  }
+  return grades;
 }
 
 export default function ViewGradesPage() {
@@ -91,43 +117,40 @@ export default function ViewGradesPage() {
   });
   const [selectedGradeForDetails, setSelectedGradeForDetails] = useState<Grade | null>(null);
 
-  const academicYears = useMemo(() => {
-    // Use a predefined list of academic years for the filter
-    return ["all", "2023/2024", "2024/2025", "2025/2026"];
+  const academicYearsForFilter = useMemo(() => {
+    return ["all", ...ACADEMIC_YEARS];
   }, []);
 
-  const semesters = useMemo(() => {
-    const semSet = new Set(allGrades.map(grade => grade.semester));
-    return ["all", "First Semester", "Second Semester", "Resit Semester"].filter(s => s === "all" || semSet.has(s)); 
-  }, [allGrades]);
+  const semestersForFilter = useMemo(() => {
+    return ["all", ...SEMESTERS]; 
+  }, []);
 
   useEffect(() => {
-    async function loadGrades() {
+    async function loadData() {
       if (!user?.uid) {
         setIsLoading(false); 
         return;
       }
       setIsLoading(true);
-      const fetchedGrades = await fetchMockGrades(user.uid); 
+      const courses = await fetchAllCoursesMock(); // Fetch course catalog
+      const fetchedGrades = await fetchMockGrades(user.uid, courses); 
       setAllGrades(fetchedGrades);
 
+      // Set initial filters to the latest available grades period
       if (fetchedGrades.length > 0) {
-        const latestYear = fetchedGrades.reduce((latest, grade) => grade.academicYear > latest ? grade.academicYear : latest, "");
-        const gradesInLatestYear = fetchedGrades.filter(g => g.academicYear === latestYear);
-        const latestSemesterInYear = gradesInLatestYear.reduce((latest, grade) => {
-            const order = {"First Semester": 3, "Second Semester": 2, "Resit Semester": 1}; 
-            return (order[grade.semester as keyof typeof order] || 0) > (order[latest as keyof typeof order] || 0) ? grade.semester : latest;
-        }, "");
-        
-        if (latestYear && latestSemesterInYear) {
-             setFilters({ academicYear: latestYear, semester: latestSemesterInYear });
-        } else if (latestYear) {
-             setFilters({ academicYear: latestYear, semester: "all" });
-        }
+        const latestGrade = fetchedGrades.sort((a,b) => {
+            if (a.academicYear !== b.academicYear) return b.academicYear.localeCompare(a.academicYear);
+            const semOrder = {"First Semester": 1, "Second Semester": 2, "Resit Semester": 3};
+            return (semOrder[b.semester as keyof typeof semOrder] || 0) - (semOrder[a.semester as keyof typeof semOrder] || 0);
+        })[0];
+        setFilters({ academicYear: latestGrade.academicYear, semester: latestGrade.semester });
+      } else {
+        // Default if no grades
+        setFilters({ academicYear: ACADEMIC_YEARS[ACADEMIC_YEARS.length-1], semester: SEMESTERS[0] });
       }
       setIsLoading(false);
     }
-    loadGrades();
+    loadData();
   }, [user?.uid]);
 
   const handleFilterChange = (filterName: keyof typeof filters, value: string) => {
@@ -141,17 +164,33 @@ export default function ViewGradesPage() {
     );
   }, [allGrades, filters]);
 
-  const calculateGpa = (gradesList: Grade[]): number => {
-    if (!gradesList || gradesList.length === 0) return 0;
-    const gradedCourses = gradesList.filter(grade => grade.gradeLetter && grade.gradeLetter !== "NG" && grade.gradePoint !== undefined);
-    if (gradedCourses.length === 0) return 0;
+  const calculateGpa = (gradesList: Grade[]): { gpa: number, totalCreditsAttempted: number, totalCreditsEarned: number, remarks: string[] } => {
+    if (!gradesList || gradesList.length === 0) return { gpa: 0, totalCreditsAttempted: 0, totalCreditsEarned: 0, remarks: [] };
+    
+    const publishedGradedCourses = gradesList.filter(
+        grade => grade.isPublished && grade.gradePoint !== null && grade.gradeLetter !== "NG"
+    );
 
-    const totalQualityPoints = gradedCourses.reduce((sum, grade) => sum + (grade.gradePoint * grade.credits), 0);
-    const totalCreditsAttempted = gradedCourses.reduce((sum, grade) => sum + grade.credits, 0);
-    return totalCreditsAttempted > 0 ? parseFloat((totalQualityPoints / totalCreditsAttempted).toFixed(2)) : 0;
+    if (publishedGradedCourses.length === 0) return { gpa: 0, totalCreditsAttempted: 0, totalCreditsEarned: 0, remarks: ["No published grades for GPA calculation."] };
+
+    const totalQualityPoints = publishedGradedCourses.reduce((sum, grade) => sum + (grade.gradePoint! * grade.credits), 0);
+    const totalCreditsAttempted = publishedGradedCourses.reduce((sum, grade) => sum + grade.credits, 0);
+    const totalCreditsEarned = publishedGradedCourses.reduce((sum, grade) => sum + (grade.isPass ? grade.credits : 0), 0);
+    
+    const gpa = totalCreditsAttempted > 0 ? parseFloat((totalQualityPoints / totalCreditsAttempted).toFixed(2)) : 0;
+    
+    const remarks = [];
+    if (gpa >= 3.5) remarks.push("Excellent Standing");
+    else if (gpa >= 3.0) remarks.push("Very Good Standing");
+    else if (gpa >= 2.5) remarks.push("Good Standing");
+    else if (gpa >= 2.0) remarks.push("Satisfactory Standing");
+    else if (gpa > 0) remarks.push("Academic Warning");
+    else remarks.push("Poor Standing");
+
+    return { gpa, totalCreditsAttempted, totalCreditsEarned, remarks };
   };
 
-  const semesterGpa = useMemo(() => {
+  const semesterGpaStats = useMemo(() => {
     if (filters.academicYear === "all" || filters.semester === "all") return null;
     const currentSemesterGrades = allGrades.filter(
       grade => grade.academicYear === filters.academicYear && grade.semester === filters.semester
@@ -159,18 +198,19 @@ export default function ViewGradesPage() {
     return calculateGpa(currentSemesterGrades);
   }, [allGrades, filters]);
 
-  const cumulativeGpa = useMemo(() => calculateGpa(allGrades), [allGrades]);
+  const cumulativeGpaStats = useMemo(() => calculateGpa(allGrades), [allGrades]);
 
-  const getGpaAlert = (gpa: number | null) => {
-    if (gpa === null) return null;
+  const getGpaAlertInfo = (gpa: number | undefined | null) => {
+    if (gpa === null || gpa === undefined) return null;
     if (gpa >= 3.5) return { variant: "success", title: "Excellent Standing", icon: <TrendingUp className="h-5 w-5 text-green-500" /> };
+    if (gpa >= 3.0) return { variant: "default", title: "Very Good Standing", icon: <CheckCircle className="h-5 w-5 text-primary" /> };
     if (gpa >= 2.5) return { variant: "default", title: "Good Standing", icon: <CheckCircle className="h-5 w-5 text-primary" /> };
     if (gpa >= 2.0) return { variant: "warning", title: "Satisfactory Standing", icon: <AlertCircle className="h-5 w-5 text-yellow-500" /> };
     return { variant: "destructive", title: "Academic Warning", icon: <TrendingDown className="h-5 w-5 text-destructive" /> };
   };
 
-  const semesterGpaAlert = getGpaAlert(semesterGpa);
-  const cumulativeGpaAlert = getGpaAlert(cumulativeGpa);
+  const currentGpaToDisplay = semesterGpaStats ? semesterGpaStats.gpa : cumulativeGpaStats.gpa;
+  const gpaAlert = getGpaAlertInfo(currentGpaToDisplay);
 
   return (
     <motion.div
@@ -185,26 +225,25 @@ export default function ViewGradesPage() {
           My Grades
         </h1>
         <p className="text-muted-foreground text-lg">
-          View your grades by academic year and semester. Score (/100) includes CA and Exam marks.
+          View your grades by academic year and semester. A grade of 'C' (2.0 points) is the minimum pass mark.
         </p>
       </header>
 
       <Card>
         <CardHeader>
           <CardTitle>Filter Grades</CardTitle>
-          <CardDescription>Select academic year and semester. A pass grade starts from 'C'.</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Select value={filters.academicYear} onValueChange={(value) => handleFilterChange("academicYear", value)}>
             <SelectTrigger><CalendarDays className="mr-2 h-4 w-4 text-muted-foreground" />Academic Year</SelectTrigger>
             <SelectContent>
-              {academicYears.map(year => <SelectItem key={year} value={year}>{year === "all" ? "All Years" : year}</SelectItem>)}
+              {academicYearsForFilter.map(year => <SelectItem key={year} value={year}>{year === "all" ? "All Years" : year}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={filters.semester} onValueChange={(value) => handleFilterChange("semester", value)}>
             <SelectTrigger><SemesterIcon className="mr-2 h-4 w-4 text-muted-foreground" />Semester</SelectTrigger>
             <SelectContent>
-              {semesters.map(sem => <SelectItem key={sem} value={sem}>{sem === "all" ? "All Semesters" : sem}</SelectItem>)}
+              {semestersForFilter.map(sem => <SelectItem key={sem} value={sem}>{sem === "all" ? "All Semesters" : sem}</SelectItem>)}
             </SelectContent>
           </Select>
         </CardContent>
@@ -235,19 +274,25 @@ export default function ViewGradesPage() {
                         <TableHead className="text-center">Credits</TableHead>
                         <TableHead className="text-center">Final Score (/100)</TableHead>
                         <TableHead className="text-center">Grade</TableHead>
+                        <TableHead className="text-center">Remark</TableHead>
                         <TableHead className="text-center">Details</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {filteredGrades.map(grade => (
-                        <TableRow key={grade.id} className={GRADE_POINTS[grade.gradeLetter] === 0.0 ? "bg-destructive/10 dark:bg-destructive/20" : ""}>
+                        <TableRow key={grade.id} className={grade.isPublished && !grade.isPass ? "bg-destructive/10 dark:bg-destructive/20" : ""}>
                             <TableCell className="font-medium">{grade.courseCode}</TableCell>
                             <TableCell>{grade.courseName}</TableCell>
                             <TableCell className="text-center">{grade.credits}</TableCell>
-                            <TableCell className="text-center">{grade.score !== null ? grade.score : "NG"}</TableCell>
-                            <TableCell className={`text-center font-semibold ${GRADE_POINTS[grade.gradeLetter] === 0.0 ? "text-destructive" : ""}`}>{grade.gradeLetter}</TableCell>
+                            <TableCell className="text-center">{grade.isPublished ? (grade.score !== null ? grade.score : "N/A") : "Pending"}</TableCell>
+                            <TableCell className={`text-center font-semibold ${grade.isPublished && !grade.isPass ? "text-destructive" : ""}`}>
+                                {grade.isPublished ? grade.gradeLetter : "Pending"}
+                            </TableCell>
+                            <TableCell className="text-center text-xs">
+                                {grade.isPublished ? grade.remark : <Badge variant="outline">Pending Publication</Badge>}
+                            </TableCell>
                             <TableCell className="text-center">
-                                <Button variant="ghost" size="icon" onClick={() => setSelectedGradeForDetails(grade)}>
+                                <Button variant="ghost" size="icon" onClick={() => setSelectedGradeForDetails(grade)} disabled={!grade.isPublished}>
                                     <Eye className="h-4 w-4" />
                                     <span className="sr-only">View Details</span>
                                 </Button>
@@ -261,7 +306,7 @@ export default function ViewGradesPage() {
                     <Image src="https://placehold.co/300x200.png" alt="No grades found" width={200} height={133} className="mx-auto mb-4 rounded-lg" data-ai-hint="empty state education"/>
                     <h3 className="text-xl font-semibold">No Grades Found</h3>
                     <p className="text-muted-foreground mt-1">
-                        No grades available for the selected academic period.
+                        No grades available for the selected academic period. Results might be pending publication.
                     </p>
                     </div>
                 )}
@@ -277,34 +322,32 @@ export default function ViewGradesPage() {
             <CardContent className="space-y-4">
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground">
-                  {filters.academicYear === "all" || filters.semester === "all" 
-                    ? "Cumulative GPA (CGPA)" 
-                    : `Semester GPA (SGPA) - ${filters.semester}, ${filters.academicYear}`}
+                  {semesterGpaStats 
+                    ? `SGPA - ${filters.semester}, ${filters.academicYear}`
+                    : `Cumulative GPA (CGPA) - All Semesters`}
                 </h3>
-                <p className={`text-3xl font-bold ${semesterGpaAlert?.variant === 'destructive' ? 'text-destructive' : semesterGpaAlert?.variant === 'warning' ? 'text-yellow-500' : 'text-primary'}`}>
-                  {semesterGpa !== null ? semesterGpa.toFixed(2) : cumulativeGpa.toFixed(2)}
+                <p className={`text-3xl font-bold ${gpaAlert?.variant === 'destructive' ? 'text-destructive' : gpaAlert?.variant === 'warning' ? 'text-yellow-500' : 'text-primary'}`}>
+                  {currentGpaToDisplay !== null && currentGpaToDisplay !== undefined ? currentGpaToDisplay.toFixed(2) : "N/A"}
                 </p>
-                {semesterGpa !== null && semesterGpaAlert && (
-                  <Alert variant={semesterGpaAlert.variant === "success" ? "default" : semesterGpaAlert.variant} className="mt-2">
-                    {semesterGpaAlert.icon}
-                    <AlertTitle>{semesterGpaAlert.title}</AlertTitle>
+                {gpaAlert && (
+                  <Alert variant={gpaAlert.variant === "success" ? "default" : gpaAlert.variant} className="mt-2">
+                    {gpaAlert.icon}
+                    <AlertTitle>{gpaAlert.title}</AlertTitle>
+                     <AlertDescription>
+                        {semesterGpaStats ? `Based on ${semesterGpaStats.totalCreditsAttempted} credits attempted this semester.` : `Based on ${cumulativeGpaStats.totalCreditsAttempted} total credits attempted.`}
+                    </AlertDescription>
                   </Alert>
                 )}
-                 {semesterGpa === null && cumulativeGpaAlert && (
-                   <Alert variant={cumulativeGpaAlert.variant === "success" ? "default" : cumulativeGpaAlert.variant} className="mt-2">
-                    {cumulativeGpaAlert.icon}
-                    <AlertTitle>{cumulativeGpaAlert.title} (Overall)</AlertTitle>
-                  </Alert>
-                )}
+                {!gpaAlert && currentGpaToDisplay === 0 && <Alert variant="info" className="mt-2"><Info className="h-4 w-4"/><AlertDescription>GPA is 0.00 or no published grades available for calculation.</AlertDescription></Alert>}
               </div>
-              {semesterGpa !== null && ( 
+              {semesterGpaStats && ( 
                 <div className="pt-3 border-t">
                     <h3 className="text-sm font-medium text-muted-foreground">Cumulative GPA (CGPA)</h3>
-                    <p className={`text-2xl font-bold ${cumulativeGpaAlert?.variant === 'destructive' ? 'text-destructive' : cumulativeGpaAlert?.variant === 'warning' ? 'text-yellow-500' : 'text-primary'}`}>{cumulativeGpa.toFixed(2)}</p>
-                     {cumulativeGpaAlert && (
-                        <Alert variant={cumulativeGpaAlert.variant === "success" ? "default" : cumulativeGpaAlert.variant} className="mt-1">
-                            {cumulativeGpaAlert.icon}
-                            <AlertTitle>{cumulativeGpaAlert.title} (Overall)</AlertTitle>
+                    <p className={`text-2xl font-bold ${getGpaAlertInfo(cumulativeGpaStats.gpa)?.variant === 'destructive' ? 'text-destructive' : getGpaAlertInfo(cumulativeGpaStats.gpa)?.variant === 'warning' ? 'text-yellow-500' : 'text-primary'}`}>{cumulativeGpaStats.gpa.toFixed(2)}</p>
+                     {getGpaAlertInfo(cumulativeGpaStats.gpa) && (
+                        <Alert variant={getGpaAlertInfo(cumulativeGpaStats.gpa)?.variant  === "success" ? "default" : getGpaAlertInfo(cumulativeGpaStats.gpa)?.variant } className="mt-1">
+                            {getGpaAlertInfo(cumulativeGpaStats.gpa)?.icon}
+                            <AlertTitle>{getGpaAlertInfo(cumulativeGpaStats.gpa)?.title} (Overall)</AlertTitle>
                         </Alert>
                     )}
                 </div>
@@ -312,7 +355,7 @@ export default function ViewGradesPage() {
             </CardContent>
             <CardFooter>
                 <p className="text-xs text-muted-foreground">
-                    GPA calculations are based on the CHITECHMA University grading scale. 'C' is the minimum pass grade.
+                    GPA calculations exclude courses with pending results or 'NG' grades.
                 </p>
             </CardFooter>
           </Card>
@@ -325,29 +368,38 @@ export default function ViewGradesPage() {
             <DialogHeader>
               <DialogTitle className="font-headline text-xl">{selectedGradeForDetails.courseCode} - {selectedGradeForDetails.courseName}</DialogTitle>
               <DialogDescription>
-                Detailed score breakdown for {selectedGradeForDetails.semester}, {selectedGradeForDetails.academicYear}
+                {selectedGradeForDetails.isPublished 
+                  ? `Detailed score breakdown for ${selectedGradeForDetails.semester}, ${selectedGradeForDetails.academicYear}`
+                  : "Results for this course are pending publication."}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-3 py-2 text-sm">
-              <h4 className="font-semibold text-md text-primary border-b pb-1 mb-2">Continuous Assessment (CA) - Max 30</h4>
-              {selectedGradeForDetails.caDetails ? (
-                <>
-                  <div className="flex justify-between"><span>Assignments:</span> <span>{selectedGradeForDetails.caDetails.assignments ?? 'N/A'} / 5</span></div>
-                  <div className="flex justify-between"><span>Group Work:</span> <span>{selectedGradeForDetails.caDetails.groupWork ?? 'N/A'} / 5</span></div>
-                  <div className="flex justify-between"><span>Attendance:</span> <span>{selectedGradeForDetails.caDetails.attendance ?? 'N/A'} / 5</span></div>
-                  <div className="flex justify-between"><span>Written CA:</span> <span>{selectedGradeForDetails.caDetails.writtenCA ?? 'N/A'} / 15</span></div>
-                  <div className="flex justify-between font-semibold pt-1 border-t mt-1"><span>Total CA Score:</span> <span>{selectedGradeForDetails.caDetails.totalCaScore ?? 'N/A'} / 30</span></div>
-                </>
-              ) : <p className="text-muted-foreground">No detailed CA marks available.</p>}
-              
-              <h4 className="font-semibold text-md text-primary border-b pb-1 mt-4 mb-2">Examination - Max 70</h4>
-              <div className="flex justify-between"><span>Exam Score:</span> <span>{selectedGradeForDetails.examScore ?? 'N/A'} / 70</span></div>
+            {selectedGradeForDetails.isPublished ? (
+                <div className="space-y-3 py-2 text-sm">
+                <h4 className="font-semibold text-md text-primary border-b pb-1 mb-2">Continuous Assessment (CA) - Max 30</h4>
+                {selectedGradeForDetails.caDetails ? (
+                    <>
+                    <div className="flex justify-between"><span>Assignments:</span> <span>{selectedGradeForDetails.caDetails.assignments ?? 'N/A'} / 5</span></div>
+                    <div className="flex justify-between"><span>Group Work:</span> <span>{selectedGradeForDetails.caDetails.groupWork ?? 'N/A'} / 5</span></div>
+                    <div className="flex justify-between"><span>Attendance:</span> <span>{selectedGradeForDetails.caDetails.attendance ?? 'N/A'} / 5</span></div>
+                    <div className="flex justify-between"><span>Written CA:</span> <span>{selectedGradeForDetails.caDetails.writtenCA ?? 'N/A'} / 15</span></div>
+                    <div className="flex justify-between font-semibold pt-1 border-t mt-1"><span>Total CA Score:</span> <span>{selectedGradeForDetails.caDetails.totalCaScore ?? 'N/A'} / 30</span></div>
+                    </>
+                ) : <p className="text-muted-foreground">No detailed CA marks available.</p>}
+                
+                <h4 className="font-semibold text-md text-primary border-b pb-1 mt-4 mb-2">Examination - Max 70</h4>
+                <div className="flex justify-between"><span>Exam Score:</span> <span>{selectedGradeForDetails.examScore ?? 'N/A'} / 70</span></div>
 
-              <div className="border-t pt-3 mt-3 space-y-1">
-                <div className="flex justify-between text-md font-bold"><span className="text-foreground">Final Score:</span> <span>{selectedGradeForDetails.score} / 100</span></div>
-                <div className="flex justify-between text-md font-bold"><span className="text-foreground">Grade Awarded:</span> <span className={GRADE_POINTS[selectedGradeForDetails.gradeLetter] === 0.0 ? "text-destructive" : "text-green-600"}>{selectedGradeForDetails.gradeLetter}</span></div>
-              </div>
-            </div>
+                <div className="border-t pt-3 mt-3 space-y-1">
+                    <div className="flex justify-between text-md font-bold"><span className="text-foreground">Final Score:</span> <span>{selectedGradeForDetails.score} / 100</span></div>
+                    <div className="flex justify-between text-md font-bold"><span className="text-foreground">Grade Awarded:</span> <span className={!selectedGradeForDetails.isPass ? "text-destructive" : "text-green-600"}>{selectedGradeForDetails.gradeLetter} ({selectedGradeForDetails.remark})</span></div>
+                </div>
+                </div>
+            ) : (
+                <div className="py-4 text-center text-muted-foreground">
+                    <HelpCircle className="mx-auto h-10 w-10 mb-2" />
+                    Detailed scores are not available as results are pending publication.
+                </div>
+            )}
              <DialogClose asChild>
                 <Button type="button" variant="outline">
                   Close
@@ -359,4 +411,3 @@ export default function ViewGradesPage() {
     </motion.div>
   );
 }
-

@@ -12,65 +12,80 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import type { Grade, CaDetails } from "@/types"; // Ensure Grade type is available
+import type { Grade, CaDetails, Course } from "@/types"; 
 import { Skeleton } from "@/components/ui/skeleton";
+import { DEPARTMENTS, ACADEMIC_YEARS, SEMESTERS, getGradeDetailsFromScore } from "@/config/data";
+
+async function fetchAllCoursesMockAppeals(): Promise<Course[]> {
+    return [
+      { id: "LAW101_CESM_Y2223_S1", title: "Introduction to Law", code: "LAW101", department: DEPARTMENTS.CESM, credits: 1, level: 200, semester: "First Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "General"},
+      { id: "ENG102_CESM_Y2223_S1", title: "English Language", code: "ENG102", department: DEPARTMENTS.CESM, credits: 1, level: 200, semester: "First Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "General"},
+      { id: "SWE111_CESM_Y2223_S1", title: "Introduction to Software Eng", code: "SWE111", department: DEPARTMENTS.CESM, credits: 3, level: 200, semester: "First Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "Compulsory"},
+      { id: "SWE92_CESM_Y2223_S2", title: "Computer Programming I", code: "SWE92", department: DEPARTMENTS.CESM, credits: 3, level: 200, semester: "Second Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "Compulsory"},
+      { id: "SWE94_CESM_Y2223_S2", title: "Data Structures and Algorithms", code: "SWE94", department: DEPARTMENTS.CESM, credits: 3, level: 200, semester: "Second Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "Compulsory"},
+      { id: "CSE301_CESM_Y2324_S1", title: "Introduction to Algorithms", code: "CSE301", department: DEPARTMENTS.CESM, credits: 3, level: 300, semester: "First Semester", academicYear: "2023/2024", description: "", lecturerId: "" , type: "Compulsory"},
+      { id: "CSE303_CESM_Y2324_S1", title: "Web Technologies", code: "CSE303", department: DEPARTMENTS.CESM, credits: 3, level: 300, semester: "First Semester", academicYear: "2023/2024", description: "", lecturerId: "" , type: "Compulsory"},
+      { id: "CSE302_CESM_Y2324_S2", title: "Database Systems", code: "CSE302", department: DEPARTMENTS.CESM, credits: 3, level: 300, semester: "Second Semester", academicYear: "2023/2024", description: "", lecturerId: "" , type: "Compulsory"},
+      { id: "CSE308_CESM_Y2324_S2", title: "Operating Systems II", code: "CSE308", department: DEPARTMENTS.CESM, credits: 3, level: 300, semester: "Second Semester", academicYear: "2023/2024", description: "", lecturerId: "" , type: "Compulsory"},
+      { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "Compulsory"},
+      { id: "CSE409_CESM_Y2425_S1", title: "Software Development and OOP", code: "CSE409", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "Compulsory"},
+      { id: "MGT403_CESM_Y2425_S1", title: "Research Methodology", code: "MGT403", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "General"},
+      { id: "CSE405_CESM_Y2425_S1", title: "Embedded Systems", code: "CSE405", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "Compulsory"},
+      { id: "NES403_CESM_Y2425_S1", title: "Modeling in Information System", code: "NES403", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "Elective"},
+    ];
+  }
 
 // Copied and adapted from ViewGradesPage for fetching mock grades
-const GRADE_POINTS_APPEAL: Record<string, number> = {
-  "A+": 4.0, "A": 4.0, 
-  "B+": 3.5, "B": 3.0, 
-  "C+": 2.5, "C": 2.0, 
-  "D+": 0.0, "D": 0.0, "F": 0.0,   
-};
-
-function getGradeLetterFromScoreAppeal(score: number): string {
-  if (score >= 90) return "A+";
-  if (score >= 80) return "A";
-  if (score >= 75) return "B+";
-  if (score >= 70) return "B";
-  if (score >= 65) return "C+";
-  if (score >= 60) return "C"; 
-  if (score >= 55) return "D+"; 
-  if (score >= 50) return "D";  
-  return "F"; 
-}
-
-async function fetchStudentGradesForAppeal(studentId: string): Promise<Grade[]> {
-  await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
+async function fetchStudentGradesForAppeal(studentId: string, allCourses: Course[]): Promise<Grade[]> {
+  await new Promise(resolve => setTimeout(resolve, 1000)); 
   
-  // Using the same mock data structure as ViewGradesPage
-  const mockRawScores: { 
-    studentId: string, courseId: string, courseCode: string, courseName: string, credits: number, 
-    caDetails: CaDetails, examScore: number, academicYear: string, semester: string 
-  }[] = [
-    { studentId, courseId: "CSE301", courseCode: "CSE301", courseName: "Introduction to Algorithms", credits: 3, caDetails: { assignments: 5, groupWork: 4, attendance: 5, writtenCA: 13, totalCaScore: 27 }, examScore: 58, academicYear: "2023/2024", semester: "First Semester" },
-    { studentId, courseId: "MTH201", courseCode: "MTH201", courseName: "Calculus I", credits: 4, caDetails: { assignments: 4, groupWork: 3, attendance: 4, writtenCA: 12, totalCaScore: 23 }, examScore: 55, academicYear: "2023/2024", semester: "First Semester" },
-    { studentId, courseId: "PHY205", courseCode: "PHY205", courseName: "General Physics I", credits: 3, caDetails: { assignments: 3, groupWork: 4, attendance: 5, writtenCA: 10, totalCaScore: 22 }, examScore: 46, academicYear: "2023/2024", semester: "First Semester" },
-    { studentId, courseId: "CSE401", courseCode: "CSE401", courseName: "Mobile Application Development", credits: 3, caDetails: { assignments: 4, groupWork: 4, attendance: 5, writtenCA: 14, totalCaScore: 27 }, examScore: 61, academicYear: "2024/2025", semester: "First Semester" },
-    { studentId, courseId: "MGT403", courseCode: "MGT403", courseName: "Research Methodology", credits: 3, caDetails: { assignments: 4, groupWork: 5, attendance: 5, writtenCA: 13, totalCaScore: 27 }, examScore: 54, academicYear: "2024/2025", semester: "First Semester" },
-    { studentId, courseId: "NES403", courseCode: "NES403", courseName: "Modeling in Information System", credits: 3, caDetails: { assignments: 1, groupWork: 2, attendance: 2, writtenCA: 5, totalCaScore: 10 }, examScore: 35, academicYear: "2024/2025", semester: "First Semester" }, // F Grade
+  const studentProfile = { department: DEPARTMENTS.CESM, level: 400 }; 
+  const grades: Grade[] = [];
+  let gradeIdCounter = 1;
+
+  const academicPeriods = [
+    { year: "2022/2023", semester: "First Semester", level: 200 },
+    { year: "2022/2023", semester: "Second Semester", level: 200 },
+    { year: "2023/2024", semester: "First Semester", level: 300 },
+    { year: "2023/2024", semester: "Second Semester", level: 300 },
+    { year: "2024/2025", semester: "First Semester", level: 400 },
   ];
 
-  return mockRawScores.map((gradeData, index) => {
-    const totalScore = (gradeData.caDetails?.totalCaScore || 0) + (gradeData.examScore || 0);
-    const gradeLetter = getGradeLetterFromScoreAppeal(totalScore);
-    return {
-      id: `G${String(index + 1).padStart(3, '0')}`,
-      studentId: studentId,
-      courseId: gradeData.courseId,
-      courseCode: gradeData.courseCode,
-      courseName: gradeData.courseName,
-      credits: gradeData.credits,
-      score: totalScore,
-      gradeLetter: gradeLetter,
-      gradePoint: GRADE_POINTS_APPEAL[gradeLetter] !== undefined ? GRADE_POINTS_APPEAL[gradeLetter] : 0.0,
-      academicYear: gradeData.academicYear,
-      semester: gradeData.semester,
-      caDetails: gradeData.caDetails,
-      examScore: gradeData.examScore,
-      isPass: GRADE_POINTS_APPEAL[gradeLetter] >= 2.0,
-    };
-  });
+  for (const period of academicPeriods) {
+    if (period.level > studentProfile.level) continue;
+
+    const coursesForPeriod = allCourses.filter(
+      c => c.level === period.level && c.department === studentProfile.department && c.semester === period.semester
+    );
+
+    for (const course of coursesForPeriod) {
+      const totalCaScore = Math.floor(Math.random() * 15) + 15; 
+      const examScore = Math.floor(Math.random() * (period.level === 200 ? 30:40)) + (period.level === 200 ? 30:30);
+      const finalScore = totalCaScore + examScore;
+      const gradeDetails = getGradeDetailsFromScore(finalScore);
+      const isPublished = Math.random() > 0.2; // 80% chance of being published
+
+      grades.push({
+        id: `G_Appeal_${String(gradeIdCounter++).padStart(3, '0')}`,
+        studentId: studentId,
+        courseId: course.id,
+        courseCode: course.code,
+        courseName: course.title,
+        credits: course.credits,
+        score: isPublished ? finalScore : null,
+        gradeLetter: isPublished ? gradeDetails.gradeLetter : null,
+        gradePoint: isPublished ? gradeDetails.points : null,
+        remark: isPublished ? gradeDetails.remark : "Pending Publication",
+        academicYear: period.year,
+        semester: period.semester,
+        caDetails: { totalCaScore },
+        examScore: isPublished ? examScore : null,
+        isPass: isPublished ? gradeDetails.isPass : false,
+        isPublished: isPublished,
+      });
+    }
+  }
+  return grades;
 }
 
 
@@ -92,10 +107,11 @@ export default function GradeAppealsPage() {
         return;
       }
       setIsLoadingGrades(true);
-      const fetchedGrades = await fetchStudentGradesForAppeal(user.uid);
-      // Only include courses with actual grades (not "NG" or similar if that were a concept)
-      const coursesWithGrades = fetchedGrades.filter(g => g.gradeLetter); 
-      setAppealableCourses(coursesWithGrades);
+      const courses = await fetchAllCoursesMockAppeals();
+      const fetchedGrades = await fetchStudentGradesForAppeal(user.uid, courses);
+      // Only include published courses for appeal
+      const coursesWithPublishedGrades = fetchedGrades.filter(g => g.isPublished && g.gradeLetter); 
+      setAppealableCourses(coursesWithPublishedGrades);
       setIsLoadingGrades(false);
     }
     loadAppealableCourses();
@@ -162,13 +178,13 @@ export default function GradeAppealsPage() {
             Submit Grade Appeal
           </CardTitle>
           <CardDescription>
-            If you believe there is an error in your grade for a specific course you completed, you can submit an appeal here.
+            If you believe there is an error in your grade for a specific course with published results, you can submit an appeal here.
             Please provide clear and concise reasons, along with any supporting evidence.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <Label htmlFor="course-select">Select Course to Appeal</Label>
+            <Label htmlFor="course-select">Select Course to Appeal (Published Grades Only)</Label>
             {isLoadingGrades ? (
               <Skeleton className="h-10 w-full" />
             ) : (
@@ -178,7 +194,7 @@ export default function GradeAppealsPage() {
               disabled={appealableCourses.length === 0}
             >
               <SelectTrigger id="course-select" aria-label="Select course to appeal">
-                <SelectValue placeholder={appealableCourses.length === 0 ? "No graded courses available" : "Select a graded course..."} />
+                <SelectValue placeholder={appealableCourses.length === 0 ? "No appealable courses found" : "Select a course..."} />
               </SelectTrigger>
               <SelectContent>
                 {appealableCourses.length > 0 ? (
@@ -188,12 +204,12 @@ export default function GradeAppealsPage() {
                     </SelectItem>
                   ))
                 ) : (
-                  <SelectItem value="no-courses" disabled>No graded courses found</SelectItem>
+                  <SelectItem value="no-courses" disabled>No published grades available for appeal</SelectItem>
                 )}
               </SelectContent>
             </Select>
             )}
-            <p className="text-xs text-muted-foreground mt-1">Select the course for which you want to appeal the grade.</p>
+            <p className="text-xs text-muted-foreground mt-1">Select the course with a published grade you wish to appeal.</p>
           </div>
 
           <div>
@@ -243,4 +259,3 @@ export default function GradeAppealsPage() {
     </motion.div>
   );
 }
-    

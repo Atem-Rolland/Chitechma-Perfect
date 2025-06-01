@@ -58,7 +58,7 @@ export interface Course {
   title: string;
   code: string;
   description:string;
-  department: string;
+  department: string; // Should match a key from DEPARTMENTS config
   lecturerId: string; 
   lecturerName?: string; 
   schedule?: string; 
@@ -85,14 +85,16 @@ export interface Grade {
   courseCode: string;
   courseName: string;
   credits: number;
-  score: number; 
-  gradeLetter: string; 
-  gradePoint: number; 
+  score: number | null; // Can be null if not published
+  gradeLetter: string | null; // Can be null if not published
+  gradePoint: number | null; // Can be null if not published
   academicYear: string; 
   semester: string; 
   caDetails?: CaDetails; 
-  examScore?: number; 
+  examScore?: number | null; // Can be null if not published
   isPass?: boolean; 
+  isPublished?: boolean; // New field
+  remark?: string; // New field (e.g., "Excellent", "Pass", "Failed")
 }
 
 export interface Payment {
