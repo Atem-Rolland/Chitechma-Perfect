@@ -40,7 +40,8 @@ import {
   Edit, // For Grade Entry/Assignments
   Bell, // For Announcements
   CalendarCheck, // For Timetable
-  BookCopy as ManageCoursesIcon // For Lecturer Manage Courses
+  BookCopy as ManageCoursesIcon, // For Lecturer Manage Courses
+  FileSignature // Added missing import
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -69,7 +70,8 @@ const iconMap: Record<string, React.ElementType> = {
   Edit,
   Bell,
   CalendarCheck,
-  ManageCoursesIcon, // Added
+  ManageCoursesIcon, 
+  FileSignature // Added to map
 };
 
 const defaultSidebarNav: Record<Role | "guest", NavItem[]> = {
