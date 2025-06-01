@@ -34,9 +34,13 @@ import {
   ClipboardCheck, // For Assignments
   Video, // For Video Lectures
   MessageSquare, // For Discussion Forum
-  BookCheck, // For View Grades (main results)
+  BookCheck as ResultsIcon, // For View Grades (main results)
   History, // For Payment History
-  Presentation // For Live Classes
+  Presentation, // For Live Classes
+  Edit, // For Grade Entry/Assignments
+  Bell, // For Announcements
+  CalendarCheck, // For Timetable
+  BookCopy as ManageCoursesIcon // For Lecturer Manage Courses
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -52,7 +56,7 @@ const iconMap: Record<string, React.ElementType> = {
   DollarSign,
   Settings,
   ShieldCheck,
-  BookCheck, 
+  ResultsIcon, 
   BarChart3,
   DownloadCloud,
   FileWarning,
@@ -62,6 +66,10 @@ const iconMap: Record<string, React.ElementType> = {
   MessageSquare,
   History,
   Presentation,
+  Edit,
+  Bell,
+  CalendarCheck,
+  ManageCoursesIcon, // Added
 };
 
 const defaultSidebarNav: Record<Role | "guest", NavItem[]> = {
@@ -73,7 +81,7 @@ const defaultSidebarNav: Record<Role | "guest", NavItem[]> = {
       href: '#', 
       icon: GraduationCap, 
       subItems: [
-        { title: 'View Grades', href: '/dashboard/student/grades', icon: BookCheck },
+        { title: 'View Grades', href: '/dashboard/student/grades', icon: ResultsIcon },
         { title: 'GPA Analytics', href: '/dashboard/student/grades/gpa-analytics', icon: BarChart3 },
         { title: 'Download Transcript', href: '/dashboard/student/grades/transcript', icon: DownloadCloud },
         { title: 'Grade Appeals', href: '/dashboard/student/grades/appeals', icon: FileWarning },
@@ -103,9 +111,21 @@ const defaultSidebarNav: Record<Role | "guest", NavItem[]> = {
   ],
   lecturer: [
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { title: 'Manage Courses', href: '/dashboard/lecturer/courses', icon: BookOpen },
-    { title: 'Upload Grades', href: '/dashboard/lecturer/grades', icon: FileText },
-    { title: 'Student Lists', href: '/dashboard/lecturer/students', icon: Users },
+    { title: 'My Courses', href: '/dashboard/lecturer/courses', icon: ManageCoursesIcon },
+    { 
+      title: 'Grading & Evaluation', 
+      href: '#', 
+      icon: Edit,
+      subItems: [
+        { title: 'Assignments', href: '/dashboard/lecturer/assignments', icon: ClipboardCheck },
+        { title: 'Enter Marks (CA/Exam)', href: '/dashboard/lecturer/grades/entry', icon: FileSignature },
+        { title: 'View Gradebook', href: '/dashboard/lecturer/gradebook', icon: BarChart3 },
+      ]
+    },
+    { title: 'Student Management', href: '/dashboard/lecturer/students', icon: Users },
+    { title: 'Announcements', href: '/dashboard/lecturer/announcements', icon: Bell },
+    { title: 'Grade Appeals', href: '/dashboard/lecturer/appeals', icon: FileWarning },
+    { title: 'My Timetable', href: '/dashboard/lecturer/timetable', icon: CalendarCheck },
   ],
   admin: [
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
