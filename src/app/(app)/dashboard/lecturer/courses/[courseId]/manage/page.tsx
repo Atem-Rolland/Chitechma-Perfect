@@ -36,11 +36,6 @@ const MOCK_ALL_COURSES_SOURCE: Course[] = [
     { id: "CSE409_CESM_Y2425_S1", title: "Software Development and OOP", code: "CSE409", description: "Object-oriented principles and design patterns.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Tue 14-16, Fri 8-9", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
 ];
 
-const MOCK_ASSIGNMENTS_DATA: Assignment[] = [
-    { id: "assignMock1", courseId: "CSE401_CESM_Y2425_S1", lecturerId: "lect001", title: "Midterm Project Proposal", description: "Submit a 2-page proposal for your midterm project.", dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), maxScore: 100, allowedFileTypes: ".pdf,.docx", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), totalSubmissions: 5, gradedSubmissions: 2 },
-    { id: "assignMock2", courseId: "CSE401_CESM_Y2425_S1", lecturerId: "lect001", title: "Quiz 1: Android Fundamentals", description: "Online quiz covering basic Android concepts.", dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), maxScore: 50, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), totalSubmissions: 12, gradedSubmissions: 10 },
-];
-
 
 function formatFileSize(bytes: number | undefined, decimals = 2): string {
     if (!bytes || bytes === 0) return '0 Bytes';
@@ -79,14 +74,19 @@ export default function ManageCoursePage() {
     const [newAssignmentInstructions, setNewAssignmentInstructions] = useState("");
     const [newAssignmentDueDate, setNewAssignmentDueDate] = useState<Date | undefined>(undefined);
     const [newAssignmentMaxScore, setNewAssignmentMaxScore] = useState<number | string>(100);
-    const [newAssignmentFileTypes, setNewAssignmentFileTypes] = useState(".pdf, .docx, .zip");
+    const [newAssignmentFileTypes, setNewAssignmentFileTypes] = useState(".pdf,.docx,.zip");
     const [newAssignmentResourceFile, setNewAssignmentResourceFile] = useState<File | null>(null);
     const [isCreatingAssignment, setIsCreatingAssignment] = useState(false);
 
 
     useEffect(() => {
         async function fetchCourseData() {
-            if (!courseId) return;
+            if (!courseId || !user?.uid) {
+                setIsLoadingCourseDetails(false);
+                setIsLoadingMaterials(false);
+                setIsLoadingAssignments(false);
+                return;
+            }
             setIsLoadingCourseDetails(true);
             setIsLoadingMaterials(true);
             setIsLoadingAssignments(true);
@@ -97,9 +97,11 @@ export default function ManageCoursePage() {
 
             if (foundCourse) {
                 try {
+                    // Fetch Materials
                     const materialsQuery = query(
                         collection(db, "courseMaterials"), 
                         where("courseId", "==", courseId),
+                        where("lecturerId", "==", user.uid), // Ensure lecturer owns material
                         orderBy("uploadedAt", "desc")
                     );
                     const materialsSnapshot = await getDocs(materialsQuery);
@@ -111,20 +113,38 @@ export default function ManageCoursePage() {
                 } catch (error) {
                     console.error("Error fetching course materials:", error);
                     toast({ variant: "destructive", title: "Error", description: "Could not load course materials." });
+                } finally {
+                    setIsLoadingMaterials(false);
                 }
-                setIsLoadingMaterials(false);
 
-                // Mock fetching assignments for now
-                // In a real app, this would be: fetchAssignmentsFromFirestore(courseId);
-                setAssignments(MOCK_ASSIGNMENTS_DATA.filter(a => a.courseId === courseId));
-                setIsLoadingAssignments(false);
+                try {
+                    // Fetch Assignments
+                    const assignmentsQuery = query(
+                        collection(db, "assignments"),
+                        where("courseId", "==", courseId),
+                        where("lecturerId", "==", user.uid), // Ensure lecturer owns assignment
+                        orderBy("createdAt", "desc")
+                    );
+                    const assignmentsSnapshot = await getDocs(assignmentsQuery);
+                    const fetchedAssignments: Assignment[] = [];
+                    assignmentsSnapshot.forEach((doc) => {
+                        fetchedAssignments.push({ id: doc.id, ...doc.data() } as Assignment);
+                    });
+                    setAssignments(fetchedAssignments);
+                } catch (error) {
+                    console.error("Error fetching assignments:", error);
+                    toast({ variant: "destructive", title: "Error", description: "Could not load assignments." });
+                } finally {
+                    setIsLoadingAssignments(false);
+                }
+
             } else {
                 setIsLoadingMaterials(false);
                 setIsLoadingAssignments(false);
             }
         }
         fetchCourseData();
-    }, [courseId, toast]);
+    }, [courseId, toast, user?.uid]);
 
     const handleMaterialFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
@@ -179,7 +199,7 @@ export default function ManageCoursePage() {
                  return;
             }
 
-            const materialToSave: Omit<CourseMaterial, 'id'> = {
+            const materialToSave: Omit<CourseMaterial, 'id' | 'uploadedAt'> & { uploadedAt: any } = {
                 courseId: courseId, lecturerId: user.uid, name: newMaterialName, type: newMaterialType,
                 url: fileUrl, storagePath: storagePath || undefined, fileName: newMaterialFile?.name,
                 fileType: newMaterialFile?.type, size: newMaterialFile?.size, uploadedAt: serverTimestamp(),
@@ -221,7 +241,12 @@ export default function ManageCoursePage() {
     const handleAssignmentResourceFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
-            // Add size validation if needed
+            if (file.size > 20 * 1024 * 1024) { // 20MB limit for assignment resources
+                toast({ variant: "destructive", title: "File too large", description: "Maximum file size for assignment resources is 20MB." });
+                setNewAssignmentResourceFile(null);
+                event.target.value = "";
+                return;
+            }
             setNewAssignmentResourceFile(file);
         } else {
             setNewAssignmentResourceFile(null);
@@ -245,30 +270,54 @@ export default function ManageCoursePage() {
             return;
         }
         setIsCreatingAssignment(true);
-        // Simulate creation - in real app, upload resource file to Supabase, then save assignment to Firestore
-        await new Promise(resolve => setTimeout(resolve, 1500)); 
-        
-        const newMockAssignment: Assignment = {
-            id: `assignMock${Date.now()}`,
-            courseId: courseId,
-            lecturerId: user.uid,
-            title: newAssignmentTitle,
-            description: newAssignmentInstructions,
-            dueDate: newAssignmentDueDate.toISOString(),
-            maxScore: Number(newAssignmentMaxScore),
-            allowedFileTypes: newAssignmentFileTypes,
-            assignmentResources: newAssignmentResourceFile ? [{ name: newAssignmentResourceFile.name, url: "mock/url", type: newAssignmentResourceFile.type, size: newAssignmentResourceFile.size }] : [],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            totalSubmissions: 0,
-            gradedSubmissions: 0,
-        };
-        setAssignments(prev => [newMockAssignment, ...prev].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+        try {
+            let resource: AssignmentResource | undefined = undefined;
+            if (newAssignmentResourceFile) {
+                const filePath = `assignment_resources/${courseId}/${Date.now()}-${newAssignmentResourceFile.name}`;
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('cusms-files')
+                    .upload(filePath, newAssignmentResourceFile);
 
-        toast({ title: "Assignment Created (Simulated)", description: `"${newAssignmentTitle}" has been created.`});
-        setIsCreateAssignmentDialogOpen(false);
-        resetCreateAssignmentForm();
-        setIsCreatingAssignment(false);
+                if (uploadError) throw uploadError;
+                
+                const { data: urlData } = supabase.storage.from('cusms-files').getPublicUrl(filePath);
+                resource = {
+                    name: newAssignmentResourceFile.name,
+                    url: urlData.publicUrl,
+                    type: newAssignmentResourceFile.type,
+                    size: newAssignmentResourceFile.size,
+                };
+            }
+
+            const assignmentToSave: Omit<Assignment, 'id' | 'createdAt' | 'updatedAt'> & { createdAt: any, updatedAt: any } = {
+                courseId: courseId,
+                lecturerId: user.uid,
+                title: newAssignmentTitle.trim(),
+                description: newAssignmentInstructions.trim(),
+                dueDate: Timestamp.fromDate(newAssignmentDueDate),
+                maxScore: Number(newAssignmentMaxScore) || 100,
+                allowedFileTypes: newAssignmentFileTypes.trim(),
+                assignmentResources: resource ? [resource] : [],
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                status: "Open",
+                totalSubmissions: 0,
+                gradedSubmissions: 0,
+            };
+
+            const docRef = await addDoc(collection(db, "assignments"), assignmentToSave);
+            setAssignments(prev => [{ ...assignmentToSave, id: docRef.id, createdAt: new Date(), updatedAt: new Date(), dueDate: newAssignmentDueDate.toISOString() } as Assignment, ...prev].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+
+            toast({ title: "Assignment Created", description: `"${newAssignmentTitle}" has been created successfully.`});
+            setIsCreateAssignmentDialogOpen(false);
+            resetCreateAssignmentForm();
+
+        } catch (error: any) {
+            console.error("Error creating assignment:", error);
+            toast({ variant: "destructive", title: "Creation Failed", description: error.message || "Could not create assignment." });
+        } finally {
+            setIsCreatingAssignment(false);
+        }
     };
 
 
@@ -403,7 +452,7 @@ export default function ManageCoursePage() {
                                     const MaterialIcon = getMaterialTypeIcon(material.type);
                                     const uploadedDate = material.uploadedAt instanceof Timestamp 
                                                         ? material.uploadedAt.toDate() 
-                                                        : (typeof material.uploadedAt === 'string' ? parseISO(material.uploadedAt) : new Date());
+                                                        : material.uploadedAt; // Could be already a Date if optimistically added
                                     return (
                                     <TableRow key={material.id}>
                                         <TableCell className="text-center"><MaterialIcon className="h-5 w-5 mx-auto text-muted-foreground" /></TableCell>
@@ -412,7 +461,9 @@ export default function ManageCoursePage() {
                                             {material.description && <p className="text-xs text-muted-foreground mt-0.5">{material.description}</p>}
                                         </TableCell>
                                         <TableCell className="hidden md:table-cell text-center">{material.size ? formatFileSize(material.size) : (materialTypeAcceptsLink(material.type) ? "Link" : "N/A")}</TableCell>
-                                        <TableCell className="hidden md:table-cell text-center">{format(uploadedDate, "MMM dd, yyyy")}</TableCell>
+                                        <TableCell className="hidden md:table-cell text-center">
+                                            {uploadedDate instanceof Date ? format(uploadedDate, "MMM dd, yyyy") : "Processing..."}
+                                        </TableCell>
                                         <TableCell className="text-right space-x-1">
                                             {materialTypeAcceptsLink(material.type) || (material.url && material.url.startsWith("http")) ? (
                                                 <Button variant="outline" size="sm" onClick={() => window.open(material.url, '_blank', 'noopener,noreferrer')}>
@@ -459,7 +510,7 @@ export default function ManageCoursePage() {
                                     <Input id="assignment-title" value={newAssignmentTitle} onChange={(e) => setNewAssignmentTitle(e.target.value)} placeholder="e.g., Essay on Algorithms" />
                                 </div>
                                 <div>
-                                    <Label htmlFor="assignment-instructions">Instructions</Label>
+                                    <Label htmlFor="assignment-instructions">Instructions/Description</Label>
                                     <Textarea id="assignment-instructions" value={newAssignmentInstructions} onChange={(e) => setNewAssignmentInstructions(e.target.value)} placeholder="Detailed instructions for students..." rows={5}/>
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -484,6 +535,7 @@ export default function ManageCoursePage() {
                                                 selected={newAssignmentDueDate}
                                                 onSelect={setNewAssignmentDueDate}
                                                 initialFocus
+                                                disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))} // Disable past dates
                                             />
                                             </PopoverContent>
                                         </Popover>
@@ -496,14 +548,15 @@ export default function ManageCoursePage() {
                                 <div>
                                     <Label htmlFor="assignment-file-types">Allowed File Types (Optional)</Label>
                                     <Input id="assignment-file-types" value={newAssignmentFileTypes} onChange={(e) => setNewAssignmentFileTypes(e.target.value)} placeholder="e.g., .pdf, .docx, .zip" />
-                                     <p className="text-xs text-muted-foreground mt-1">Comma-separated list of extensions.</p>
+                                     <p className="text-xs text-muted-foreground mt-1">Comma-separated list of extensions (e.g., .pdf,.docx).</p>
                                 </div>
                                 <div>
                                     <Label htmlFor="assignment-resource-file">Upload Resource File (Optional)</Label>
                                      <Input id="assignment-resource-file" type="file" onChange={handleAssignmentResourceFileChange} 
                                           className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                                         />
-                                    {newAssignmentResourceFile && <p className="text-xs text-muted-foreground mt-1">Selected: {newAssignmentResourceFile.name}</p>}
+                                    {newAssignmentResourceFile && <p className="text-xs text-muted-foreground mt-1">Selected: {newAssignmentResourceFile.name} ({formatFileSize(newAssignmentResourceFile.size)})</p>}
+                                    <p className="text-xs text-muted-foreground mt-1">Max file size: 20MB.</p>
                                 </div>
                             </div>
                             <DialogFooter>
@@ -537,20 +590,25 @@ export default function ManageCoursePage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {assignments.map(assignment => (
-                                        <TableRow key={assignment.id}>
-                                            <TableCell className="font-medium">{assignment.title}</TableCell>
-                                            <TableCell className="text-center">{format(parseISO(assignment.dueDate as string), "MMM dd, yyyy")}</TableCell>
-                                            <TableCell className="text-center hidden sm:table-cell">
-                                                {assignment.gradedSubmissions || 0} / {assignment.totalSubmissions || 0} Graded
-                                            </TableCell>
-                                            <TableCell className="text-right space-x-1">
-                                                <Button variant="outline" size="sm" disabled><Eye className="mr-1 h-4 w-4"/>View</Button>
-                                                <Button variant="outline" size="sm" disabled><Edit className="mr-1 h-4 w-4"/>Edit</Button>
-                                                <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" disabled><Trash2 className="h-4 w-4"/></Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
+                                    {assignments.map(assignment => {
+                                        const dueDate = assignment.dueDate instanceof Timestamp
+                                                        ? assignment.dueDate.toDate()
+                                                        : (typeof assignment.dueDate === 'string' ? parseISO(assignment.dueDate) : new Date());
+                                        return (
+                                            <TableRow key={assignment.id}>
+                                                <TableCell className="font-medium">{assignment.title}</TableCell>
+                                                <TableCell className="text-center">{format(dueDate, "MMM dd, yyyy p")}</TableCell>
+                                                <TableCell className="text-center hidden sm:table-cell">
+                                                    {assignment.gradedSubmissions || 0} / {assignment.totalSubmissions || 0} Graded
+                                                </TableCell>
+                                                <TableCell className="text-right space-x-1">
+                                                    <Button variant="outline" size="sm" disabled><Eye className="mr-1 h-4 w-4"/>View</Button>
+                                                    <Button variant="outline" size="sm" disabled><Edit className="mr-1 h-4 w-4"/>Edit</Button>
+                                                    <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" disabled><Trash2 className="h-4 w-4"/></Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
                                 </TableBody>
                             </Table>
                         </div>
@@ -569,9 +627,8 @@ export default function ManageCoursePage() {
                     <p className="text-sm text-muted-foreground mt-3">Mark entry and bulk upload features will be available here.</p>
                 </CardContent>
             </Card>
-
-
         </motion.div>
     );
 }
 
+    
