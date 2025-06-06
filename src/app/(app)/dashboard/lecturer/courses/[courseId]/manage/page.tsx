@@ -10,7 +10,7 @@ import { MATERIAL_TYPES, materialTypeAcceptsFile, materialTypeAcceptsLink, getMa
 import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS } from "@/config/data";
 import { db, auth } from "@/lib/firebase";
 import { supabase } from "@/lib/supabase";
-import { collection, addDoc, query, where, orderBy, getDocs, serverTimestamp, doc, deleteDoc, Timestamp } from "firebase/firestore";
+import { collection, addDoc, query, where, orderBy, getDocs, serverTimestamp, doc, deleteDoc, Timestamp, updateDoc } from "firebase/firestore";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { ArrowLeft, UploadCloud, PlusCircle, Trash2, Download, ExternalLink as OpenLinkIcon, Info, File, FileText, FilePresentation, Youtube, Link as LinkIcon, Archive, Image as ImageIconLucide, CalendarIcon, Edit, Eye, ListChecks } from "lucide-react"; 
+import { ArrowLeft, UploadCloud, PlusCircle, Trash2, Download, ExternalLink as OpenLinkIcon, Info, File, FileText, FilePresentation, Youtube, Link as LinkIcon, Archive, Image as ImageIconLucide, CalendarIcon, Edit, Eye, ListChecks, Loader2 } from "lucide-react"; 
 import { motion } from "framer-motion";
 import Image from "next/image"; 
 import { format, parseISO } from "date-fns"; 
@@ -69,14 +69,16 @@ export default function ManageCoursePage() {
     const [newMaterialDescription, setNewMaterialDescription] = useState("");
     const [isUploadingMaterial, setIsUploadingMaterial] = useState(false);
 
-    const [isCreateAssignmentDialogOpen, setIsCreateAssignmentDialogOpen] = useState(false);
+    const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
+    const [currentAssignmentToEdit, setCurrentAssignmentToEdit] = useState<Assignment | null>(null);
     const [newAssignmentTitle, setNewAssignmentTitle] = useState("");
     const [newAssignmentInstructions, setNewAssignmentInstructions] = useState("");
     const [newAssignmentDueDate, setNewAssignmentDueDate] = useState<Date | undefined>(undefined);
     const [newAssignmentMaxScore, setNewAssignmentMaxScore] = useState<number | string>(100);
     const [newAssignmentFileTypes, setNewAssignmentFileTypes] = useState(".pdf,.docx,.zip");
     const [newAssignmentResourceFile, setNewAssignmentResourceFile] = useState<File | null>(null);
-    const [isCreatingAssignment, setIsCreatingAssignment] = useState(false);
+    const [isSavingAssignment, setIsSavingAssignment] = useState(false);
+    const [isDeletingAssignmentId, setIsDeletingAssignmentId] = useState<string | null>(null);
 
 
     useEffect(() => {
@@ -97,11 +99,10 @@ export default function ManageCoursePage() {
 
             if (foundCourse) {
                 try {
-                    // Fetch Materials
                     const materialsQuery = query(
                         collection(db, "courseMaterials"), 
                         where("courseId", "==", courseId),
-                        where("lecturerId", "==", user.uid), // Ensure lecturer owns material
+                        where("lecturerId", "==", user.uid),
                         orderBy("uploadedAt", "desc")
                     );
                     const materialsSnapshot = await getDocs(materialsQuery);
@@ -118,11 +119,10 @@ export default function ManageCoursePage() {
                 }
 
                 try {
-                    // Fetch Assignments
                     const assignmentsQuery = query(
                         collection(db, "assignments"),
                         where("courseId", "==", courseId),
-                        where("lecturerId", "==", user.uid), // Ensure lecturer owns assignment
+                        where("lecturerId", "==", user.uid),
                         orderBy("createdAt", "desc")
                     );
                     const assignmentsSnapshot = await getDocs(assignmentsQuery);
@@ -137,7 +137,6 @@ export default function ManageCoursePage() {
                 } finally {
                     setIsLoadingAssignments(false);
                 }
-
             } else {
                 setIsLoadingMaterials(false);
                 setIsLoadingAssignments(false);
@@ -253,70 +252,133 @@ export default function ManageCoursePage() {
         }
     };
 
-    const resetCreateAssignmentForm = () => {
+    const resetAssignmentForm = () => {
         setNewAssignmentTitle("");
         setNewAssignmentInstructions("");
         setNewAssignmentDueDate(undefined);
         setNewAssignmentMaxScore(100);
-        setNewAssignmentFileTypes(".pdf, .docx, .zip");
+        setNewAssignmentFileTypes(".pdf,.docx,.zip");
         setNewAssignmentResourceFile(null);
+        setCurrentAssignmentToEdit(null);
         const resourceFileInput = document.getElementById("assignment-resource-file") as HTMLInputElement;
         if (resourceFileInput) resourceFileInput.value = "";
     };
 
-    const handleCreateAssignment = async () => {
+    const handleOpenEditAssignmentDialog = (assignment: Assignment) => {
+        setCurrentAssignmentToEdit(assignment);
+        setNewAssignmentTitle(assignment.title);
+        setNewAssignmentInstructions(assignment.description);
+        setNewAssignmentDueDate(assignment.dueDate instanceof Timestamp ? assignment.dueDate.toDate() : parseISO(assignment.dueDate));
+        setNewAssignmentMaxScore(assignment.maxScore);
+        setNewAssignmentFileTypes(assignment.allowedFileTypes || ".pdf,.docx,.zip");
+        setNewAssignmentResourceFile(null); // Do not allow changing resource file on edit for now
+        setIsAssignmentDialogOpen(true);
+    };
+
+
+    const handleSaveAssignment = async () => {
         if (!newAssignmentTitle.trim() || !newAssignmentDueDate || !courseId || !user?.uid) {
             toast({ variant: "destructive", title: "Missing Fields", description: "Title and Due Date are required for an assignment."});
             return;
         }
-        setIsCreatingAssignment(true);
+        setIsSavingAssignment(true);
         try {
-            let resource: AssignmentResource | undefined = undefined;
-            if (newAssignmentResourceFile) {
-                const filePath = `assignment_resources/${courseId}/${Date.now()}-${newAssignmentResourceFile.name}`;
-                const { data: uploadData, error: uploadError } = await supabase.storage
-                    .from('cusms-files')
-                    .upload(filePath, newAssignmentResourceFile);
-
-                if (uploadError) throw uploadError;
-                
-                const { data: urlData } = supabase.storage.from('cusms-files').getPublicUrl(filePath);
-                resource = {
-                    name: newAssignmentResourceFile.name,
-                    url: urlData.publicUrl,
-                    type: newAssignmentResourceFile.type,
-                    size: newAssignmentResourceFile.size,
+            if (currentAssignmentToEdit) { // Edit Mode
+                const updatedAssignmentData: Partial<Assignment> & {updatedAt: any} = {
+                    title: newAssignmentTitle.trim(),
+                    description: newAssignmentInstructions.trim(),
+                    dueDate: Timestamp.fromDate(newAssignmentDueDate),
+                    maxScore: Number(newAssignmentMaxScore) || 100,
+                    allowedFileTypes: newAssignmentFileTypes.trim(),
+                    updatedAt: serverTimestamp(),
+                    // Note: assignmentResources are not modified in edit mode for this iteration
                 };
+                await updateDoc(doc(db, "assignments", currentAssignmentToEdit.id), updatedAssignmentData);
+                setAssignments(prev => prev.map(a => a.id === currentAssignmentToEdit.id ? {...a, ...updatedAssignmentData, dueDate: newAssignmentDueDate.toISOString()} : a).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+                toast({ title: "Assignment Updated", description: `"${newAssignmentTitle}" has been updated successfully.`});
+            } else { // Create Mode
+                let resource: AssignmentResource | undefined = undefined;
+                if (newAssignmentResourceFile) {
+                    const filePath = `assignment_resources/${courseId}/${Date.now()}-${newAssignmentResourceFile.name}`;
+                    const { data: uploadData, error: uploadError } = await supabase.storage
+                        .from('cusms-files')
+                        .upload(filePath, newAssignmentResourceFile);
+
+                    if (uploadError) throw uploadError;
+                    
+                    const { data: urlData } = supabase.storage.from('cusms-files').getPublicUrl(filePath);
+                    resource = {
+                        name: newAssignmentResourceFile.name,
+                        url: urlData.publicUrl,
+                        type: newAssignmentResourceFile.type,
+                        size: newAssignmentResourceFile.size,
+                        storagePath: filePath, // Save storage path for deletion
+                    };
+                }
+
+                const assignmentToSave: Omit<Assignment, 'id' | 'createdAt' | 'updatedAt'> & { createdAt: any, updatedAt: any } = {
+                    courseId: courseId,
+                    lecturerId: user.uid,
+                    title: newAssignmentTitle.trim(),
+                    description: newAssignmentInstructions.trim(),
+                    dueDate: Timestamp.fromDate(newAssignmentDueDate),
+                    maxScore: Number(newAssignmentMaxScore) || 100,
+                    allowedFileTypes: newAssignmentFileTypes.trim(),
+                    assignmentResources: resource ? [resource] : [],
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    status: "Open",
+                    totalSubmissions: 0,
+                    gradedSubmissions: 0,
+                };
+                const docRef = await addDoc(collection(db, "assignments"), assignmentToSave);
+                setAssignments(prev => [{ ...assignmentToSave, id: docRef.id, createdAt: new Date(), updatedAt: new Date(), dueDate: newAssignmentDueDate.toISOString() } as Assignment, ...prev].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+                toast({ title: "Assignment Created", description: `"${newAssignmentTitle}" has been created successfully.`});
+            }
+            setIsAssignmentDialogOpen(false);
+            resetAssignmentForm();
+        } catch (error: any) {
+            console.error("Error saving assignment:", error);
+            toast({ variant: "destructive", title: "Save Failed", description: error.message || "Could not save assignment." });
+        } finally {
+            setIsSavingAssignment(false);
+        }
+    };
+
+    const handleDeleteAssignment = async (assignmentToDelete: Assignment) => {
+        if (!assignmentToDelete.id) return;
+        if (!window.confirm(`Are you sure you want to delete assignment "${assignmentToDelete.title}"? This will also delete any associated resource files. This action cannot be undone.`)) return;
+        
+        setIsDeletingAssignmentId(assignmentToDelete.id);
+        try {
+            // Delete associated resource files from Supabase Storage
+            if (assignmentToDelete.assignmentResources && assignmentToDelete.assignmentResources.length > 0) {
+                const storagePathsToDelete: string[] = [];
+                for (const resource of assignmentToDelete.assignmentResources) {
+                    if (resource.storagePath) { // Check if storagePath exists
+                        storagePathsToDelete.push(resource.storagePath);
+                    }
+                }
+                if (storagePathsToDelete.length > 0) {
+                    const { error: storageError } = await supabase.storage.from('cusms-files').remove(storagePathsToDelete);
+                    if (storageError) {
+                        console.warn("Error deleting resource files from Supabase Storage:", storageError);
+                        toast({ variant: "warning", title: "Partial Deletion", description: "Assignment metadata removed, but failed to delete some resource files." });
+                    }
+                }
             }
 
-            const assignmentToSave: Omit<Assignment, 'id' | 'createdAt' | 'updatedAt'> & { createdAt: any, updatedAt: any } = {
-                courseId: courseId,
-                lecturerId: user.uid,
-                title: newAssignmentTitle.trim(),
-                description: newAssignmentInstructions.trim(),
-                dueDate: Timestamp.fromDate(newAssignmentDueDate),
-                maxScore: Number(newAssignmentMaxScore) || 100,
-                allowedFileTypes: newAssignmentFileTypes.trim(),
-                assignmentResources: resource ? [resource] : [],
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-                status: "Open",
-                totalSubmissions: 0,
-                gradedSubmissions: 0,
-            };
-
-            const docRef = await addDoc(collection(db, "assignments"), assignmentToSave);
-            setAssignments(prev => [{ ...assignmentToSave, id: docRef.id, createdAt: new Date(), updatedAt: new Date(), dueDate: newAssignmentDueDate.toISOString() } as Assignment, ...prev].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-
-            toast({ title: "Assignment Created", description: `"${newAssignmentTitle}" has been created successfully.`});
-            setIsCreateAssignmentDialogOpen(false);
-            resetCreateAssignmentForm();
+            // Delete the assignment document from Firestore
+            await deleteDoc(doc(db, "assignments", assignmentToDelete.id));
+            
+            setAssignments(prev => prev.filter(a => a.id !== assignmentToDelete.id));
+            toast({ title: "Assignment Deleted", description: `"${assignmentToDelete.title}" has been removed.`, variant: "default" });
 
         } catch (error: any) {
-            console.error("Error creating assignment:", error);
-            toast({ variant: "destructive", title: "Creation Failed", description: error.message || "Could not create assignment." });
+            console.error("Error deleting assignment:", error);
+            toast({ variant: "destructive", title: "Deletion Failed", description: error.message || "Could not delete assignment." });
         } finally {
-            setIsCreatingAssignment(false);
+            setIsDeletingAssignmentId(null);
         }
     };
 
@@ -452,7 +514,7 @@ export default function ManageCoursePage() {
                                     const MaterialIcon = getMaterialTypeIcon(material.type);
                                     const uploadedDate = material.uploadedAt instanceof Timestamp 
                                                         ? material.uploadedAt.toDate() 
-                                                        : material.uploadedAt; // Could be already a Date if optimistically added
+                                                        : material.uploadedAt; 
                                     return (
                                     <TableRow key={material.id}>
                                         <TableCell className="text-center"><MaterialIcon className="h-5 w-5 mx-auto text-muted-foreground" /></TableCell>
@@ -495,14 +557,19 @@ export default function ManageCoursePage() {
                         <CardTitle className="text-2xl">Assignments</CardTitle>
                         <CardDescription>Create and manage assignments for this course.</CardDescription>
                     </div>
-                     <Dialog open={isCreateAssignmentDialogOpen} onOpenChange={(isOpen) => { setIsCreateAssignmentDialogOpen(isOpen); if (!isOpen) resetCreateAssignmentForm(); }}>
+                     <Dialog open={isAssignmentDialogOpen} onOpenChange={(isOpen) => { 
+                            setIsAssignmentDialogOpen(isOpen); 
+                            if (!isOpen) {
+                                resetAssignmentForm(); // Reset form and currentAssignmentToEdit
+                            }
+                        }}>
                         <DialogTrigger asChild>
-                            <Button><PlusCircle className="mr-2 h-5 w-5"/>Create New Assignment</Button>
+                            <Button onClick={() => { resetAssignmentForm(); setIsAssignmentDialogOpen(true); }}><PlusCircle className="mr-2 h-5 w-5"/>Create New Assignment</Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-lg">
                             <DialogHeader>
-                                <DialogTitle className="text-xl">Create New Assignment</DialogTitle>
-                                <DialogDescription>Define the assignment details below.</DialogDescription>
+                                <DialogTitle className="text-xl">{currentAssignmentToEdit ? `Edit: ${currentAssignmentToEdit.title}` : "Create New Assignment"}</DialogTitle>
+                                <DialogDescription>{currentAssignmentToEdit ? "Update the assignment details below." : "Define the assignment details below."}</DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4 py-3 max-h-[70vh] overflow-y-auto pr-2">
                                 <div>
@@ -535,7 +602,7 @@ export default function ManageCoursePage() {
                                                 selected={newAssignmentDueDate}
                                                 onSelect={setNewAssignmentDueDate}
                                                 initialFocus
-                                                disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))} // Disable past dates
+                                                disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))} 
                                             />
                                             </PopoverContent>
                                         </Popover>
@@ -550,20 +617,22 @@ export default function ManageCoursePage() {
                                     <Input id="assignment-file-types" value={newAssignmentFileTypes} onChange={(e) => setNewAssignmentFileTypes(e.target.value)} placeholder="e.g., .pdf, .docx, .zip" />
                                      <p className="text-xs text-muted-foreground mt-1">Comma-separated list of extensions (e.g., .pdf,.docx).</p>
                                 </div>
-                                <div>
-                                    <Label htmlFor="assignment-resource-file">Upload Resource File (Optional)</Label>
-                                     <Input id="assignment-resource-file" type="file" onChange={handleAssignmentResourceFileChange} 
-                                          className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
-                                        />
-                                    {newAssignmentResourceFile && <p className="text-xs text-muted-foreground mt-1">Selected: {newAssignmentResourceFile.name} ({formatFileSize(newAssignmentResourceFile.size)})</p>}
-                                    <p className="text-xs text-muted-foreground mt-1">Max file size: 20MB.</p>
-                                </div>
+                                {!currentAssignmentToEdit && ( // Only show for new assignments
+                                    <div>
+                                        <Label htmlFor="assignment-resource-file">Upload Resource File (Optional)</Label>
+                                        <Input id="assignment-resource-file" type="file" onChange={handleAssignmentResourceFileChange} 
+                                            className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                                            />
+                                        {newAssignmentResourceFile && <p className="text-xs text-muted-foreground mt-1">Selected: {newAssignmentResourceFile.name} ({formatFileSize(newAssignmentResourceFile.size)})</p>}
+                                        <p className="text-xs text-muted-foreground mt-1">Max file size: 20MB.</p>
+                                    </div>
+                                )}
                             </div>
                             <DialogFooter>
-                                <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-                                <Button type="button" onClick={handleCreateAssignment} disabled={isCreatingAssignment}>
-                                    {isCreatingAssignment ? <UploadCloud className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
-                                    Create Assignment
+                                <Button type="button" variant="outline" onClick={() => { setIsAssignmentDialogOpen(false); resetAssignmentForm();}}>Cancel</Button>
+                                <Button type="button" onClick={handleSaveAssignment} disabled={isSavingAssignment}>
+                                    {isSavingAssignment ? <UploadCloud className="mr-2 h-4 w-4 animate-spin" /> : (currentAssignmentToEdit ? <Edit className="mr-2 h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />)}
+                                    {currentAssignmentToEdit ? "Save Changes" : "Create Assignment"}
                                 </Button>
                             </DialogFooter>
                         </DialogContent>
@@ -594,6 +663,7 @@ export default function ManageCoursePage() {
                                         const dueDate = assignment.dueDate instanceof Timestamp
                                                         ? assignment.dueDate.toDate()
                                                         : (typeof assignment.dueDate === 'string' ? parseISO(assignment.dueDate) : new Date());
+                                        const isCurrentlyDeleting = isDeletingAssignmentId === assignment.id;
                                         return (
                                             <TableRow key={assignment.id}>
                                                 <TableCell className="font-medium">{assignment.title}</TableCell>
@@ -603,8 +673,24 @@ export default function ManageCoursePage() {
                                                 </TableCell>
                                                 <TableCell className="text-right space-x-1">
                                                     <Button variant="outline" size="sm" disabled><Eye className="mr-1 h-4 w-4"/>View</Button>
-                                                    <Button variant="outline" size="sm" disabled><Edit className="mr-1 h-4 w-4"/>Edit</Button>
-                                                    <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" disabled><Trash2 className="h-4 w-4"/></Button>
+                                                    <Button 
+                                                        variant="outline" 
+                                                        size="sm" 
+                                                        onClick={() => handleOpenEditAssignmentDialog(assignment)}
+                                                        disabled={isSavingAssignment || !!isDeletingAssignmentId}
+                                                    >
+                                                        <Edit className="mr-1 h-4 w-4"/>Edit
+                                                    </Button>
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        className="text-destructive hover:bg-destructive/10" 
+                                                        onClick={() => handleDeleteAssignment(assignment)}
+                                                        disabled={isSavingAssignment || !!isDeletingAssignmentId}
+                                                    >
+                                                        {isCurrentlyDeleting ? <Loader2 className="h-4 w-4 animate-spin"/> : <Trash2 className="h-4 w-4"/>}
+                                                        <span className="sr-only">Delete {assignment.title}</span>
+                                                    </Button>
                                                 </TableCell>
                                             </TableRow>
                                         );
@@ -630,5 +716,3 @@ export default function ManageCoursePage() {
         </motion.div>
     );
 }
-
-    

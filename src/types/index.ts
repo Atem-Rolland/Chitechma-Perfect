@@ -129,6 +129,7 @@ export interface AssignmentResource {
   url: string; // URL to the file in Supabase Storage
   type?: string; // Mime type
   size?: number; // Size in bytes
+  storagePath?: string; // Path in Supabase storage, for deletion
 }
 
 export interface Assignment {
