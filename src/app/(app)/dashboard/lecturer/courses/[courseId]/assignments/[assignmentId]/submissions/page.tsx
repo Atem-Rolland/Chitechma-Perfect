@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import type { Assignment, Submission, Course } from "@/types";
+import type { Assignment, Submission, Course, StudentSubmissionFile } from "@/types";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, doc, getDoc, Timestamp } from "firebase/firestore";
 import { format, parseISO, isPast } from 'date-fns';
@@ -15,43 +15,29 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Eye, FileText, AlertCircle, Inbox, Download, MessageSquare } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { ArrowLeft, Eye, FileText, AlertCircle, Inbox, Download, MessageSquare, Link as LinkIcon, UserCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 // Mock data for courses (needed to find course details for breadcrumbs/header)
-// In a real app, this might come from a shared context or a direct fetch if not passed
 const MOCK_COURSES_SUBMISSIONS: Partial<Course>[] = [
     { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401" },
     { id: "CSE409_CESM_Y2425_S1", title: "Software Development and OOP", code: "CSE409" },
 ];
 
-const MOCK_ASSIGNMENTS_DETAILS: Partial<Assignment>[] = [
-    { id: "ASG001_CSE401", title: "Initial App Proposal", courseId: "CSE401_CESM_Y2425_S1", dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), maxScore: 20 },
-    { id: "ASG002_CSE401", title: "UI Mockups", courseId: "CSE401_CESM_Y2425_S1", dueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(), maxScore: 30 },
-    { id: "ASG001_CSE409", title: "OOP Concepts Essay", courseId: "CSE409_CESM_Y2425_S1", dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), maxScore: 25 },
-];
-
-const MOCK_SUBMISSIONS_DATA: Submission[] = [
-    { 
-        id: "SUB001", assignmentId: "ASG001_CSE401", courseId: "CSE401_CESM_Y2425_S1", studentId: "stud001", studentName: "Atem Rolland", studentMatricule: "CUSMS/S/24C001",
-        submittedAt: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(), status: 'Submitted', isLate: false,
-        files: [{ name: "proposal_atem.pdf", url: "#", type: "application/pdf", size: 1200000 }],
-        textSubmission: "Here is my proposal for the new app."
-    },
-    { 
-        id: "SUB002", assignmentId: "ASG001_CSE401", courseId: "CSE401_CESM_Y2425_S1", studentId: "stud002", studentName: "Bih Brenda", studentMatricule: "CUSMS/S/24C002",
-        submittedAt: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(), status: 'Late Submission', isLate: true,
-        files: [{ name: "proposal_brenda.docx", url: "#", type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", size: 850000 }],
-    },
-    { 
-        id: "SUB003", assignmentId: "ASG001_CSE401", courseId: "CSE401_CESM_Y2425_S1", studentId: "stud003", studentName: "Chenwi Charles", studentMatricule: "CUSMS/S/24C003",
-        submittedAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), status: 'Graded', isLate: false,
-        grade: 18, feedback: "Good effort. Some sections need more detail.",
-        files: [{ name: "app_proposal_charles.pdf", url: "#", type: "application/pdf", size: 1500000 }],
-    },
-];
+function formatFileSize(bytes: number | undefined, decimals = 2): string {
+    if (!bytes || bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
 
 
 export default function AssignmentSubmissionsPage() {
@@ -63,9 +49,16 @@ export default function AssignmentSubmissionsPage() {
     const courseId = params.courseId as string;
     const assignmentId = params.assignmentId as string;
 
-    const [assignment, setAssignment] = useState<Partial<Assignment> | null | undefined>(undefined);
+    const [assignment, setAssignment] = useState<Assignment | null | undefined>(undefined);
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    const [selectedSubmissionForGrading, setSelectedSubmissionForGrading] = useState<Submission | null>(null);
+    const [isGradeSubmissionDialogOpen, setIsGradeSubmissionDialogOpen] = useState(false);
+    const [currentGrade, setCurrentGrade] = useState<string>("");
+    const [currentFeedback, setCurrentFeedback] = useState<string>("");
+    const [isSavingGrade, setIsSavingGrade] = useState(false);
+
 
     useEffect(() => {
         async function fetchData() {
@@ -75,19 +68,49 @@ export default function AssignmentSubmissionsPage() {
             }
             setIsLoading(true);
             try {
-                // For now, using mock data. Replace with Firestore fetching later.
-                const foundAssignment = MOCK_ASSIGNMENTS_DETAILS.find(a => a.id === assignmentId && a.courseId === courseId);
-                setAssignment(foundAssignment || null);
+                // Fetch Assignment Details
+                const assignmentDocRef = doc(db, "assignments", assignmentId);
+                const assignmentDocSnap = await getDoc(assignmentDocRef);
 
-                const foundSubmissions = MOCK_SUBMISSIONS_DATA.filter(s => s.assignmentId === assignmentId);
-                setSubmissions(foundSubmissions);
+                if (assignmentDocSnap.exists()) {
+                    const assignmentData = assignmentDocSnap.data() as Omit<Assignment, 'id'>;
+                    if (assignmentData.courseId === courseId && assignmentData.lecturerId === user.uid) {
+                        const fetchedAssignment: Assignment = {
+                            id: assignmentDocSnap.id,
+                            ...assignmentData,
+                            dueDate: assignmentData.dueDate instanceof Timestamp ? assignmentData.dueDate.toDate().toISOString() : assignmentData.dueDate,
+                            createdAt: assignmentData.createdAt instanceof Timestamp ? assignmentData.createdAt.toDate().toISOString() : assignmentData.createdAt,
+                            updatedAt: assignmentData.updatedAt instanceof Timestamp ? assignmentData.updatedAt.toDate().toISOString() : assignmentData.updatedAt,
+                        };
+                        setAssignment(fetchedAssignment);
 
-                // Simulate API delay
-                await new Promise(resolve => setTimeout(resolve, 700));
-
+                        // Fetch Submissions
+                        const submissionsQuery = query(
+                            collection(db, "submissions"),
+                            where("assignmentId", "==", assignmentId)
+                        );
+                        const submissionsSnapshot = await getDocs(submissionsQuery);
+                        const fetchedSubmissions: Submission[] = [];
+                        submissionsSnapshot.forEach((subDoc) => {
+                            const subData = subDoc.data() as Omit<Submission, 'id'>;
+                            fetchedSubmissions.push({ 
+                                id: subDoc.id, 
+                                ...subData,
+                                submittedAt: subData.submittedAt instanceof Timestamp ? subData.submittedAt.toDate().toISOString() : subData.submittedAt,
+                            });
+                        });
+                        setSubmissions(fetchedSubmissions.sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()));
+                    } else {
+                         toast({ variant: "destructive", title: "Access Denied", description: "You do not have permission to view this assignment or it does not belong to this course." });
+                         setAssignment(null); // Mark as not found or access denied
+                    }
+                } else {
+                    toast({ variant: "destructive", title: "Not Found", description: "Assignment could not be found." });
+                    setAssignment(null);
+                }
             } catch (error) {
                 console.error("Error fetching assignment/submissions:", error);
-                toast({ variant: "destructive", title: "Error", description: "Could not load data." });
+                toast({ variant: "destructive", title: "Error", description: "Could not load assignment and submissions data." });
                 setAssignment(null);
             } finally {
                 setIsLoading(false);
@@ -96,7 +119,14 @@ export default function AssignmentSubmissionsPage() {
         fetchData();
     }, [courseId, assignmentId, user?.uid, toast]);
 
-    const courseDetails = useMemo(() => MOCK_COURSES_SUBMISSIONS.find(c => c.id === courseId), [courseId]);
+    const courseDetails = useMemo(() => {
+        // Try to get from fetched assignment first
+        if (assignment && assignment.courseCode && assignment.courseName) {
+            return { code: assignment.courseCode, title: assignment.courseName };
+        }
+        // Fallback to mock if needed (e.g. if assignment lacks these denormalized fields)
+        return MOCK_COURSES_SUBMISSIONS.find(c => c.id === courseId) || {code: courseId, title: "Course Details"};
+    }, [courseId, assignment]);
 
     const getStatusBadgeVariant = (status: Submission['status']) => {
         switch (status) {
@@ -106,6 +136,35 @@ export default function AssignmentSubmissionsPage() {
             case "Pending Review": return "outline";
             default: return "secondary";
         }
+    };
+
+    const handleOpenGradeDialog = (submission: Submission) => {
+        setSelectedSubmissionForGrading(submission);
+        setCurrentGrade(submission.grade?.toString() || "");
+        setCurrentFeedback(submission.feedback || "");
+        setIsGradeSubmissionDialogOpen(true);
+    };
+    
+    const handleSaveGrade = async () => {
+        if (!selectedSubmissionForGrading || !assignment) return;
+        
+        const gradeValue = parseFloat(currentGrade);
+        if (isNaN(gradeValue) || gradeValue < 0 || gradeValue > assignment.maxScore) {
+            toast({ variant: "destructive", title: "Invalid Grade", description: `Grade must be a number between 0 and ${assignment.maxScore}.` });
+            return;
+        }
+        setIsSavingGrade(true);
+        // TODO: Implement actual saving to Firestore
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+
+        setSubmissions(prev => prev.map(sub => 
+            sub.id === selectedSubmissionForGrading.id 
+            ? {...sub, grade: gradeValue, feedback: currentFeedback, status: "Graded" as const} 
+            : sub
+        ));
+        toast({ title: "Grade Saved (Simulated)", description: `Grade for ${selectedSubmissionForGrading.studentName} has been saved.` });
+        setIsSavingGrade(false);
+        setIsGradeSubmissionDialogOpen(false);
     };
     
     if (isLoading) {
@@ -185,13 +244,19 @@ export default function AssignmentSubmissionsPage() {
                                                 {sub.isLate && <Badge variant="warning" className="ml-2 text-xs">Late</Badge>}
                                             </TableCell>
                                             <TableCell className="text-center">
-                                                <Badge variant={getStatusBadgeVariant(sub.status)}>{sub.status}</Badge>
+                                                <Badge 
+                                                    variant={getStatusBadgeVariant(sub.status)}
+                                                    className={
+                                                      sub.status === "Graded" ? "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300" :
+                                                      sub.status === "Submitted" || sub.status === "Late Submission" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300" : ""
+                                                    }
+                                                >{sub.status}</Badge>
                                             </TableCell>
                                             <TableCell className="text-center font-semibold">
                                                 {sub.grade !== null && sub.grade !== undefined ? `${sub.grade}/${assignment.maxScore}` : "N/G"}
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Button variant="outline" size="sm" disabled>
+                                                <Button variant="outline" size="sm" onClick={() => handleOpenGradeDialog(sub)}>
                                                     <Eye className="mr-1 h-4 w-4"/> View & Grade
                                                 </Button>
                                             </TableCell>
@@ -208,6 +273,96 @@ export default function AssignmentSubmissionsPage() {
                     </Button>
                 </CardFooter>
             </Card>
+
+            {/* Grade Submission Dialog */}
+            {selectedSubmissionForGrading && assignment && (
+                <Dialog open={isGradeSubmissionDialogOpen} onOpenChange={setIsGradeSubmissionDialogOpen}>
+                    <DialogContent className="sm:max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>Review Submission: {selectedSubmissionForGrading.studentName}</DialogTitle>
+                            <DialogDescription>
+                                Assignment: {assignment.title} (Max Score: {assignment.maxScore})
+                                <br/>Submitted: {format(parseISO(selectedSubmissionForGrading.submittedAt as string), "PPP p")}
+                                {selectedSubmissionForGrading.isLate && <Badge variant="warning" className="ml-2 text-xs">Late Submission</Badge>}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                            {selectedSubmissionForGrading.textSubmission && (
+                                <Card>
+                                    <CardHeader><CardTitle className="text-base">Text Submission</CardTitle></CardHeader>
+                                    <CardContent className="text-sm bg-muted p-3 rounded-md whitespace-pre-wrap">
+                                        {selectedSubmissionForGrading.textSubmission}
+                                    </CardContent>
+                                </Card>
+                            )}
+                            {selectedSubmissionForGrading.files && selectedSubmissionForGrading.files.length > 0 && (
+                                <Card>
+                                    <CardHeader><CardTitle className="text-base">Submitted Files ({selectedSubmissionForGrading.files.length})</CardTitle></CardHeader>
+                                    <CardContent>
+                                        <ul className="space-y-2">
+                                            {selectedSubmissionForGrading.files.map((file, index) => (
+                                                <li key={index} className="flex items-center justify-between p-2 border rounded-md hover:bg-muted/50">
+                                                    <div className="flex items-center gap-2 text-sm">
+                                                        <FileText className="h-5 w-5 text-primary" />
+                                                        <div>
+                                                            <p className="font-medium">{file.name}</p>
+                                                            <p className="text-xs text-muted-foreground">{formatFileSize(file.size)} - {file.type}</p>
+                                                        </div>
+                                                    </div>
+                                                    <Button variant="outline" size="sm" asChild>
+                                                        <a href={file.url} target="_blank" rel="noopener noreferrer">
+                                                            <Download className="mr-1 h-4 w-4" /> Download
+                                                        </a>
+                                                    </Button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </CardContent>
+                                </Card>
+                            )}
+                             {!selectedSubmissionForGrading.textSubmission && (!selectedSubmissionForGrading.files || selectedSubmissionForGrading.files.length === 0) && (
+                                 <p className="text-muted-foreground text-center py-4">No text or files submitted for this assignment.</p>
+                             )}
+
+                            <Card className="mt-4">
+                                <CardHeader><CardTitle className="text-base">Grade & Feedback</CardTitle></CardHeader>
+                                <CardContent className="space-y-3">
+                                     <div>
+                                        <Label htmlFor="grade-input">Grade (Out of {assignment.maxScore})</Label>
+                                        <Input 
+                                            id="grade-input" 
+                                            type="number" 
+                                            value={currentGrade} 
+                                            onChange={(e) => setCurrentGrade(e.target.value)}
+                                            max={assignment.maxScore}
+                                            min={0}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="feedback-input">Feedback for Student</Label>
+                                        <Textarea 
+                                            id="feedback-input" 
+                                            value={currentFeedback}
+                                            onChange={(e) => setCurrentFeedback(e.target.value)}
+                                            placeholder="Provide constructive feedback..."
+                                            rows={4}
+                                        />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button variant="outline">Cancel</Button>
+                            </DialogClose>
+                            <Button onClick={handleSaveGrade} disabled={isSavingGrade}>
+                                {isSavingGrade ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                Save Grade & Feedback
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
         </motion.div>
     );
 }
