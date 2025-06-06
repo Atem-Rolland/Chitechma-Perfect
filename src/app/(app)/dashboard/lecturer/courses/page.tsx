@@ -33,7 +33,6 @@ async function fetchAllUniversityCourses(): Promise<Course[]> {
     { id: "NES403_CESM_Y2425_S1", title: "Modeling in Information System", code: "NES403", description: "Techniques for system modeling.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Elective", level: 400, schedule: "Fri 11-13, CR10", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "LAW101_CESM_Y2223_S1", title: "Introduction to Law", code: "LAW101", description: "Basic legal principles.", department: DEPARTMENTS.CESM, lecturerId: "lect_law", lecturerName: "Barr. Tabi", credits: 1, type: "General", level: 200, schedule: "Mon 8-9, AMPHI100", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
     { id: "SWE111_CESM_Y2223_S1", title: "Introduction to Software Eng", code: "SWE111", description: "Foundations of software engineering.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 200, schedule: "Mon 14-17, AMPHI300", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    // Add a few courses for CPT taught by a mock lecturer if needed
     { id: "CPT116_CPT_Y2223_S1", title: "Soil and Fertilization", code: "CPT116", description: "Soil science and fertilization techniques.", department: DEPARTMENTS.CPT, lecturerId: "lect_cpt1", lecturerName: "Dr. Soil", credits: 3, type: "Compulsory", level: 200, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
   ];
   return mockCourses;
@@ -45,20 +44,19 @@ interface AssignedCourse extends Course {
 }
 
 export default function LecturerCoursesPage() {
-  const { user, profile } = useAuth(); // Assuming lecturerId might be in profile
+  const { user, profile } = useAuth(); 
   const [allUniversityCourses, setAllUniversityCourses] = useState<Course[]>([]);
   const [assignedCourses, setAssignedCourses] = useState<AssignedCourse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({
-    academicYear: "all", // Default to all or current
-    semester: "all",     // Default to all or current
+    academicYear: "all", 
+    semester: "all",     
     level: "all",
   });
 
-  // Mock lecturer ID - in a real app, this comes from the logged-in user's profile
-  const MOCK_LECTURER_ID = profile?.uid || "lect001"; // Fallback for now
-  const MOCK_LECTURER_NAME = profile?.displayName || "Dr. Eno"; // Fallback
+  const MOCK_LECTURER_ID = profile?.uid || "lect001"; 
+  const MOCK_LECTURER_NAME = profile?.displayName || "Dr. Eno"; 
 
   useEffect(() => {
     async function loadData() {
@@ -66,14 +64,12 @@ export default function LecturerCoursesPage() {
       const universityCourses = await fetchAllUniversityCourses();
       setAllUniversityCourses(universityCourses);
 
-      // Simulate fetching courses assigned to this lecturer
-      // In a real app, this would be a Firestore query: where("lecturerId", "==", MOCK_LECTURER_ID)
       const lecturerSpecificCourses = universityCourses
-        .filter(course => course.lecturerId === MOCK_LECTURER_ID || course.lecturerName === MOCK_LECTURER_NAME) // Simple mock filter
+        .filter(course => course.lecturerId === MOCK_LECTURER_ID || course.lecturerName === MOCK_LECTURER_NAME) 
         .map(course => ({
           ...course,
-          enrolledStudents: Math.floor(Math.random() * 50) + 10, // Mock student count
-          status: course.academicYear === "2024/2025" ? "Active" : "Completed", // Mock status
+          enrolledStudents: Math.floor(Math.random() * 50) + 10, 
+          status: course.academicYear === ACADEMIC_YEARS[ACADEMIC_YEARS.length-1] ? "Active" : "Completed", 
         }));
       
       setAssignedCourses(lecturerSpecificCourses);
@@ -138,7 +134,7 @@ export default function LecturerCoursesPage() {
               {levelsForFilter.map(lvl => <SelectItem key={lvl} value={lvl}>{lvl === "all" ? "All Levels" : lvl}</SelectItem>)}
             </SelectContent>
           </Select>
-           <div className="relative md:col-span-1"> {/* Search input takes remaining space or spans */}
+           <div className="relative md:col-span-1"> 
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input 
                 placeholder="Search by title or code..." 
@@ -212,4 +208,3 @@ export default function LecturerCoursesPage() {
     </motion.div>
   );
 }
-

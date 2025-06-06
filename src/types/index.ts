@@ -10,7 +10,6 @@ export interface UserProfile {
   photoURL?: string | null;
   role: Role;
   
-  // Student-specific fields (can be optional for other roles)
   department?: string; 
   level?: number; 
   program?: string; 
@@ -20,9 +19,8 @@ export interface UserProfile {
   isGraduating?: boolean; 
   matricule?: string;
 
-  // New fields for detailed student profile
   gender?: "Male" | "Female" | "Other" | string;
-  dateOfBirth?: string; // YYYY-MM-DD
+  dateOfBirth?: string; 
   placeOfBirth?: string;
   regionOfOrigin?: string;
   maritalStatus?: "Single" | "Married" | "Divorced" | "Widowed" | string;
@@ -58,7 +56,7 @@ export interface Course {
   title: string;
   code: string;
   description:string;
-  department: string; // Should match a key from DEPARTMENTS config
+  department: string; 
   lecturerId: string; 
   lecturerName?: string; 
   schedule?: string; 
@@ -85,13 +83,13 @@ export interface Grade {
   courseCode: string;
   courseName: string;
   credits: number;
-  score: number | null; // Can be null if not published
-  gradeLetter: string | null; // Can be null if not published
-  gradePoint: number | null; // Can be null if not published
+  score: number | null; 
+  gradeLetter: string | null; 
+  gradePoint: number | null; 
   academicYear: string; 
   semester: string; 
   caDetails?: CaDetails; 
-  examScore?: number | null; // Can be null if not published
+  examScore?: number | null; 
   isPass?: boolean; 
   isPublished?: boolean; 
   remark?: string; 
@@ -109,14 +107,22 @@ export interface Payment {
   method?: "MTN Mobile Money" | "Orange Money" | "Bank Transfer" | "Card";
 }
 
+export type MaterialType = "pdf" | "docx" | "pptx" | "video_link" | "web_link" | "zip" | "image" | "other";
+
 export interface CourseMaterial {
   id: string;
-  name: string;
-  type: "pdf" | "docx" | "video" | "zip" | "link";
-  url?: string; 
-  size?: string; 
-  uploadDate?: string; 
+  courseId: string;
+  lecturerId: string; // ID of the lecturer who uploaded it
+  name: string; // Display name for the material
+  type: MaterialType;
+  url: string; // URL to the file in Supabase Storage or external link
+  fileName?: string; // Original name of the uploaded file (if applicable)
+  fileType?: string; // MIME type of the uploaded file (if applicable)
+  size?: number; // Size in bytes (if applicable)
+  uploadedAt: any; // Firestore Timestamp or ISO string
+  description?: string; // Optional description of the material
 }
+
 
 export interface Assignment {
   id: string;
@@ -213,17 +219,51 @@ export interface ChatMessage {
 }
 
 export interface TimetableEntry {
-  id: string; // Unique ID for the timetable entry
-  courseId: string; // Link to the course
+  id: string; 
+  courseId: string; 
   courseCode: string;
   courseTitle: string;
   dayOfWeek: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday';
-  startTime: string; // e.g., "08:00"
-  endTime: string;   // e.g., "10:00"
-  venue: string;     // e.g., "AMPHI 250", "Lab Hall 1"
+  startTime: string; 
+  endTime: string;   
+  venue: string;     
   lecturerName?: string;
-  semester: string; // To filter by semester if needed, e.g., "First Semester"
-  academicYear: string; // To filter by year if needed, e.g., "2024/2025"
+  semester: string; 
+  academicYear: string; 
 }
 
-```
+// For Course Materials Manager by Lecturer
+export const MATERIAL_TYPES: { value: MaterialType; label: string }[] = [
+  { value: "pdf", label: "PDF Document" },
+  { value: "docx", label: "Word Document" },
+  { value: "pptx", label: "PowerPoint Presentation" },
+  { value: "image", label: "Image (PNG, JPG, GIF)" },
+  { value: "zip", label: "ZIP Archive" },
+  { value: "video_link", label: "Video Link (YouTube, Vimeo, etc.)" },
+  { value: "web_link", label: "Web Link (Article, Resource)" },
+  { value: "other", label: "Other File Type" },
+];
+
+export const materialTypeAcceptsFile = (type: MaterialType | undefined): boolean => {
+  if (!type) return false;
+  return !["video_link", "web_link"].includes(type);
+};
+
+export const materialTypeAcceptsLink = (type: MaterialType | undefined): boolean => {
+  if (!type) return false;
+  return ["video_link", "web_link"].includes(type);
+};
+
+export const getMaterialTypeIcon = (type: MaterialType): React.ElementType => {
+  const LucideIcons = require("lucide-react");
+  switch (type) {
+    case "pdf": return LucideIcons.FileText;
+    case "docx": return LucideIcons.FileText;
+    case "pptx": return LucideIcons.FilePresentation;
+    case "video_link": return LucideIcons.Youtube;
+    case "web_link": return LucideIcons.Link;
+    case "zip": return LucideIcons.Archive;
+    case "image": return LucideIcons.Image;
+    default: return LucideIcons.File;
+  }
+};
