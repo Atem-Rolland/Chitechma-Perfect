@@ -80,16 +80,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const fetchUserProfile = useCallback(async (firebaseUser: FirebaseUser): Promise<UserProfile | null> => {
     const userDocRef = doc(db, "users", firebaseUser.uid);
     const userDocSnap = await getDoc(userDocRef);
+
     if (userDocSnap.exists()) {
       const userProfileData = userDocSnap.data() as UserProfile;
       
       const completeProfile: UserProfile = {
         uid: firebaseUser.uid,
-        email: firebaseUser.email, // Always source email from FirebaseUser
-        ...userProfileData, // Spread fetched data first
+        email: firebaseUser.email, 
+        ...userProfileData, 
         displayName: userProfileData.displayName || firebaseUser.displayName || (userProfileData.role === 'student' ? FALLBACK_STUDENT_DETAILS.displayName : "User"),
         role: userProfileData.role || null, 
-        // For students, ensure academic details have fallbacks if not explicitly set during registration
         department: userProfileData.role === 'student' ? (userProfileData.department || FALLBACK_STUDENT_DETAILS.department) : userProfileData.department,
         level: userProfileData.role === 'student' ? (userProfileData.level || FALLBACK_STUDENT_DETAILS.level) : userProfileData.level,
         program: userProfileData.role === 'student' ? (userProfileData.program || FALLBACK_STUDENT_DETAILS.program) : userProfileData.program,
@@ -99,22 +99,39 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         isGraduating: userProfileData.role === 'student' ? (userProfileData.isGraduating === undefined ? (userProfileData.level === VALID_LEVELS[VALID_LEVELS.length -1]) : userProfileData.isGraduating) : userProfileData.isGraduating,
         matricule: userProfileData.role === 'student' ? (userProfileData.matricule || FALLBACK_STUDENT_DETAILS.matricule) : userProfileData.matricule,
       };
-      setProfile(completeProfile);
-      setRole(completeProfile.role);
+      setProfile(completeProfile); // Update context profile state
+      setRole(completeProfile.role);   // Update context role state
       return completeProfile;
     } else {
-      console.warn("User profile not found in Firestore for UID:", firebaseUser.uid, ". A new profile might be created upon registration flow completion.");
-      setProfile(null);
-      setRole(null);
+      console.warn("User profile not found in Firestore for UID:", firebaseUser.uid, ". This might be a new user or Firestore propagation delay.");
+      // Do NOT call setProfile(null) or setRole(null) here. Let the caller handle it.
       return null;
     }
-  }, []);
+  }, []); // Removed `profile` from dependency array as it was causing potential stale closure issues. fetchUserProfile should be pure based on firebaseUser.
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        const userProfileData = await fetchUserProfile(firebaseUser);
-        setUser({ ...firebaseUser, profile: userProfileData || undefined });
+        const fetchedProfileData = await fetchUserProfile(firebaseUser);
+        if (fetchedProfileData) {
+          // Profile found in Firestore, fetchUserProfile has updated context's profile and role states.
+          setUser({ ...firebaseUser, profile: fetchedProfileData });
+        } else {
+          // Profile not found in Firestore.
+          // Check if the current 'user' state (which might have been set by register())
+          // already holds a profile for this firebaseUser. If so, preserve it.
+          if (user?.uid === firebaseUser.uid && user.profile) {
+            // The `user` state already contains the profile, likely set by `register()`.
+            // No change needed to `user` state. The separate `profile` & `role` states in context
+            // would have been set by register() and should not be cleared by a lagged Firestore read.
+          } else {
+            // Genuinely no profile in Firestore, or it's a different user just authenticated.
+            // Clear the `user`'s profile field and the context's separate `profile` & `role` states.
+            setUser({ ...firebaseUser, profile: undefined });
+            setProfile(null); 
+            setRole(null);    
+          }
+        }
       } else {
         setUser(null);
         setProfile(null);
@@ -123,12 +140,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setLoading(false);
     });
     return () => unsubscribe();
-  }, [fetchUserProfile]);
+  }, [fetchUserProfile, user]); // Added `user` to dependency array for the check `user?.uid === firebaseUser.uid`
 
   const login = async (email: string, password: string): Promise<AppUser> => {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
-    const userProfileData = await fetchUserProfile(firebaseUser);
+    const userProfileData = await fetchUserProfile(firebaseUser); // This will set profile and role states
     const appUser = { ...firebaseUser, profile: userProfileData || undefined };
     setUser(appUser);
     return appUser;
@@ -141,11 +158,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
     const firebaseUser = userCredential.user;
     
-    const userRole = data.role || 'student'; // Default to student if not provided
+    const userRole = data.role || 'student'; 
 
     const userProfileData: Partial<UserProfile> = {
       displayName: data.displayName,
-      // Academic Info (if student)
       department: userRole === 'student' ? (data.department || FALLBACK_STUDENT_DETAILS.department) : undefined,
       level: userRole === 'student' ? (data.level || FALLBACK_STUDENT_DETAILS.level) : undefined,
       program: userRole === 'student' ? FALLBACK_STUDENT_DETAILS.program : undefined,
@@ -154,8 +170,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       isNewStudent: userRole === 'student' ? (data.level === VALID_LEVELS[0] || data.level === undefined) : undefined,
       isGraduating: userRole === 'student' ? (data.level === VALID_LEVELS[VALID_LEVELS.length - 1]) : undefined,
       matricule: userRole === 'student' ? (data.level ? `CUSMS/S/${new Date().getFullYear().toString().slice(-2)}${String(data.level).charAt(0)}${Math.floor(1000 + Math.random() * 9000)}` : FALLBACK_STUDENT_DETAILS.matricule ) : undefined,
-
-      // Identity Details (if student)
       gender: userRole === 'student' ? data.gender : undefined,
       dateOfBirth: userRole === 'student' ? data.dateOfBirth : undefined,
       placeOfBirth: userRole === 'student' ? data.placeOfBirth : undefined,
@@ -163,12 +177,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       maritalStatus: userRole === 'student' ? data.maritalStatus : undefined,
       nidOrPassport: userRole === 'student' ? data.nidOrPassport : undefined,
       nationality: userRole === 'student' ? data.nationality : undefined,
-
-      // Contact Info (if student)
       phone: userRole === 'student' ? data.phone : undefined,
       address: userRole === 'student' ? data.address : undefined,
-
-      // Guardian Info (if student)
       guardianName: userRole === 'student' ? data.guardianName : undefined,
       guardianPhone: userRole === 'student' ? data.guardianPhone : undefined,
       guardianAddress: userRole === 'student' ? data.guardianAddress : undefined,
@@ -178,7 +188,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       uid: firebaseUser.uid,
       email: firebaseUser.email,
       role: userRole,
-      photoURL: firebaseUser.photoURL, // Initially null, user can update later
+      photoURL: firebaseUser.photoURL, 
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       ...userProfileData,
@@ -186,10 +196,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     await setDoc(doc(db, "users", firebaseUser.uid), finalProfile);
 
+    // Critical: Update context state immediately after successful registration and Firestore write.
     setProfile(finalProfile);
-    setRole(userRole);
+    setRole(userRole);      
     const appUser = { ...firebaseUser, profile: finalProfile };
-    setUser(appUser);
+    setUser(appUser);        
     return appUser;
   };
 
@@ -211,3 +222,4 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     </AuthContext.Provider>
   );
 };
+
