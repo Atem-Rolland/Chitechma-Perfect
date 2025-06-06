@@ -99,40 +99,42 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         isGraduating: userProfileData.role === 'student' ? (userProfileData.isGraduating === undefined ? (userProfileData.level === VALID_LEVELS[VALID_LEVELS.length -1]) : userProfileData.isGraduating) : userProfileData.isGraduating,
         matricule: userProfileData.role === 'student' ? (userProfileData.matricule || FALLBACK_STUDENT_DETAILS.matricule) : userProfileData.matricule,
       };
-      setProfile(completeProfile); // Update context profile state
-      setRole(completeProfile.role);   // Update context role state
+      // These calls are important for keeping the context's standalone profile/role states in sync.
+      setProfile(completeProfile); 
+      setRole(completeProfile.role);
       return completeProfile;
     } else {
-      console.warn("User profile not found in Firestore for UID:", firebaseUser.uid, ". This might be a new user or Firestore propagation delay.");
-      // Do NOT call setProfile(null) or setRole(null) here. Let the caller handle it.
+      console.warn("User profile not found in Firestore for UID:", firebaseUser.uid);
       return null;
     }
-  }, []); // Removed `profile` from dependency array as it was causing potential stale closure issues. fetchUserProfile should be pure based on firebaseUser.
+  }, []); 
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         const fetchedProfileData = await fetchUserProfile(firebaseUser);
+
         if (fetchedProfileData) {
-          // Profile found in Firestore, fetchUserProfile has updated context's profile and role states.
+          // Profile was successfully fetched. fetchUserProfile has already updated context's profile and role.
+          // Now, update the main 'user' state in context.
           setUser({ ...firebaseUser, profile: fetchedProfileData });
         } else {
-          // Profile not found in Firestore.
-          // Check if the current 'user' state (which might have been set by register())
-          // already holds a profile for this firebaseUser. If so, preserve it.
-          if (user?.uid === firebaseUser.uid && user.profile) {
-            // The `user` state already contains the profile, likely set by `register()`.
-            // No change needed to `user` state. The separate `profile` & `role` states in context
-            // would have been set by register() and should not be cleared by a lagged Firestore read.
-          } else {
-            // Genuinely no profile in Firestore, or it's a different user just authenticated.
-            // Clear the `user`'s profile field and the context's separate `profile` & `role` states.
-            setUser({ ...firebaseUser, profile: undefined });
+          // Profile not found in Firestore by this fetchUserProfile call.
+          // This could be a temporary Firestore lag, or the user genuinely has no profile.
+          // We check if the 'user' state in context *already* has a profile for this firebaseUser.uid.
+          // If it does, it means login() or register() likely just set it. We trust that.
+          if (!(user?.uid === firebaseUser.uid && user?.profile)) {
+            // If not, then it's more likely a genuine "no profile" or a different user session causing this.
+            // Clear profile from 'user' state and also the standalone 'profile' & 'role' states.
+            setUser({ ...firebaseUser, profile: undefined }); 
             setProfile(null); 
             setRole(null);    
           }
+          // If user?.uid === firebaseUser.uid && user?.profile was true, we do nothing here,
+          // preserving the profile/role potentially set by login()/register() and fetched by their own fetchUserProfile call.
         }
       } else {
+        // User is signed out
         setUser(null);
         setProfile(null);
         setRole(null);
@@ -140,14 +142,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setLoading(false);
     });
     return () => unsubscribe();
-  }, [fetchUserProfile, user]); // Added `user` to dependency array for the check `user?.uid === firebaseUser.uid`
+  }, [fetchUserProfile, user]); // user is a dependency
 
   const login = async (email: string, password: string): Promise<AppUser> => {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
-    const userProfileData = await fetchUserProfile(firebaseUser); // This will set profile and role states
+    // fetchUserProfile will call setProfile and setRole internally if successful
+    const userProfileData = await fetchUserProfile(firebaseUser); 
     const appUser = { ...firebaseUser, profile: userProfileData || undefined };
-    setUser(appUser);
+    setUser(appUser); // Update the main user object in context
     return appUser;
   };
 
@@ -196,11 +199,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     await setDoc(doc(db, "users", firebaseUser.uid), finalProfile);
 
-    // Critical: Update context state immediately after successful registration and Firestore write.
-    setProfile(finalProfile);
-    setRole(userRole);      
+    // Critical: Update context states immediately after successful registration and Firestore write.
+    setProfile(finalProfile); // This ensures the context's standalone profile is up-to-date
+    setRole(userRole);       // This ensures the context's standalone role is up-to-date
     const appUser = { ...firebaseUser, profile: finalProfile };
-    setUser(appUser);        
+    setUser(appUser);        // This ensures the main user object in context (with its embedded profile) is up-to-date
     return appUser;
   };
 
