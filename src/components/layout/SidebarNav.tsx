@@ -4,7 +4,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import type { NavItem, Role } from '@/config/site';
+import type { NavItem } from '@/config/site'; // NavItem can stay from siteConfig or move to types if preferred
+import type { Role } from '@/types'; // Corrected Role import
 import { cn } from '@/lib/utils';
 import { 
   SidebarMenu, 
@@ -42,7 +43,8 @@ import {
   CalendarCheck, 
   BookCopy as ManageCoursesIcon, 
   FileSignature,
-  Bot // Added Bot icon
+  Bot,
+  CalendarDays
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -73,13 +75,16 @@ const iconMap: Record<string, React.ElementType> = {
   CalendarCheck,
   ManageCoursesIcon, 
   FileSignature,
-  Bot // Added Bot icon to map
+  Bot,
+  CalendarDays
 };
 
-const defaultSidebarNav: Record<Role | "guest", NavItem[]> = {
+// Adjusted to use Role from @/types which includes null
+const defaultSidebarNav: Record<Role | 'guest', NavItem[]> = {
   student: [
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { title: 'My Courses', href: '/courses', icon: BookOpen },
+    { title: 'My Timetable', href: '/dashboard/student/timetable', icon: CalendarDays },
     { 
       title: 'Results', 
       href: '#', 
@@ -255,9 +260,9 @@ export function SidebarNav() {
   const { role } = useAuth();
   const pathname = usePathname();
   
-  const navItems = role ? defaultSidebarNav[role] : [];
+  const navItems = role ? defaultSidebarNav[role] : defaultSidebarNav['null']; // Ensure fallback if role is null initially
 
-  if (!navItems.length) {
+  if (!navItems || !navItems.length) { // Added !navItems check for safety
     return null; 
   }
 

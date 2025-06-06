@@ -211,3 +211,19 @@ export interface ChatMessage {
   text: string;
   timestamp: string;
 }
+
+export interface TimetableEntry {
+  id: string; // Unique ID for the timetable entry
+  courseId: string; // Link to the course
+  courseCode: string;
+  courseTitle: string;
+  dayOfWeek: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday';
+  startTime: string; // e.g., "08:00"
+  endTime: string;   // e.g., "10:00"
+  venue: string;     // e.g., "AMPHI 250", "Lab Hall 1"
+  lecturerName?: string;
+  semester: string; // To filter by semester if needed, e.g., "First Semester"
+  academicYear: string; // To filter by year if needed, e.g., "2024/2025"
+}
+
+```
