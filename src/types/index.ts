@@ -93,8 +93,8 @@ export interface Grade {
   caDetails?: CaDetails; 
   examScore?: number | null; // Can be null if not published
   isPass?: boolean; 
-  isPublished?: boolean; // New field
-  remark?: string; // New field (e.g., "Excellent", "Pass", "Failed")
+  isPublished?: boolean; 
+  remark?: string; 
 }
 
 export interface Payment {
@@ -203,4 +203,11 @@ export interface VideoLecture {
   sourceType?: "Google Classroom" | "CUSMS Platform";
   sourceDetails?: string; 
   classroomLink?: string; 
+}
+
+export interface ChatMessage {
+  id: string;
+  sender: "user" | "bot";
+  text: string;
+  timestamp: string;
 }

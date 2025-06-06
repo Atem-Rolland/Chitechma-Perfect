@@ -27,21 +27,22 @@ import {
   ShieldCheck,
   ChevronDown,
   ChevronRight,
-  BarChart3, // For GPA Analytics
-  DownloadCloud, // For Transcript
-  FileWarning, // For Grade Appeals
-  FolderArchive, // For Course Materials
-  ClipboardCheck, // For Assignments
-  Video, // For Video Lectures
-  MessageSquare, // For Discussion Forum
-  BookCheck as ResultsIcon, // For View Grades (main results)
-  History, // For Payment History
-  Presentation, // For Live Classes
-  Edit, // For Grade Entry/Assignments
-  Bell, // For Announcements
-  CalendarCheck, // For Timetable
-  BookCopy as ManageCoursesIcon, // For Lecturer Manage Courses
-  FileSignature // Added missing import
+  BarChart3, 
+  DownloadCloud, 
+  FileWarning, 
+  FolderArchive, 
+  ClipboardCheck, 
+  Video, 
+  MessageSquare, 
+  BookCheck as ResultsIcon, 
+  History, 
+  Presentation, 
+  Edit, 
+  Bell, 
+  CalendarCheck, 
+  BookCopy as ManageCoursesIcon, 
+  FileSignature,
+  Bot // Added Bot icon
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -71,7 +72,8 @@ const iconMap: Record<string, React.ElementType> = {
   Bell,
   CalendarCheck,
   ManageCoursesIcon, 
-  FileSignature // Added to map
+  FileSignature,
+  Bot // Added Bot icon to map
 };
 
 const defaultSidebarNav: Record<Role | "guest", NavItem[]> = {
@@ -108,6 +110,7 @@ const defaultSidebarNav: Record<Role | "guest", NavItem[]> = {
         { title: 'Video Lectures', href: '/dashboard/student/e-learning/lectures', icon: Video },
         { title: 'Live Classes', href: '/dashboard/student/e-learning/live-classes', icon: Presentation },
         { title: 'Discussion Forum', href: '/dashboard/student/e-learning/forum', icon: MessageSquare },
+        { title: 'AI Chatbot', href: '/dashboard/student/e-learning/chatbot', icon: Bot },
       ]
     }
   ],
