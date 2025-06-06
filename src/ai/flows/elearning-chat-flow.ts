@@ -34,6 +34,7 @@ export async function elearningChat(input: ElearningChatInput): Promise<Elearnin
 
 const prompt = ai.definePrompt({
   name: 'elearningChatPrompt',
+  model: 'googleai/gemini-2.0-flash', // Explicitly set the model
   input: { schema: ElearningChatInputSchema },
   output: { schema: ElearningChatOutputSchema },
   prompt: `You are a friendly, empathetic, and knowledgeable e-learning assistant chatbot for Chitechma University.
@@ -55,7 +56,7 @@ No history yet. This is the start of the conversation.
 Current Student Query:
 User: {{{query}}}
 
-Provide your response as the e-learning assistant.`, // Removed "Your response should be: Bot: "
+Provide your response as the e-learning assistant.`,
 });
 
 const elearningChatFlow = ai.defineFlow(
@@ -65,14 +66,39 @@ const elearningChatFlow = ai.defineFlow(
     outputSchema: ElearningChatOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    if (!output) {
-        // Handle cases where the model might not return a valid structured output
-        // or if safety settings block the response.
-        console.error('Elearning Chat Flow: Model did not return a valid output.', await prompt(input).catch(e => e));
-        return { response: "I'm sorry, I couldn't generate a response at this moment. Please try rephrasing your question or try again later." };
+    let promptResult;
+    try {
+      // Attempt to get a response from the AI model using the defined prompt
+      promptResult = await prompt(input);
+    } catch (error) {
+      // Log errors that occur during the execution of the prompt (e.g., API errors, network issues)
+      console.error('Elearning Chat Flow: Error during prompt execution.', error, 'Input was:', input);
+      
+      let userMessage = "I'm sorry, an unexpected error occurred while processing your request. Please try again later.";
+      // Check if the error message indicates a safety-related issue
+      if (error instanceof Error && error.message.toLowerCase().includes('safety')) {
+        userMessage = "I'm sorry, I cannot respond to that query due to safety guidelines. Please try a different question.";
+      } else if (error instanceof Error) {
+        // Log more details for debugging if it's a general error
+        console.error('Detailed error message for prompt execution failure:', error.message);
+      }
+      return { response: userMessage };
     }
-    return output;
+
+    // Extract the structured output from the prompt result
+    // The 'output' field is expected based on Genkit's handling of prompts with an outputSchema
+    const flowOutput = promptResult?.output;
+
+    if (!flowOutput) {
+      // This case handles scenarios where the prompt executed without throwing an error,
+      // but the model's response was empty, blocked by safety filters post-generation,
+      // or could not be successfully parsed into the ElearningChatOutputSchema.
+      console.error('Elearning Chat Flow: Model did not return a valid structured output. Input was:', input, 'Raw prompt result (if any):', promptResult);
+      return { response: "I'm sorry, I couldn't generate a response at this moment. This might be due to content filters or an issue with understanding the request. Please try rephrasing your question." };
+    }
+    
+    // If a valid structured output is received, return it
+    return flowOutput;
   }
 );
 
