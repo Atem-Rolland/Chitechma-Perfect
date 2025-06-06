@@ -28,6 +28,7 @@ import { motion } from "framer-motion";
 import Image from "next/image"; 
 import { format, parseISO } from "date-fns"; 
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 
 const MOCK_ALL_COURSES_SOURCE: Course[] = [
@@ -268,7 +269,7 @@ export default function ManageCoursePage() {
         setCurrentAssignmentToEdit(assignment);
         setNewAssignmentTitle(assignment.title);
         setNewAssignmentInstructions(assignment.description);
-        setNewAssignmentDueDate(assignment.dueDate instanceof Timestamp ? assignment.dueDate.toDate() : parseISO(assignment.dueDate));
+        setNewAssignmentDueDate(assignment.dueDate instanceof Timestamp ? assignment.dueDate.toDate() : parseISO(assignment.dueDate as string));
         setNewAssignmentMaxScore(assignment.maxScore);
         setNewAssignmentFileTypes(assignment.allowedFileTypes || ".pdf,.docx,.zip");
         setNewAssignmentResourceFile(null); // Do not allow changing resource file on edit for now
@@ -294,7 +295,11 @@ export default function ManageCoursePage() {
                     // Note: assignmentResources are not modified in edit mode for this iteration
                 };
                 await updateDoc(doc(db, "assignments", currentAssignmentToEdit.id), updatedAssignmentData);
-                setAssignments(prev => prev.map(a => a.id === currentAssignmentToEdit.id ? {...a, ...updatedAssignmentData, dueDate: newAssignmentDueDate.toISOString()} : a).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+                setAssignments(prev => prev.map(a => a.id === currentAssignmentToEdit.id ? {...a, ...updatedAssignmentData, dueDate: newAssignmentDueDate.toISOString()} : a).sort((a,b) => {
+                     const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toDate() : new Date(a.createdAt as string);
+                     const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toDate() : new Date(b.createdAt as string);
+                     return dateB.getTime() - dateA.getTime();
+                }));
                 toast({ title: "Assignment Updated", description: `"${newAssignmentTitle}" has been updated successfully.`});
             } else { // Create Mode
                 let resource: AssignmentResource | undefined = undefined;
@@ -312,7 +317,7 @@ export default function ManageCoursePage() {
                         url: urlData.publicUrl,
                         type: newAssignmentResourceFile.type,
                         size: newAssignmentResourceFile.size,
-                        storagePath: filePath, // Save storage path for deletion
+                        storagePath: filePath, 
                     };
                 }
 
@@ -332,7 +337,11 @@ export default function ManageCoursePage() {
                     gradedSubmissions: 0,
                 };
                 const docRef = await addDoc(collection(db, "assignments"), assignmentToSave);
-                setAssignments(prev => [{ ...assignmentToSave, id: docRef.id, createdAt: new Date(), updatedAt: new Date(), dueDate: newAssignmentDueDate.toISOString() } as Assignment, ...prev].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+                setAssignments(prev => [{ ...assignmentToSave, id: docRef.id, createdAt: new Date(), updatedAt: new Date(), dueDate: newAssignmentDueDate.toISOString() } as Assignment, ...prev].sort((a,b) => {
+                    const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toDate() : new Date(a.createdAt as string);
+                    const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toDate() : new Date(b.createdAt as string);
+                    return dateB.getTime() - dateA.getTime();
+                }));
                 toast({ title: "Assignment Created", description: `"${newAssignmentTitle}" has been created successfully.`});
             }
             setIsAssignmentDialogOpen(false);
@@ -355,7 +364,7 @@ export default function ManageCoursePage() {
             if (assignmentToDelete.assignmentResources && assignmentToDelete.assignmentResources.length > 0) {
                 const storagePathsToDelete: string[] = [];
                 for (const resource of assignmentToDelete.assignmentResources) {
-                    if (resource.storagePath) { // Check if storagePath exists
+                    if (resource.storagePath) { 
                         storagePathsToDelete.push(resource.storagePath);
                     }
                 }
@@ -560,7 +569,7 @@ export default function ManageCoursePage() {
                      <Dialog open={isAssignmentDialogOpen} onOpenChange={(isOpen) => { 
                             setIsAssignmentDialogOpen(isOpen); 
                             if (!isOpen) {
-                                resetAssignmentForm(); // Reset form and currentAssignmentToEdit
+                                resetAssignmentForm(); 
                             }
                         }}>
                         <DialogTrigger asChild>
@@ -617,7 +626,7 @@ export default function ManageCoursePage() {
                                     <Input id="assignment-file-types" value={newAssignmentFileTypes} onChange={(e) => setNewAssignmentFileTypes(e.target.value)} placeholder="e.g., .pdf, .docx, .zip" />
                                      <p className="text-xs text-muted-foreground mt-1">Comma-separated list of extensions (e.g., .pdf,.docx).</p>
                                 </div>
-                                {!currentAssignmentToEdit && ( // Only show for new assignments
+                                {!currentAssignmentToEdit && ( 
                                     <div>
                                         <Label htmlFor="assignment-resource-file">Upload Resource File (Optional)</Label>
                                         <Input id="assignment-resource-file" type="file" onChange={handleAssignmentResourceFileChange} 
@@ -672,7 +681,11 @@ export default function ManageCoursePage() {
                                                     {assignment.gradedSubmissions || 0} / {assignment.totalSubmissions || 0} Graded
                                                 </TableCell>
                                                 <TableCell className="text-right space-x-1">
-                                                    <Button variant="outline" size="sm" disabled><Eye className="mr-1 h-4 w-4"/>View</Button>
+                                                    <Button variant="outline" size="sm" asChild>
+                                                        <Link href={`/dashboard/lecturer/courses/${courseId}/assignments/${assignment.id}/submissions`}>
+                                                            <Eye className="mr-1 h-4 w-4"/>View
+                                                        </Link>
+                                                    </Button>
                                                     <Button 
                                                         variant="outline" 
                                                         size="sm" 
@@ -716,3 +729,4 @@ export default function ManageCoursePage() {
         </motion.div>
     );
 }
+

@@ -144,31 +144,43 @@ export interface Assignment {
   assignmentResources?: AssignmentResource[]; // Files uploaded by lecturer with assignment
   createdAt: any; // Timestamp
   updatedAt: any; // Timestamp
-  status?: "Open" | "Closed" | "Grading" | "Completed"; // Optional status
-  totalSubmissions?: number; // (For display - could be dynamic)
-  gradedSubmissions?: number; // (For display - could be dynamic)
+  status?: "Open" | "Closed" | "Grading" | "Completed"; 
+  totalSubmissions?: number; 
+  gradedSubmissions?: number; 
+  // Fields from mock data that might be useful
+  courseCode?: string; // Denormalized for easier display
+  courseName?: string; // Denormalized
+  allowsResubmission?: boolean; // If student can resubmit
+  submittedText?: string; // If a student's text submission (relevant for student view)
+  submittedFile?: { name: string; type: string; size: number }; // (relevant for student view)
+  submissionDate?: string; // (relevant for student view)
+  grade?: string; // (relevant for student view, e.g., "85/100")
+  feedback?: string; // (relevant for student view)
 }
 
 export interface StudentSubmissionFile {
   name: string;
-  url: string; // URL to the file in Supabase Storage
-  type: string; // Mime type
-  size: number; // Size in bytes
+  url: string; // Public URL from Supabase
+  type: string; // MIME type
+  size: number; // in bytes
+  storagePath?: string; // Path in Supabase for potential future management (e.g., if submissions can be deleted by admin)
 }
 
 export interface Submission {
   id: string; // Firestore document ID
   assignmentId: string;
+  courseId: string; 
   studentId: string;
-  studentName?: string; // Denormalized for easier display
-  studentMatricule?: string; // Denormalized
-  submittedAt: any; // Timestamp
+  studentName?: string; // Denormalized for display
+  studentMatricule?: string; // Denormalized for display
+  submittedAt: any; // Firestore Timestamp
   files?: StudentSubmissionFile[];
   textSubmission?: string;
-  grade?: number | null; // Score given by lecturer
+  grade?: number | null; // Score given by lecturer out of assignment.maxScore
   feedback?: string;
   isLate?: boolean;
-  lecturerId?: string; // To scope feedback/grading
+  status: 'Submitted' | 'Late Submission' | 'Graded' | 'Pending Review'; // Status of this specific submission
+  lecturerId?: string; // To scope feedback/grading if multiple lecturers on a course
 }
 
 
