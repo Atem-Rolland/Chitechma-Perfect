@@ -124,23 +124,52 @@ export interface CourseMaterial {
   description?: string; 
 }
 
+export interface AssignmentResource {
+  name: string;
+  url: string; // URL to the file in Supabase Storage
+  type?: string; // Mime type
+  size?: number; // Size in bytes
+}
 
 export interface Assignment {
-  id: string;
+  id: string; // Firestore document ID
   courseId: string;
-  courseCode: string;
-  courseName: string;
+  lecturerId: string;
   title: string;
   description: string;
-  dueDate: string; 
-  status: "Pending Submission" | "Submitted" | "Graded" | "Late";
-  grade?: string; 
-  feedback?: string;
-  submissionDate?: string; 
-  submittedFile?: { name: string; type: string; size: number }; 
-  submittedText?: string;
-  allowsResubmission?: boolean;
+  dueDate: any; // Timestamp or ISO string
+  maxScore: number;
+  allowedFileTypes?: string; // e.g., ".pdf,.docx,.zip"
+  assignmentResources?: AssignmentResource[]; // Files uploaded by lecturer with assignment
+  createdAt: any; // Timestamp
+  updatedAt: any; // Timestamp
+  status?: "Open" | "Closed" | "Grading" | "Completed"; // Optional status
+  totalSubmissions?: number; // (For display - could be dynamic)
+  gradedSubmissions?: number; // (For display - could be dynamic)
 }
+
+export interface StudentSubmissionFile {
+  name: string;
+  url: string; // URL to the file in Supabase Storage
+  type: string; // Mime type
+  size: number; // Size in bytes
+}
+
+export interface Submission {
+  id: string; // Firestore document ID
+  assignmentId: string;
+  studentId: string;
+  studentName?: string; // Denormalized for easier display
+  studentMatricule?: string; // Denormalized
+  submittedAt: any; // Timestamp
+  files?: StudentSubmissionFile[];
+  textSubmission?: string;
+  grade?: number | null; // Score given by lecturer
+  feedback?: string;
+  isLate?: boolean;
+  lecturerId?: string; // To scope feedback/grading
+}
+
 
 export interface ForumUser {
   id: string;
@@ -259,12 +288,13 @@ export const getMaterialTypeIcon = (type: MaterialType): React.ElementType => {
   const LucideIcons = require("lucide-react");
   switch (type) {
     case "pdf": return LucideIcons.FileText;
-    case "docx": return LucideIcons.FileText; // Could use a specific Word icon if available or desired
+    case "docx": return LucideIcons.FileText; 
     case "pptx": return LucideIcons.FilePresentation;
     case "video_link": return LucideIcons.Youtube;
     case "web_link": return LucideIcons.Link;
     case "zip": return LucideIcons.Archive;
-    case "image": return LucideIcons.Image; // Corrected from ImageIcon to Image
+    case "image": return LucideIcons.Image; 
     default: return LucideIcons.File;
   }
 };
+
