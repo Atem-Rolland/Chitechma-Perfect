@@ -31,26 +31,31 @@ export default function ChatbotPage() {
   };
   
   useEffect(() => {
+    // Add an initial greeting from the bot only if messages are empty
+    if (messages.length === 0) {
+      setMessages([
+        {
+          id: 'initial-greeting',
+          sender: 'bot',
+          text: `Hello ${profile?.displayName?.split(' ')[0] || 'Student'}! I am your Chitechma University e-learning assistant. How can I help you today?`,
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+    }
+  }, [profile?.displayName]); // Rerun if profile name changes, useful if profile loads late
+
+  useEffect(() => {
     // Scroll to bottom when new messages are added
     if (scrollAreaRef.current) {
-      const scrollViewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      const scrollViewport = scrollAreaRef.current.querySelector<HTMLDivElement>('[data-radix-scroll-area-viewport]');
       if(scrollViewport) {
-        scrollViewport.scrollTop = scrollViewport.scrollHeight;
+        // Using requestAnimationFrame to ensure scrolling happens after layout calculation
+        requestAnimationFrame(() => {
+          scrollViewport.scrollTop = scrollViewport.scrollHeight;
+        });
       }
     }
   }, [messages]);
-  
-  useEffect(() => {
-    // Add an initial greeting from the bot
-    setMessages([
-      {
-        id: 'initial-greeting',
-        sender: 'bot',
-        text: 'Hello! I am your Chitechma University e-learning assistant. How can I help you today?',
-        timestamp: new Date().toISOString(),
-      },
-    ]);
-  }, []);
 
   const handleSendMessage = async () => {
     if (inputValue.trim() === '' || isLoading) return;
@@ -63,14 +68,16 @@ export default function ChatbotPage() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = inputValue;
     setInputValue('');
     setIsLoading(true);
 
     try {
+      // Create history from the current messages state *before* adding the new user message for the API call
       const chatHistoryForFlow = messages.map(msg => ({ sender: msg.sender, text: msg.text }));
       
       const flowInput: ElearningChatInput = {
-        query: userMessage.text,
+        query: currentInput, // Use the captured input value
         history: chatHistoryForFlow.slice(-10) // Send last 10 messages for context
       };
       const result = await elearningChat(flowInput);
@@ -87,7 +94,7 @@ export default function ChatbotPage() {
       const errorMessage: ChatMessage = {
         id: `error-${Date.now()}`,
         sender: 'bot',
-        text: 'Sorry, I encountered an error. Please try again later.',
+        text: 'Sorry, I encountered an error processing your request. Please try again.',
         timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -101,7 +108,7 @@ export default function ChatbotPage() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="flex flex-col h-[calc(100vh-10rem)] md:h-[calc(100vh-8rem)]" // Adjusted height calculation
+      className="flex flex-col h-[calc(100vh-10rem)] md:h-[calc(100vh-8rem)]" 
     >
       <Card className="flex-grow flex flex-col shadow-xl">
         <CardHeader className="border-b">
@@ -187,3 +194,4 @@ export default function ChatbotPage() {
     </motion.div>
   );
 }
+
