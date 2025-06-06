@@ -31,18 +31,18 @@ export default function ChatbotPage() {
   };
   
   useEffect(() => {
-    // Add an initial greeting from the bot only if messages are empty
-    if (messages.length === 0) {
+    // Add an initial greeting from the bot only if messages are empty and profile is loaded
+    if (messages.length === 0 && profile) {
       setMessages([
         {
           id: 'initial-greeting',
           sender: 'bot',
-          text: `Hello ${profile?.displayName?.split(' ')[0] || 'Student'}! I am your Chitechma University e-learning assistant. How can I help you today?`,
+          text: `Hello ${profile.displayName?.split(' ')[0] || 'Student'}! I am your Chitechma University e-learning assistant. How can I help you today?`,
           timestamp: new Date().toISOString(),
         },
       ]);
     }
-  }, [profile?.displayName]); // Rerun if profile name changes, useful if profile loads late
+  }, [profile, messages.length]); // Depend on profile and messages.length
 
   useEffect(() => {
     // Scroll to bottom when new messages are added
@@ -60,25 +60,24 @@ export default function ChatbotPage() {
   const handleSendMessage = async () => {
     if (inputValue.trim() === '' || isLoading) return;
 
+    const currentInput = inputValue; // Capture input before clearing
+    const historyForFlow = messages.map(msg => ({ sender: msg.sender, text: msg.text })); // Capture history before adding new user message
+
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       sender: 'user',
-      text: inputValue,
+      text: currentInput, // Use captured input
       timestamp: new Date().toISOString(),
     };
 
     setMessages(prev => [...prev, userMessage]);
-    const currentInput = inputValue;
     setInputValue('');
     setIsLoading(true);
 
     try {
-      // Create history from the current messages state *before* adding the new user message for the API call
-      const chatHistoryForFlow = messages.map(msg => ({ sender: msg.sender, text: msg.text }));
-      
       const flowInput: ElearningChatInput = {
-        query: currentInput, // Use the captured input value
-        history: chatHistoryForFlow.slice(-10) // Send last 10 messages for context
+        query: currentInput,
+        history: historyForFlow.slice(-10) // Send last 10 messages for context
       };
       const result = await elearningChat(flowInput);
 

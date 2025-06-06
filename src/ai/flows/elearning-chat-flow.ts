@@ -55,8 +55,7 @@ No history yet. This is the start of the conversation.
 Current Student Query:
 User: {{{query}}}
 
-Your response should be:
-Bot: `,
+Provide your response as the e-learning assistant.`, // Removed "Your response should be: Bot: "
 });
 
 const elearningChatFlow = ai.defineFlow(
@@ -67,7 +66,13 @@ const elearningChatFlow = ai.defineFlow(
   },
   async (input) => {
     const { output } = await prompt(input);
-    return output!;
+    if (!output) {
+        // Handle cases where the model might not return a valid structured output
+        // or if safety settings block the response.
+        console.error('Elearning Chat Flow: Model did not return a valid output.', await prompt(input).catch(e => e));
+        return { response: "I'm sorry, I couldn't generate a response at this moment. Please try rephrasing your question or try again later." };
+    }
+    return output;
   }
 );
 
