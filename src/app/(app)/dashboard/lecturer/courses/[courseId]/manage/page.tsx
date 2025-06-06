@@ -6,8 +6,11 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import type { Course, CourseMaterial, MaterialType } from "@/types";
-import { MATERIAL_TYPES, materialTypeAcceptsFile, materialTypeAcceptsLink, getMaterialTypeIcon } from "@/types"; // Import helpers
-import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS } from "@/config/data"; // For MOCK_ALL_COURSES_SOURCE
+import { MATERIAL_TYPES, materialTypeAcceptsFile, materialTypeAcceptsLink, getMaterialTypeIcon } from "@/types";
+import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS } from "@/config/data";
+import { db, auth } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
+import { collection, addDoc, query, where, orderBy, getDocs, serverTimestamp, doc, deleteDoc, Timestamp } from "firebase/firestore";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,24 +21,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, UploadCloud, PlusCircle, Trash2, Download, ExternalLink as OpenLinkIcon, Info, File, FileText, FilePresentation, Youtube, Link as LinkIcon, Archive, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, UploadCloud, PlusCircle, Trash2, Download, ExternalLink as OpenLinkIcon, Info, File, FileText, FilePresentation, Youtube, Link as LinkIcon, Archive, Image as ImageIconLucide } from "lucide-react"; // Renamed ImageIcon to ImageIconLucide
 import { motion } from "framer-motion";
-import Image from "next/image"; // For placeholder image if needed
-import { format } from "date-fns"; // For formatting dates
+import Image from "next/image"; 
+import { format } from "date-fns"; 
 
 // Simplified MOCK_ALL_COURSES_SOURCE for this page context.
-// In a real app, this would come from a central data store or API.
 const MOCK_ALL_COURSES_SOURCE: Course[] = [
     { id: "CSE301_CESM_Y2324_S1", title: "Introduction to Algorithms", code: "CSE301", description: "Fundamental algorithms and data structures.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2023/2024" },
     { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401", description: "Covers native and cross-platform development.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 10-12, Wed 10-11, Lab Hall 1", prerequisites: ["CSE301"], semester: "First Semester", academicYear: "2024/2025" },
     { id: "CSE409_CESM_Y2425_S1", title: "Software Development and OOP", code: "CSE409", description: "Object-oriented principles and design patterns.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Tue 14-16, Fri 8-9", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
 ];
 
-const MOCK_COURSE_MATERIALS: CourseMaterial[] = [
-    { id: "mat001", courseId: "CSE401_CESM_Y2425_S1", lecturerId: "lect001", name: "Lecture Slides - Week 1.pptx", type: "pptx", url: "#", size: 2500000, uploadedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), fileName: "Lecture Slides - Week 1.pptx", fileType: "application/vnd.openxmlformats-officedocument.presentationml.presentation"},
-    { id: "mat002", courseId: "CSE401_CESM_Y2425_S1", lecturerId: "lect001", name: "Syllabus_MobileDev.pdf", type: "pdf", url: "#", size: 500000, uploadedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), fileName: "Syllabus_MobileDev.pdf", fileType: "application/pdf"},
-    { id: "mat003", courseId: "CSE401_CESM_Y2425_S1", lecturerId: "lect001", name: "Android Studio Setup Guide", type: "web_link", url: "https://developer.android.com/studio/install", uploadedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString() },
-];
 
 function formatFileSize(bytes: number | undefined, decimals = 2): string {
     if (!bytes || bytes === 0) return '0 Bytes';
@@ -56,7 +53,8 @@ export default function ManageCoursePage() {
 
     const [course, setCourse] = useState<Course | null | undefined>(undefined);
     const [materials, setMaterials] = useState<CourseMaterial[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingCourseDetails, setIsLoadingCourseDetails] = useState(true);
+    const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
     
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
@@ -67,30 +65,47 @@ export default function ManageCoursePage() {
     const [newMaterialDescription, setNewMaterialDescription] = useState("");
 
     useEffect(() => {
-        setIsLoading(true);
-        const foundCourse = MOCK_ALL_COURSES_SOURCE.find(c => c.id === courseId);
-        
-        setTimeout(() => { // Simulate API delay
+        async function fetchCourseData() {
+            if (!courseId) return;
+            setIsLoadingCourseDetails(true);
+            setIsLoadingMaterials(true);
+
+            // Fetch course details (still mocked for now)
+            const foundCourse = MOCK_ALL_COURSES_SOURCE.find(c => c.id === courseId);
+            setCourse(foundCourse || null);
+            setIsLoadingCourseDetails(false);
+
+            // Fetch materials from Firestore
             if (foundCourse) {
-                setCourse(foundCourse);
-                // Filter mock materials for this course
-                const courseSpecificMaterials = MOCK_COURSE_MATERIALS.filter(m => m.courseId === courseId);
-                setMaterials(courseSpecificMaterials);
-            } else {
-                setCourse(null);
+                try {
+                    const materialsQuery = query(
+                        collection(db, "courseMaterials"), 
+                        where("courseId", "==", courseId),
+                        orderBy("uploadedAt", "desc")
+                    );
+                    const querySnapshot = await getDocs(materialsQuery);
+                    const fetchedMaterials: CourseMaterial[] = [];
+                    querySnapshot.forEach((doc) => {
+                        fetchedMaterials.push({ id: doc.id, ...doc.data() } as CourseMaterial);
+                    });
+                    setMaterials(fetchedMaterials);
+                } catch (error) {
+                    console.error("Error fetching course materials:", error);
+                    toast({ variant: "destructive", title: "Error", description: "Could not load course materials." });
+                }
             }
-            setIsLoading(false);
-        }, 500);
-    }, [courseId]);
+            setIsLoadingMaterials(false);
+        }
+        fetchCourseData();
+    }, [courseId, toast]);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
-            // Add file size validation if needed (e.g., max 50MB)
-            if (file.size > 50 * 1024 * 1024) {
+            if (file.size > 50 * 1024 * 1024) { // 50MB limit
                 toast({ variant: "destructive", title: "File too large", description: "Maximum file size is 50MB." });
                 setNewMaterialFile(null);
-                event.target.value = ""; // Clear the input
+                event.target.value = ""; 
                 return;
             }
             setNewMaterialFile(file);
@@ -110,54 +125,99 @@ export default function ManageCoursePage() {
     };
 
     const handleUploadMaterial = async () => {
-        if (!newMaterialName.trim() || !newMaterialType) {
-            toast({ variant: "destructive", title: "Missing fields", description: "Please provide material name and type." });
+        if (!newMaterialName.trim() || !newMaterialType || !user?.uid || !courseId) {
+            toast({ variant: "destructive", title: "Missing fields", description: "Material name, type, and user/course context are required." });
             return;
         }
-        if (materialTypeAcceptsFile(newMaterialType) && !newMaterialFile) {
-             toast({ variant: "destructive", title: "File Required", description: "Please select a file for this material type." });
-            return;
-        }
-        if (materialTypeAcceptsLink(newMaterialType) && !newMaterialLink.trim()) {
-            toast({ variant: "destructive", title: "Link Required", description: "Please enter a URL for this link type." });
-            return;
-        }
+
+        let fileUrl = "";
+        let storagePath = "";
 
         setIsUploading(true);
-        // Simulate upload and Firestore save
-        await new Promise(resolve => setTimeout(resolve, 1500));
 
-        const newMaterialEntry: CourseMaterial = {
-            id: `mat${Date.now()}`,
-            courseId: courseId,
-            lecturerId: user?.uid || "unknown_lecturer",
-            name: newMaterialName,
-            type: newMaterialType,
-            url: materialTypeAcceptsLink(newMaterialType) ? newMaterialLink : `#simulated-${newMaterialFile?.name || 'file'}`,
-            size: newMaterialFile?.size,
-            fileName: newMaterialFile?.name,
-            fileType: newMaterialFile?.type,
-            uploadedAt: new Date().toISOString(),
-            description: newMaterialDescription,
-        };
-        setMaterials(prev => [newMaterialEntry, ...prev]);
-        toast({ title: "Material Uploaded", description: `${newMaterialName} has been added.` });
-        setIsUploading(false);
-        setIsUploadDialogOpen(false);
-        resetUploadForm();
+        try {
+            if (materialTypeAcceptsFile(newMaterialType) && newMaterialFile) {
+                const filePath = `course_materials/${courseId}/${Date.now()}-${newMaterialFile.name}`;
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('cusms-files')
+                    .upload(filePath, newMaterialFile);
+
+                if (uploadError) throw uploadError;
+                
+                const { data: urlData } = supabase.storage.from('cusms-files').getPublicUrl(filePath);
+                fileUrl = urlData.publicUrl;
+                storagePath = filePath;
+
+            } else if (materialTypeAcceptsLink(newMaterialType) && newMaterialLink.trim()) {
+                fileUrl = newMaterialLink.trim();
+                if (!fileUrl.startsWith('http://') && !fileUrl.startsWith('https://')) {
+                    fileUrl = 'https://' + fileUrl;
+                }
+            } else {
+                 toast({ variant: "destructive", title: "Input Required", description: "Please provide a file or a link for the selected material type." });
+                 setIsUploading(false);
+                 return;
+            }
+
+            const materialToSave: Omit<CourseMaterial, 'id'> = {
+                courseId: courseId,
+                lecturerId: user.uid,
+                name: newMaterialName,
+                type: newMaterialType,
+                url: fileUrl,
+                storagePath: storagePath || undefined,
+                fileName: newMaterialFile?.name,
+                fileType: newMaterialFile?.type,
+                size: newMaterialFile?.size,
+                uploadedAt: serverTimestamp(),
+                description: newMaterialDescription.trim() || undefined,
+            };
+
+            const docRef = await addDoc(collection(db, "courseMaterials"), materialToSave);
+            // Optimistic update:
+            setMaterials(prev => [{ ...materialToSave, id: docRef.id, uploadedAt: new Date() } as CourseMaterial, ...prev]);
+            
+            toast({ title: "Material Uploaded", description: `${newMaterialName} has been added.` });
+            setIsUploadDialogOpen(false);
+            resetUploadForm();
+
+        } catch (error: any) {
+            console.error("Error uploading material:", error);
+            toast({ variant: "destructive", title: "Upload Failed", description: error.message || "Could not upload material." });
+        } finally {
+            setIsUploading(false);
+        }
     };
 
-    const handleDeleteMaterial = async (materialId: string) => {
-        // Confirm deletion
-        if (!window.confirm("Are you sure you want to delete this material? This action cannot be undone.")) {
+    const handleDeleteMaterial = async (materialToDelete: CourseMaterial) => {
+        if (!materialToDelete.id) return;
+        if (!window.confirm(`Are you sure you want to delete "${materialToDelete.name}"? This action cannot be undone.`)) {
             return;
         }
-        // Simulate delete
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setMaterials(prev => prev.filter(m => m.id !== materialId));
-        toast({ title: "Material Deleted", description: "The material has been removed.", variant: "default" });
+
+        try {
+            // Delete from Firestore
+            await deleteDoc(doc(db, "courseMaterials", materialToDelete.id));
+
+            // Delete from Supabase Storage if it's a file with a storagePath
+            if (materialToDelete.storagePath) {
+                const { error: storageError } = await supabase.storage
+                    .from('cusms-files')
+                    .remove([materialToDelete.storagePath]);
+                if (storageError) {
+                    console.warn("Error deleting file from Supabase Storage, but Firestore entry removed:", storageError);
+                    toast({ variant: "warning", title: "Partial Deletion", description: "Material removed from list, but file deletion from storage may have failed. Contact support if issues persist." });
+                }
+            }
+            setMaterials(prev => prev.filter(m => m.id !== materialToDelete.id));
+            toast({ title: "Material Deleted", description: `${materialToDelete.name} has been removed.`, variant: "default" });
+        } catch (error: any) {
+            console.error("Error deleting material:", error);
+            toast({ variant: "destructive", title: "Deletion Failed", description: error.message || "Could not delete material." });
+        }
     };
 
+    const isLoading = isLoadingCourseDetails || isLoadingMaterials;
     const IconForType = newMaterialType ? getMaterialTypeIcon(newMaterialType) : File;
 
 
@@ -265,7 +325,9 @@ export default function ManageCoursePage() {
                     </Dialog>
                 </CardHeader>
                 <CardContent>
-                    {materials.length === 0 ? (
+                    {isLoadingMaterials ? (
+                        <div className="text-center py-10"><UploadCloud className="mx-auto h-12 w-12 text-muted-foreground mb-3 animate-pulse" /><p>Loading materials...</p></div>
+                    ) : materials.length === 0 ? (
                         <div className="text-center py-10 border-2 border-dashed border-muted rounded-lg">
                             <IconForType className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
                             <h3 className="text-lg font-semibold text-muted-foreground">No Materials Uploaded Yet</h3>
@@ -277,7 +339,7 @@ export default function ManageCoursePage() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="w-[50px] text-center">Type</TableHead>
-                                    <TableHead>Name</TableHead>
+                                    <TableHead>Name & Description</TableHead>
                                     <TableHead className="hidden md:table-cell text-center">Size</TableHead>
                                     <TableHead className="hidden md:table-cell text-center">Uploaded</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
@@ -286,6 +348,9 @@ export default function ManageCoursePage() {
                             <TableBody>
                                 {materials.map(material => {
                                     const MaterialIcon = getMaterialTypeIcon(material.type);
+                                    const uploadedDate = material.uploadedAt instanceof Timestamp 
+                                                        ? material.uploadedAt.toDate() 
+                                                        : (typeof material.uploadedAt === 'string' ? new Date(material.uploadedAt) : new Date());
                                     return (
                                     <TableRow key={material.id}>
                                         <TableCell className="text-center"><MaterialIcon className="h-5 w-5 mx-auto text-muted-foreground" /></TableCell>
@@ -294,18 +359,18 @@ export default function ManageCoursePage() {
                                             {material.description && <p className="text-xs text-muted-foreground mt-0.5">{material.description}</p>}
                                         </TableCell>
                                         <TableCell className="hidden md:table-cell text-center">{material.size ? formatFileSize(material.size) : (materialTypeAcceptsLink(material.type) ? "Link" : "N/A")}</TableCell>
-                                        <TableCell className="hidden md:table-cell text-center">{format(new Date(material.uploadedAt), "MMM dd, yyyy")}</TableCell>
+                                        <TableCell className="hidden md:table-cell text-center">{format(uploadedDate, "MMM dd, yyyy")}</TableCell>
                                         <TableCell className="text-right space-x-1">
-                                            {materialTypeAcceptsLink(material.type) ? (
+                                            {materialTypeAcceptsLink(material.type) || material.url.startsWith("http") ? (
                                                 <Button variant="outline" size="sm" onClick={() => window.open(material.url, '_blank', 'noopener,noreferrer')}>
                                                     <OpenLinkIcon className="mr-1 h-4 w-4"/>Open Link
                                                 </Button>
                                             ) : (
-                                                <Button variant="outline" size="sm" onClick={() => toast({ title: "Download (Simulated)", description:`Downloading ${material.fileName || material.name}`})}>
+                                                <Button variant="outline" size="sm" onClick={() => window.open(material.url, '_blank', 'noopener,noreferrer')}>
                                                     <Download className="mr-1 h-4 w-4"/>Download
                                                 </Button>
                                             )}
-                                            <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleDeleteMaterial(material.id)}>
+                                            <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleDeleteMaterial(material)}>
                                                 <Trash2 className="h-4 w-4"/>
                                                 <span className="sr-only">Delete {material.name}</span>
                                             </Button>
@@ -347,3 +412,4 @@ export default function ManageCoursePage() {
         </motion.div>
     );
 }
+

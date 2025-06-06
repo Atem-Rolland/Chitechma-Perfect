@@ -110,17 +110,18 @@ export interface Payment {
 export type MaterialType = "pdf" | "docx" | "pptx" | "video_link" | "web_link" | "zip" | "image" | "other";
 
 export interface CourseMaterial {
-  id: string;
+  id: string; // Firestore document ID
   courseId: string;
-  lecturerId: string; // ID of the lecturer who uploaded it
-  name: string; // Display name for the material
+  lecturerId: string; 
+  name: string; 
   type: MaterialType;
-  url: string; // URL to the file in Supabase Storage or external link
-  fileName?: string; // Original name of the uploaded file (if applicable)
-  fileType?: string; // MIME type of the uploaded file (if applicable)
-  size?: number; // Size in bytes (if applicable)
-  uploadedAt: any; // Firestore Timestamp or ISO string
-  description?: string; // Optional description of the material
+  url: string; 
+  storagePath?: string; // Path in Supabase storage, if it's a file
+  fileName?: string; 
+  fileType?: string; 
+  size?: number; 
+  uploadedAt: any; 
+  description?: string; 
 }
 
 
@@ -258,12 +259,12 @@ export const getMaterialTypeIcon = (type: MaterialType): React.ElementType => {
   const LucideIcons = require("lucide-react");
   switch (type) {
     case "pdf": return LucideIcons.FileText;
-    case "docx": return LucideIcons.FileText;
+    case "docx": return LucideIcons.FileText; // Could use a specific Word icon if available or desired
     case "pptx": return LucideIcons.FilePresentation;
     case "video_link": return LucideIcons.Youtube;
     case "web_link": return LucideIcons.Link;
     case "zip": return LucideIcons.Archive;
-    case "image": return LucideIcons.Image;
+    case "image": return LucideIcons.Image; // Corrected from ImageIcon to Image
     default: return LucideIcons.File;
   }
 };
