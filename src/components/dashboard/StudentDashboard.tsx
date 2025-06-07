@@ -5,15 +5,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { BookOpen, GraduationCap, CreditCard, FileText, Download, User, Edit3, Settings, LogOut, HelpCircle, History, ChevronDown, Info, Phone, Mail, MapPin, Smartphone, Building, Users as GuardianIcon, Briefcase, CalendarDays, ShieldAlert, Award, Globe, School, Loader2 } from "lucide-react";
+import { BookOpen, GraduationCap, CreditCard, FileText, Download, User, Edit3, Settings, LogOut, HelpCircle, History, ChevronDown, Info, Phone, Mail, MapPin, Smartphone, Building, Users as GuardianIcon, Briefcase, CalendarDays, ShieldAlert, Award, Globe, School, Loader2, Bell, AlertTriangle, CheckCircle, MessageSquare, FileWarning, Video } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
 import { useState, useEffect, useMemo } from "react";
-import type { Course } from "@/types";
+import type { Course, Notification, NotificationType } from "@/types";
 import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS } from "@/config/data";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatDistanceToNowStrict, parseISO } from 'date-fns';
+import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Mock data for tuition status
 const tuitionStatus = {
@@ -41,12 +44,41 @@ const getLocalStorageKeyForAllRegistrations = (uid?: string) => {
   return `allRegisteredCourses_${uid}`;
 };
 
+
+const MOCK_NOTIFICATIONS: Notification[] = [
+  { id: "n1", title: "Grades Published for CSE301", description: "Your grades for Introduction to Algorithms are now available.", type: "grade_release", timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), isRead: false, link: "/dashboard/student/grades" },
+  { id: "n2", title: "New Material: Week 5 Lecture Notes", description: "Lecture notes for CSE401 - Week 5 have been uploaded.", type: "new_material", timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), isRead: false, link: "/dashboard/student/e-learning/materials" },
+  { id: "n3", title: "Assignment Due: Mobile App Proposal", description: "Your CSE401 UI/UX proposal is due in 3 days.", type: "assignment_due", timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), isRead: true, link: "/dashboard/student/e-learning/assignments" },
+  { id: "n4", title: "Payment Reminder: Second Installment", description: "Your second tuition installment is due next week.", type: "payment_due", timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), isRead: false, link: "/dashboard/student/payments" },
+  { id: "n5", title: "Forum Reply in 'Big O Discussion'", description: "Dr. Eno replied to your question in the CSE301 forum.", type: "forum_reply", timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), isRead: true, link: "/dashboard/student/e-learning/forum" },
+  { id: "n6", title: "System Maintenance Scheduled", description: "The CUSMS portal will be down for maintenance on Sunday from 2 AM to 4 AM.", type: "info", timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), isRead: true },
+];
+
+const getNotificationIcon = (type: NotificationType): React.ElementType => {
+  switch (type) {
+    case 'grade_release': return GraduationCap;
+    case 'new_material': return BookOpen;
+    case 'assignment_due': return FileWarning;
+    case 'payment_due': return CreditCard;
+    case 'forum_reply': return MessageSquare;
+    case 'info': return Info;
+    case 'warning': return AlertTriangle;
+    case 'success': return CheckCircle;
+    case 'course_update': return BookOpen;
+    default: return Bell;
+  }
+};
+
+
 export function StudentDashboard() {
   const { user, profile, logout } = useAuth();
   const [isLoadingCourses, setIsLoadingCourses] = useState(true);
   const [displayedEnrolledCourses, setDisplayedEnrolledCourses] = useState<Course[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
 
   useEffect(() => {
+    // Load Registered Courses
     async function loadRegisteredCoursesForDashboard() {
       setIsLoadingCourses(true);
       await new Promise(resolve => setTimeout(resolve, 500)); 
@@ -66,8 +98,8 @@ export function StudentDashboard() {
             }
         }
         
-        const studentCurrentYear = profile.currentAcademicYear || ACADEMIC_YEARS[2]; // Fallback to 2024/2025
-        const studentCurrentSemester = profile.currentSemester || SEMESTERS[0]; // Fallback to First Semester
+        const studentCurrentYear = profile.currentAcademicYear || ACADEMIC_YEARS[2]; 
+        const studentCurrentSemester = profile.currentSemester || SEMESTERS[0]; 
 
         const filtered = MOCK_ALL_COURSES_SOURCE.filter(course => 
             studentRegisteredIds.includes(course.id) &&
@@ -82,10 +114,21 @@ export function StudentDashboard() {
       }
       setIsLoadingCourses(false);
     }
-    if (profile) { // Only load if profile is available
+
+    // Load Notifications
+    async function loadNotifications() {
+        setIsLoadingNotifications(true);
+        await new Promise(resolve => setTimeout(resolve, 700)); // Simulate API delay
+        setNotifications(MOCK_NOTIFICATIONS.sort((a,b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime()));
+        setIsLoadingNotifications(false);
+    }
+
+    if (profile) { 
         loadRegisteredCoursesForDashboard();
+        loadNotifications();
     } else {
-        setIsLoadingCourses(false); // If no profile, no courses to load
+        setIsLoadingCourses(false); 
+        setIsLoadingNotifications(false);
     }
   }, [profile, user?.uid]);
 
@@ -99,14 +142,20 @@ export function StudentDashboard() {
     return name.substring(0, 2);
   };
 
+  const handleNotificationClick = (notificationId: string) => {
+    setNotifications(prev => 
+      prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
+    );
+    // If notification has a link, we'd navigate here.
+    // For now, just marking as read.
+  };
+
   const academicProgram = profile?.program || "Program Not Set"; 
   const studentDepartment = profile?.department || "Department Not Set";
   const studentLevel = profile?.level ? `Level ${profile.level}` : "Level Not Set";
   const currentAcademicYear = profile?.currentAcademicYear || "Academic Year Not Set";
   const currentSemester = profile?.currentSemester || "Semester Not Set";
 
-  // Placeholder for student specific details not directly in UserProfile
-  // In a real app, this would come from a more detailed student record or profile expansion.
   const studentMockPersonalData = {
     matricule: profile?.matricule || "N/A",
     gender: profile?.gender || "N/A",
@@ -116,11 +165,11 @@ export function StudentDashboard() {
     maritalStatus: profile?.maritalStatus || "N/A",
     nidOrPassport: profile?.nidOrPassport || "N/A",
     nationality: profile?.nationality || "N/A",
-    admissionDate: "2022-09-01", // Example, could be part of extended profile
+    admissionDate: "2022-09-01", 
     studentStatus: "Cameroonian (National)", 
     address: profile?.address || "N/A",
-    emergencyContactName: "John Doe (Father)", // Example
-    emergencyContactPhone: "+237 6XX XXX XXX", // Example
+    emergencyContactName: "John Doe (Father)", 
+    emergencyContactPhone: "+237 6XX XXX XXX", 
     guardianName: profile?.guardianName || "N/A",
     guardianAddress: profile?.guardianAddress || "N/A",
     guardianPhone: profile?.guardianPhone || "N/A",
@@ -255,6 +304,73 @@ export function StudentDashboard() {
         </CardContent>
       </Card>
 
+       {/* Notifications Section */}
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.1 }}>
+        <Card className="shadow-md hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Bell className="text-primary"/>Recent Notifications</CardTitle>
+            <CardDescription>Stay updated with important announcements and alerts.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoadingNotifications ? (
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
+              </div>
+            ) : notifications.length > 0 ? (
+              <ScrollArea className="h-[280px] pr-3">
+                <ul className="space-y-3">
+                  {notifications.slice(0, 5).map(notif => { // Display up to 5 notifications
+                    const Icon = getNotificationIcon(notif.type);
+                    const isClickable = !!notif.link;
+                    const NotificationItemWrapper = isClickable ? Link : 'div';
+                    const wrapperProps = isClickable ? { href: notif.link } : {};
+
+                    return (
+                      <li key={notif.id}>
+                        <NotificationItemWrapper {...wrapperProps}>
+                          <div 
+                            className={cn(
+                              "flex items-start gap-3 p-3 rounded-lg border transition-colors",
+                              !notif.isRead && "bg-primary/5 border-primary/20 hover:bg-primary/10",
+                              notif.isRead && "bg-muted/50 hover:bg-muted/70",
+                              isClickable && "cursor-pointer"
+                            )}
+                            onClick={() => !isClickable && handleNotificationClick(notif.id)} // Mark as read if not a link
+                          >
+                            <Icon className={cn("h-5 w-5 mt-0.5 shrink-0", 
+                                !notif.isRead ? 'text-primary' : 'text-muted-foreground'
+                            )} />
+                            <div className="flex-grow">
+                              <div className="flex justify-between items-start">
+                                <h4 className={cn("font-medium text-sm", !notif.isRead && "text-foreground")}>{notif.title}</h4>
+                                {!notif.isRead && <span className="h-2 w-2 rounded-full bg-primary shrink-0 ml-2 mt-1.5" title="Unread"></span>}
+                              </div>
+                              <p className={cn("text-xs", !notif.isRead ? "text-foreground/80" : "text-muted-foreground")}>{notif.description}</p>
+                              <p className={cn("text-xs mt-1", !notif.isRead ? "text-foreground/60" : "text-muted-foreground/80")}>
+                                {formatDistanceToNowStrict(parseISO(notif.timestamp), { addSuffix: true })}
+                              </p>
+                            </div>
+                          </div>
+                        </NotificationItemWrapper>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </ScrollArea>
+            ) : (
+              <div className="text-center py-6">
+                <Image src="https://placehold.co/200x150.png" alt="No notifications" width={100} height={75} className="mx-auto mb-3 rounded-md opacity-70" data-ai-hint="empty bell notification" />
+                <p className="text-muted-foreground">No new notifications.</p>
+              </div>
+            )}
+          </CardContent>
+          <CardFooter>
+            <Button variant="outline" className="w-full" disabled>View All Notifications (Soon)</Button>
+          </CardFooter>
+        </Card>
+      </motion.div>
+
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.2 }}>
           <Card className="lg:col-span-2 h-full shadow-md hover:shadow-lg transition-shadow">
@@ -374,3 +490,4 @@ export function StudentDashboard() {
     </motion.div>
   );
 }
+

@@ -275,6 +275,29 @@ export interface TimetableEntry {
   academicYear: string; 
 }
 
+export type NotificationType = 
+  | 'info' 
+  | 'warning' 
+  | 'success' 
+  | 'course_update' 
+  | 'grade_release' 
+  | 'payment_due' 
+  | 'assignment_due'
+  | 'new_material'
+  | 'forum_reply';
+
+export interface Notification {
+  id: string;
+  title: string;
+  description: string;
+  type: NotificationType;
+  timestamp: string; // ISO string date
+  isRead: boolean;
+  link?: string; // Optional link to a relevant page in the app
+  icon?: React.ElementType; // For custom icons per notification type
+}
+
+
 // For Course Materials Manager by Lecturer
 export const MATERIAL_TYPES: { value: MaterialType; label: string }[] = [
   { value: "pdf", label: "PDF Document" },
