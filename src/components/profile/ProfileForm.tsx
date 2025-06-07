@@ -135,11 +135,15 @@ export function ProfileForm({ userProfile }: ProfileFormProps) {
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return "U";
-    const names = name.split(' ');
-    if (names.length > 1 && names[0] && names[names.length -1]) {
-      return names[0][0] + names[names.length - 1][0];
+    const names = name.split(' ').filter(Boolean); // filter out empty strings from multiple spaces
+    if (names.length > 1) {
+      return (names[0][0] || "") + (names[names.length - 1][0] || "");
+    } else if (names.length === 1 && names[0].length > 1) {
+      return names[0].substring(0, 2).toUpperCase();
+    } else if (names.length === 1 && names[0].length === 1) {
+      return names[0][0].toUpperCase();
     }
-    return name.substring(0, 2).toUpperCase();
+    return name.length > 1 ? name.substring(0, 2).toUpperCase() : name.toUpperCase();
   };
 
 
@@ -171,10 +175,10 @@ export function ProfileForm({ userProfile }: ProfileFormProps) {
                 <AvatarFallback className="text-3xl">{getInitials(currentProfile?.displayName)}</AvatarFallback>
               </Avatar>
               <div className="flex-grow w-full sm:w-auto">
-                <FormLabel htmlFor="photoFile" className="block text-sm font-medium mb-1">Profile Picture</FormLabel>
+                <FormLabel className="block text-sm font-medium mb-1">Profile Picture</FormLabel>
                 <FormControl>
                   <Input 
-                    id="photoFile" 
+                    id="photoFile-input" 
                     type="file" 
                     accept="image/png, image/jpeg, image/gif"
                     onChange={handleFileChange}

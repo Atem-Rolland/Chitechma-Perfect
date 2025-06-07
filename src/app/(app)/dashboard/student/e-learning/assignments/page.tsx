@@ -17,7 +17,7 @@ import type { Assignment } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { format, parseISO, isPast, differenceInDays, formatDistanceToNowStrict } from 'date-fns';
-import { cn } from "@/lib/utils"; // Added missing import
+import { cn } from "@/lib/utils"; 
 
 // Mock data - in a real app, this would come from a backend
 const MOCK_ENROLLED_COURSES = [

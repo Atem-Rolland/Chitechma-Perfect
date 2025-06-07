@@ -15,7 +15,8 @@ import Image from "next/image";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
 import { DEPARTMENTS, ACADEMIC_YEARS, SEMESTERS, getGradeDetailsFromScore } from "@/config/data";
-import { Badge } from "@/components/ui/badge"; // Added import
+import { Badge } from "@/components/ui/badge"; 
+import { cn } from "@/lib/utils";
 
 // Fetch mock courses to get course details like name and credits
 // This simulates having a central course catalog.
@@ -281,7 +282,7 @@ export default function ViewGradesPage() {
                     </TableHeader>
                     <TableBody>
                         {filteredGrades.map(grade => (
-                        <TableRow key={grade.id} className={grade.isPublished && !grade.isPass ? "bg-destructive/10 dark:bg-destructive/20" : ""}>
+                        <TableRow key={grade.id} className={cn(grade.isPublished && !grade.isPass ? "bg-destructive/10 dark:bg-destructive/20" : "")}>
                             <TableCell className="font-medium">{grade.courseCode}</TableCell>
                             <TableCell>{grade.courseName}</TableCell>
                             <TableCell className="text-center">{grade.credits}</TableCell>
@@ -412,3 +413,4 @@ export default function ViewGradesPage() {
     </motion.div>
   );
 }
+

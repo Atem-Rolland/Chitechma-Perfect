@@ -23,7 +23,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { ArrowLeft, UploadCloud, PlusCircle, Trash2, Download, ExternalLink as OpenLinkIcon, Info, File, FileText, FilePresentation, Youtube, Link as LinkIcon, Archive, Image as ImageIconLucide, CalendarIcon, Edit, Eye, ListChecks, Loader2 } from "lucide-react"; 
+import { 
+    ArrowLeft, UploadCloud, PlusCircle, Trash2, Download, ExternalLink as OpenLinkIcon, Info, FileText, FilePresentation, 
+    Youtube, Link as LinkIconLucide, Archive, Image as ImageIconLucide, CalendarIcon, Edit, Eye, ListChecks, Loader2, File 
+} from "lucide-react"; 
 import { motion } from "framer-motion";
 import Image from "next/image"; 
 import { format, parseISO } from "date-fns"; 
