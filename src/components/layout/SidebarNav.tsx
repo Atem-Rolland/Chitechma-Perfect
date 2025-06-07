@@ -45,7 +45,20 @@ import {
   FileSignature,
   Bot,
   CalendarDays,
-  BarChartHorizontalBig
+  BarChartHorizontalBig, // Added
+  UsersCog, // Added
+  Library, // Added
+  ListChecks, // Added
+  AlertCircle as AlertCircleIcon, // Added
+  UploadCloud as UploadCloudIcon, // Added
+  Lock as LockIcon, // Added
+  Landmark as LandmarkIcon, // Added
+  Receipt as ReceiptIcon, // Added
+  MailWarning as MailWarningIcon, // Added
+  Megaphone as MegaphoneIcon, // Added
+  PieChart as PieChartIcon, // Added
+  SlidersHorizontal as SlidersHorizontalIcon, // Added
+  DatabaseZap as DatabaseZapIcon // Added
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -78,7 +91,20 @@ const iconMap: Record<string, React.ElementType> = {
   FileSignature,
   Bot,
   CalendarDays,
-  BarChartHorizontalBig
+  BarChartHorizontalBig,
+  UsersCog,
+  Library,
+  ListChecks,
+  AlertCircleIcon,
+  UploadCloudIcon,
+  LockIcon,
+  LandmarkIcon,
+  ReceiptIcon,
+  MailWarningIcon,
+  MegaphoneIcon,
+  PieChartIcon,
+  SlidersHorizontalIcon,
+  DatabaseZapIcon
 };
 
 const defaultSidebarNav: Record<Role | 'guest', NavItem[]> = {
@@ -136,29 +162,78 @@ const defaultSidebarNav: Record<Role | 'guest', NavItem[]> = {
       ]
     },
     { title: 'Student Management', href: '/dashboard/lecturer/students', icon: Users },
-    { title: 'Announcements', href: '/dashboard/lecturer/announcements', icon: Bell }, // Can be specific to lecturer announcements
+    { title: 'Announcements', href: '/dashboard/lecturer/announcements', icon: MegaphoneIcon },
     { title: 'Grade Appeals', href: '/dashboard/lecturer/appeals', icon: FileWarning },
     { title: 'My Timetable', href: '/dashboard/lecturer/timetable', icon: CalendarCheck },
   ],
   admin: [
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { title: 'Notifications', href: '/dashboard/notifications', icon: Bell },
-    { title: 'User Management', href: '/dashboard/admin/users', icon: Users },
+    { 
+      title: 'User Management', 
+      href: '#', 
+      icon: UsersCog,
+      subItems: [
+        { title: 'View All Users', href: '/dashboard/admin/users/view-all', icon: Eye},
+        { title: 'Create User', href: '/dashboard/admin/users/create', icon: UserPlus},
+        { title: 'Roles & Permissions', href: '/dashboard/admin/users/roles', icon: ShieldCheck},
+        { title: 'Pending Approvals', href: '/dashboard/admin/approvals/accounts', icon: UserCheck },
+      ] 
+    },
     { 
       title: 'Academic Setup', 
       href: '#', 
       icon: Settings,
       subItems: [
-        { title: 'Courses', href: '/dashboard/admin/courses/manage', icon: BookOpen },
-        { title: 'Departments', href: '/dashboard/admin/departments', icon: ShieldCheck },
+        { title: 'Departments', href: '/dashboard/admin/departments', icon: Library },
         { title: 'Programs', href: '/dashboard/admin/programs', icon: GraduationCap },
-        { title: 'Academic Calendar', href: '/dashboard/admin/academic-years', icon: CalendarDays },
+        { title: 'Academic Periods', href: '/dashboard/admin/academic-years', icon: CalendarDays },
+        { title: 'Course Management', href: '/dashboard/admin/courses/manage', icon: BookOpen },
+        { title: 'Assign Lecturers', href: '/dashboard/admin/courses/assign', icon: Users },
+
       ]
     },
-    { title: 'Approve Accounts', href: '/dashboard/admin/approvals/accounts', icon: UserCheck },
-    { title: 'Course Registration', href: '/dashboard/admin/registration/periods', icon: UserCheck },
-    { title: 'Financial Management', href: '/dashboard/admin/finance/overview', icon: DollarSign },
-    { title: 'System Logs', href: '/dashboard/admin/logs/audit', icon: BarChartHorizontalBig },
+     { 
+      title: 'Registration & Results', 
+      href: '#', 
+      icon: Edit3,
+      subItems: [
+        { title: 'Registration Windows', href: '/dashboard/admin/registration/periods', icon: CalendarCheck },
+        { title: 'Approve Registrations', href: '/dashboard/admin/registrations/approve-courses', icon: ListChecks },
+        { title: 'Result Management', href: '/dashboard/admin/results/entry', icon: FileSignature },
+        { title: 'Lock/Unlock Results', href: '/dashboard/admin/results/lock', icon: LockIcon },
+      ]
+    },
+    { 
+      title: 'Financial Oversight', 
+      href: '#', 
+      icon: DollarSign,
+      subItems: [
+        { title: 'View Payments', href: '/dashboard/admin/finance/payments', icon: Eye },
+        { title: 'Fee Structures', href: '/dashboard/admin/finance/fees', icon: LandmarkIcon },
+        { title: 'Student Records', href: '/dashboard/admin/finance/student-records', icon: FileText },
+        { title: 'Fee Reminders', href: '/dashboard/admin/finance/reminders', icon: MailWarningIcon },
+        { title: 'Payment Gateway Sim', href: '/dashboard/admin/finance/gateway-test', icon: CreditCard },
+      ] 
+    },
+     { 
+      title: 'Communication', 
+      href: '#', 
+      icon: MegaphoneIcon,
+      subItems: [
+         { title: 'Announcements', href: '/dashboard/admin/announcements/new', icon: Edit3 },
+         { title: 'Manage Chatbot', href: '/dashboard/admin/chatbot/manage', icon: Bot },
+      ]
+    },
+    { 
+      title: 'System & Reports', 
+      href: '#', 
+      icon: BarChartHorizontalBig,
+      subItems: [
+        { title: 'Generate Reports', href: '/dashboard/admin/reports', icon: PieChartIcon },
+        { title: 'Audit Logs', href: '/dashboard/admin/logs/audit', icon: History },
+      ] 
+    },
   ],
   finance: [
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -166,6 +241,9 @@ const defaultSidebarNav: Record<Role | 'guest', NavItem[]> = {
     { title: 'Payment Records', href: '/dashboard/finance/payments', icon: DollarSign },
     { title: 'Financial Reports', href: '/dashboard/finance/reports', icon: FileText },
     { title: 'Fee Management', href: '/dashboard/finance/fees', icon: Settings},
+    { title: 'Student Financials', href: '/dashboard/finance/student-records', icon: UsersCog},
+    { title: 'Issue Reminders', href: '/dashboard/finance/reminders', icon: MailWarningIcon},
+
   ],
   guest: [], 
   null: [], 
@@ -186,12 +264,13 @@ const SidebarNavItem: React.FC<SidebarNavItemProps> = ({ item, pathname }) => {
 
   const [isSubmenuOpen, setIsSubmenuOpen] = useState(isActive && !!item.subItems);
 
-  // Effect to open submenu if a sub-item is active on initial load or route change
   React.useEffect(() => {
     if (item.subItems && item.subItems.some(sub => pathname === sub.href || (sub.href !== '/dashboard' && sub.href !== '#' && pathname.startsWith(sub.href)))) {
       setIsSubmenuOpen(true);
+    } else if (item.subItems && !isActive) { // Close if no sub-item is active
+        // setIsSubmenuOpen(false); // This line might be too aggressive, let's test behavior
     }
-  }, [pathname, item.subItems]);
+  }, [pathname, item.subItems, isActive]);
 
 
   const handleToggleSubmenu = (e: React.MouseEvent) => {
