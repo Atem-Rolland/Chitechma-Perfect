@@ -34,6 +34,9 @@ export interface UserProfile {
   guardianPhone?: string;
   guardianAddress?: string;
   
+  status?: 'active' | 'suspended' | 'pending_approval'; // Added status
+  lastLogin?: any; // Firestore Timestamp or ISO string for last login
+  
   createdAt?: any; 
   updatedAt?: any; 
 }
