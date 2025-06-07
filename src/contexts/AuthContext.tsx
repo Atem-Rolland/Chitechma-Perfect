@@ -63,7 +63,7 @@ const FALLBACK_STUDENT_DETAILS = {
   department: DEPARTMENTS.CESM, 
   level: 400, 
   program: "B.Eng. Computer Engineering and System Maintenance",
-  currentAcademicYear: ACADEMIC_YEARS[1], 
+  currentAcademicYear: ACADEMIC_YEARS[2], // Changed from ACADEMIC_YEARS[1] to ACADEMIC_YEARS[2] (2024/2025)
   currentSemester: SEMESTERS[0], 
   isNewStudent: false, 
   isGraduating: true, 

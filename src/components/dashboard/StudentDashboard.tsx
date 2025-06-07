@@ -66,8 +66,8 @@ export function StudentDashboard() {
             }
         }
         
-        const studentCurrentYear = profile.currentAcademicYear || ACADEMIC_YEARS[1];
-        const studentCurrentSemester = profile.currentSemester || SEMESTERS[0];
+        const studentCurrentYear = profile.currentAcademicYear || ACADEMIC_YEARS[2]; // Fallback to 2024/2025
+        const studentCurrentSemester = profile.currentSemester || SEMESTERS[0]; // Fallback to First Semester
 
         const filtered = MOCK_ALL_COURSES_SOURCE.filter(course => 
             studentRegisteredIds.includes(course.id) &&

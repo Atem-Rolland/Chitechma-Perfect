@@ -90,8 +90,8 @@ export default function StudentTimetablePage() {
         return;
       }
       
-      const studentCurrentYear = profile.currentAcademicYear || ACADEMIC_YEARS[ACADEMIC_YEARS.length-1];
-      const studentCurrentSemester = profile.currentSemester || SEMESTERS[0];
+      const studentCurrentYear = profile.currentAcademicYear || ACADEMIC_YEARS[2]; // Fallback to 2024/2025
+      const studentCurrentSemester = profile.currentSemester || SEMESTERS[0]; // Fallback to First Semester
       setCurrentPeriodDisplay(`${studentCurrentSemester}, ${studentCurrentYear}`);
 
       const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
