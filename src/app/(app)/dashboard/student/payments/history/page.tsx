@@ -87,8 +87,8 @@ export default function PaymentHistoryPage() {
   
   const getStatusBadgeVariant = (status: Payment['status']) => {
     switch (status) {
-      case "Completed": return "success"; // Custom variant or style for success
-      case "Pending": return "warning"; // Custom variant or style for warning
+      case "Completed": return "default"; // Using default for success-like appearance (green)
+      case "Pending": return "secondary"; // Using secondary for warning-like (yellow/amber)
       case "Failed": return "destructive";
       default: return "outline";
     }

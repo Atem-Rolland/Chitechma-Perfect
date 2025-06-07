@@ -15,6 +15,7 @@ import Image from "next/image";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
 import { DEPARTMENTS, ACADEMIC_YEARS, SEMESTERS, getGradeDetailsFromScore } from "@/config/data";
+import { Badge } from "@/components/ui/badge"; // Added import
 
 // Fetch mock courses to get course details like name and credits
 // This simulates having a central course catalog.
