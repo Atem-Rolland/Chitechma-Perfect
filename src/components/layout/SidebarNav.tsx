@@ -4,8 +4,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import type { NavItem } from '@/config/site'; // NavItem can stay from siteConfig or move to types if preferred
-import type { Role } from '@/types'; // Corrected Role import
+import type { NavItem } from '@/config/site'; 
+import type { Role } from '@/types'; 
 import { cn } from '@/lib/utils';
 import { 
   SidebarMenu, 
@@ -79,11 +79,9 @@ const iconMap: Record<string, React.ElementType> = {
   CalendarDays
 };
 
-// Adjusted to use Role from @/types which includes null
 const defaultSidebarNav: Record<Role | 'guest', NavItem[]> = {
   student: [
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { title: 'Notifications', href: '/dashboard/notifications', icon: Bell },
     { title: 'My Courses', href: '/courses', icon: BookOpen },
     { title: 'My Timetable', href: '/dashboard/student/timetable', icon: CalendarDays },
     { 
@@ -118,7 +116,8 @@ const defaultSidebarNav: Record<Role | 'guest', NavItem[]> = {
         { title: 'Discussion Forum', href: '/dashboard/student/e-learning/forum', icon: MessageSquare },
         { title: 'AI Chatbot', href: '/dashboard/student/e-learning/chatbot', icon: Bot },
       ]
-    }
+    },
+    { title: 'Notifications', href: '/dashboard/notifications', icon: Bell },
   ],
   lecturer: [
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -135,7 +134,7 @@ const defaultSidebarNav: Record<Role | 'guest', NavItem[]> = {
       ]
     },
     { title: 'Student Management', href: '/dashboard/lecturer/students', icon: Users },
-    { title: 'Announcements', href: '/dashboard/lecturer/announcements', icon: Bell },
+    { title: 'Announcements', href: '/dashboard/lecturer/announcements', icon: Bell }, // Can be specific to lecturer announcements
     { title: 'Grade Appeals', href: '/dashboard/lecturer/appeals', icon: FileWarning },
     { title: 'My Timetable', href: '/dashboard/lecturer/timetable', icon: CalendarCheck },
   ],
@@ -148,18 +147,23 @@ const defaultSidebarNav: Record<Role | 'guest', NavItem[]> = {
       href: '#', 
       icon: Settings,
       subItems: [
-        { title: 'Courses', href: '/dashboard/admin/courses', icon: BookOpen },
+        { title: 'Courses', href: '/dashboard/admin/courses/manage', icon: BookOpen },
         { title: 'Departments', href: '/dashboard/admin/departments', icon: ShieldCheck },
         { title: 'Programs', href: '/dashboard/admin/programs', icon: GraduationCap },
+        { title: 'Academic Calendar', href: '/dashboard/admin/academic-years', icon: CalendarDays },
       ]
     },
-    { title: 'Approve Accounts', href: '/dashboard/admin/approvals', icon: UserCheck },
+    { title: 'Approve Accounts', href: '/dashboard/admin/approvals/accounts', icon: UserCheck },
+    { title: 'Course Registration', href: '/dashboard/admin/registration/periods', icon: UserCheck },
+    { title: 'Financial Management', href: '/dashboard/admin/finance/overview', icon: DollarSign },
+    { title: 'System Logs', href: '/dashboard/admin/logs/audit', icon: BarChartHorizontalBig },
   ],
   finance: [
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { title: 'Notifications', href: '/dashboard/notifications', icon: Bell },
     { title: 'Payment Records', href: '/dashboard/finance/payments', icon: DollarSign },
     { title: 'Financial Reports', href: '/dashboard/finance/reports', icon: FileText },
+    { title: 'Fee Management', href: '/dashboard/finance/fees', icon: Settings},
   ],
   guest: [], 
   null: [], 
@@ -179,6 +183,14 @@ const SidebarNavItem: React.FC<SidebarNavItemProps> = ({ item, pathname }) => {
   }
 
   const [isSubmenuOpen, setIsSubmenuOpen] = useState(isActive && !!item.subItems);
+
+  // Effect to open submenu if a sub-item is active on initial load or route change
+  React.useEffect(() => {
+    if (item.subItems && item.subItems.some(sub => pathname === sub.href || (sub.href !== '/dashboard' && sub.href !== '#' && pathname.startsWith(sub.href)))) {
+      setIsSubmenuOpen(true);
+    }
+  }, [pathname, item.subItems]);
+
 
   const handleToggleSubmenu = (e: React.MouseEvent) => {
     if (item.subItems) {
@@ -264,9 +276,9 @@ export function SidebarNav() {
   const { role } = useAuth();
   const pathname = usePathname();
   
-  const navItems = role ? defaultSidebarNav[role] : defaultSidebarNav['null']; // Ensure fallback if role is null initially
+  const navItems = role ? defaultSidebarNav[role] : defaultSidebarNav['null']; 
 
-  if (!navItems || !navItems.length) { // Added !navItems check for safety
+  if (!navItems || !navItems.length) { 
     return null; 
   }
 
@@ -278,3 +290,5 @@ export function SidebarNav() {
     </SidebarMenu>
   );
 }
+
+    
