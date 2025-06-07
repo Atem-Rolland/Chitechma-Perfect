@@ -44,7 +44,8 @@ import {
   BookCopy as ManageCoursesIcon, 
   FileSignature,
   Bot,
-  CalendarDays
+  CalendarDays,
+  BarChartHorizontalBig
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -76,7 +77,8 @@ const iconMap: Record<string, React.ElementType> = {
   ManageCoursesIcon, 
   FileSignature,
   Bot,
-  CalendarDays
+  CalendarDays,
+  BarChartHorizontalBig
 };
 
 const defaultSidebarNav: Record<Role | 'guest', NavItem[]> = {
