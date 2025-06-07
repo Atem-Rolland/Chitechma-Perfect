@@ -18,12 +18,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS } from "@/config/data";
 
 // Expanded Mock Courses (simulating all available courses in the university system)
-// This should be consistent with the main course list in courses/page.tsx
 async function fetchAllUniversityCourses(): Promise<Course[]> {
-  // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 500));
-  // This data should ideally be fetched or imported from a central place
-  // For now, copying a subset from the main courses page for consistency
   const mockCourses: Course[] = [
     { id: "CSE301_CESM_Y2324_S1", title: "Introduction to Algorithms", code: "CSE301", description: "Fundamental algorithms and data structures.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2023/2024" },
     { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401", description: "Covers native and cross-platform development.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 10-12, Wed 10-11, Lab Hall 1", prerequisites: ["CSE301"], semester: "First Semester", academicYear: "2024/2025" },
@@ -44,8 +40,7 @@ interface AssignedCourse extends Course {
 }
 
 export default function LecturerCoursesPage() {
-  const { user, profile } = useAuth(); 
-  const [allUniversityCourses, setAllUniversityCourses] = useState<Course[]>([]);
+  const { user, profile, loading: authLoading } = useAuth(); 
   const [assignedCourses, setAssignedCourses] = useState<AssignedCourse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -55,28 +50,56 @@ export default function LecturerCoursesPage() {
     level: "all",
   });
 
-  const MOCK_LECTURER_ID = profile?.uid || "lect001"; 
-  const MOCK_LECTURER_NAME = profile?.displayName || "Dr. Eno"; 
-
   useEffect(() => {
     async function loadData() {
       setIsLoading(true);
       const universityCourses = await fetchAllUniversityCourses();
-      setAllUniversityCourses(universityCourses);
 
-      const lecturerSpecificCourses = universityCourses
-        .filter(course => course.lecturerId === MOCK_LECTURER_ID || course.lecturerName === MOCK_LECTURER_NAME) 
-        .map(course => ({
-          ...course,
-          enrolledStudents: Math.floor(Math.random() * 50) + 10, 
-          status: course.academicYear === ACADEMIC_YEARS[ACADEMIC_YEARS.length-1] ? "Active" : "Completed", 
-        }));
+      let filteredForLecturer: Course[];
+
+      if (profile?.uid) { 
+        // Profile is loaded, try to filter by actual lecturer's UID
+        filteredForLecturer = universityCourses.filter(
+          course => course.lecturerId === profile.uid
+        );
+        
+        // If no courses found by UID, try by display name (less reliable but good for mocks)
+        if (filteredForLecturer.length === 0 && profile.displayName) {
+            filteredForLecturer = universityCourses.filter(
+                course => course.lecturerName === profile.displayName
+            );
+        }
+
+        // Fallback for demo: If still no courses for the specific logged-in lecturer (and they are not lect001 themselves), show lect001's courses.
+        if (filteredForLecturer.length === 0 && profile.uid !== "lect001") {
+          filteredForLecturer = universityCourses.filter(
+            course => course.lecturerId === "lect001"
+          );
+        }
+      } else {
+        // Profile not yet loaded or no UID, default to "lect001" courses (Dr. Eno)
+        filteredForLecturer = universityCourses.filter(
+          course => course.lecturerId === "lect001"
+        );
+      }
+
+      const enrichedCourses = filteredForLecturer.map(course => ({
+        ...course,
+        enrolledStudents: Math.floor(Math.random() * 50) + 10, 
+        status: course.academicYear === ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1] ? "Active" : "Completed", 
+      }));
       
-      setAssignedCourses(lecturerSpecificCourses);
+      setAssignedCourses(enrichedCourses);
       setIsLoading(false);
     }
-    loadData();
-  }, [MOCK_LECTURER_ID, MOCK_LECTURER_NAME]);
+    
+    // Only run loadData if authentication is not loading.
+    // The profile object itself will trigger re-runs if it changes.
+    if (!authLoading) {
+      loadData();
+    }
+
+  }, [profile, authLoading]); 
 
   const academicYearsForFilter = useMemo(() => ["all", ...ACADEMIC_YEARS], []);
   const semestersForFilter = useMemo(() => ["all", ...SEMESTERS], []);
@@ -96,6 +119,30 @@ export default function LecturerCoursesPage() {
         course.code.toLowerCase().includes(searchTerm.toLowerCase())
       );
   }, [assignedCourses, searchTerm, filters]);
+
+  if (authLoading && isLoading) { // Show skeleton if both auth and initial data load are pending
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(3)].map((_, i) => (
+          <Card key={i}>
+            <CardHeader>
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-4 w-1/2 mt-1" />
+              <Skeleton className="h-4 w-1/4 mt-1" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-5/6 mt-1" />
+            </CardContent>
+            <CardFooter className="flex gap-2">
+              <Skeleton className="h-10 w-1/2" />
+              <Skeleton className="h-10 w-1/2" />
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -146,7 +193,7 @@ export default function LecturerCoursesPage() {
         </CardContent>
       </Card>
 
-      {isLoading ? (
+      {isLoading ? ( // This isLoading is for the data fetching within this page
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(3)].map((_, i) => (
             <Card key={i}>
@@ -208,3 +255,6 @@ export default function LecturerCoursesPage() {
     </motion.div>
   );
 }
+
+
+    
