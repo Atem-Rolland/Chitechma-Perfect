@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { ArrowLeft, Eye, FileText, AlertCircle, Inbox, Download, MessageSquare, Link as LinkIcon, UserCircle } from "lucide-react";
+import { ArrowLeft, Eye, FileText, AlertCircle, Inbox, Download, MessageSquare, Link as LinkIcon, UserCircle, Loader2 } from "lucide-react"; // Added Loader2
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -130,11 +130,11 @@ export default function AssignmentSubmissionsPage() {
 
     const getStatusBadgeVariant = (status: Submission['status']) => {
         switch (status) {
-            case "Graded": return "success";
-            case "Submitted": return "default";
-            case "Late Submission": return "warning";
+            case "Graded": return "default"; // Default is primary, often green-ish
+            case "Submitted": return "secondary"; // Secondary could be blue or another neutral
+            case "Late Submission": return "outline"; // Outline for warning
             case "Pending Review": return "outline";
-            default: return "secondary";
+            default: return "outline";
         }
     };
 
@@ -154,7 +154,15 @@ export default function AssignmentSubmissionsPage() {
             return;
         }
         setIsSavingGrade(true);
-        // TODO: Implement actual saving to Firestore
+        // TODO: Implement actual saving to Firestore:
+        // const submissionDocRef = doc(db, "submissions", selectedSubmissionForGrading.id);
+        // await updateDoc(submissionDocRef, {
+        //   grade: gradeValue,
+        //   feedback: currentFeedback,
+        //   status: "Graded",
+        //   gradedAt: serverTimestamp() // Optional: add a gradedAt field
+        // });
+
         await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
 
         setSubmissions(prev => prev.map(sub => 
@@ -366,3 +374,4 @@ export default function AssignmentSubmissionsPage() {
         </motion.div>
     );
 }
+
