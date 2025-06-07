@@ -36,22 +36,22 @@ async function fetchCourses(): Promise<Course[]> {
     
     // --- Level 200 CESM (Computer Software Engineering) ---
     // First Semester
-    { id: "LAW101_CESM_Y2223_S1", title: "Introduction to Law", code: "LAW101", description: "Basic legal principles.", department: DEPARTMENTS.CESM, lecturerId: "lect_law", lecturerName: "Barr. Tabi", credits: 1, type: "General", level: 200, schedule: "Mon 8-9, AMPHI100", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "ENG102_CESM_Y2223_S1", title: "English Language", code: "ENG102", description: "Communication skills in English.", department: DEPARTMENTS.CESM, lecturerId: "lect_eng", lecturerName: "Ms. Anja", credits: 1, type: "General", level: 200, schedule: "Tue 14-15, CR15", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "CVE100_CESM_Y2223_S1", title: "Civics and Moral Education", code: "CVE100", description: "Civic responsibilities and ethics.", department: DEPARTMENTS.CESM, lecturerId: "lect_civ", lecturerName: "Dr. Fomba", credits: 1, type: "General", level: 200, schedule: "Wed 10-11, AMPHI150", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "MGT104_CESM_Y2223_S1", title: "Principle of Management", code: "MGT104", description: "Fundamentals of management.", department: DEPARTMENTS.CESM, lecturerId: "lect_mgt", lecturerName: "Mr. Boma", credits: 1, type: "General", level: 200, schedule: "Thu 8-9, CR20", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "FRE101_CESM_Y2223_S1", title: "French", code: "FRE101", description: "Basic French communication.", department: DEPARTMENTS.CESM, lecturerId: "lect_fr", lecturerName: "Mme. Abena", credits: 1, type: "General", level: 200, schedule: "Fri 11-12, CR12", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "ENT106_CESM_Y2223_S1", title: "Enterprise Creation", code: "ENT106", description: "Fundamentals of entrepreneurship.", department: DEPARTMENTS.CESM, lecturerId: "lect_ent", lecturerName: "Dr. Wanki", credits: 2, type: "General", level: 200, schedule: "Mon 10-12, AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "ECN107_CESM_Y2223_S1", title: "Economics", code: "ECN107", description: "Principles of economics.", department: DEPARTMENTS.CESM, lecturerId: "lect_eco", lecturerName: "Prof. Ndong", credits: 2, type: "General", level: 200, schedule: "Tue 8-10, CR25", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "SWE108_CESM_Y2223_S1", title: "Information System", code: "SWE108", description: "Introduction to information systems.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Compulsory", level: 200, schedule: "Wed 14-17, Lab Hall 2", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "SWE109_CESM_Y2223_S1", title: "Multimedia Tech", code: "SWE109", description: "Basics of multimedia technologies.", department: DEPARTMENTS.CESM, lecturerId: "lect_mm", lecturerName: "Mr. Kilo", credits: 3, type: "Compulsory", level: 200, schedule: "Thu 10-13, Media Lab", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "SWE110_CESM_Y2223_S1", title: "Digital Literacy", code: "SWE110", description: "Essential digital skills.", department: DEPARTMENTS.CESM, lecturerId: "lect_dl", lecturerName: "Ms. Sona", credits: 3, type: "Compulsory", level: 200, schedule: "Fri 8-11, Comp Lab 1", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "SWE111_CESM_Y2223_S1", title: "Introduction to Software Eng", code: "SWE111", description: "Foundations of software engineering.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 200, schedule: "Mon 14-17, AMPHI300", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "SWE112_CESM_Y2223_S1", title: "Introduction to Database", code: "SWE112", description: "Database concepts and SQL.", department: DEPARTMENTS.CESM, lecturerId: "lect_db1", lecturerName: "Dr. Ngwa", credits: 3, type: "Compulsory", level: 200, schedule: "Tue 10-13, Lab Hall 3", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "SWE113_CESM_Y2223_S1", title: "Computer Maintenance", code: "SWE113", description: "Hardware and software maintenance.", department: DEPARTMENTS.CESM, lecturerId: "lect_maint", lecturerName: "Mr. Tabi", credits: 3, type: "Compulsory", level: 200, schedule: "Wed 8-11, Workshop 1", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "SWE114_CESM_Y2223_S1", title: "Operating System", code: "SWE114", description: "Introduction to operating systems.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Compulsory", level: 200, schedule: "Thu 14-17, CR30", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "SWE115_CESM_Y2223_S1", title: "Digital Electronics", code: "SWE115", description: "Fundamentals of digital circuits.", department: DEPARTMENTS.CESM, lecturerId: "lect_de", lecturerName: "Dr. Asong", credits: 3, type: "Compulsory", level: 200, schedule: "Fri 14-17, Elec Lab", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "SWE116_CESM_Y2223_S1", title: "Discrete Maths", code: "SWE116", description: "Discrete mathematics for computing.", department: DEPARTMENTS.CESM, lecturerId: "lect_dm", lecturerName: "Prof. Lima", credits: 3, type: "Compulsory", level: 200, schedule: "Mon 9-10, Wed 11-13, CR35", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
+    { id: "LAW101_CESM_Y2223_S1", title: "Introduction to Law", code: "LAW101", description: "Basic legal principles.", department: DEPARTMENTS.CESM, lecturerId: "lect_law", lecturerName: "Barr. Tabi", credits: 1, type: "General", level: 200, schedule: "Mon 8:00-9:00, AMPHI100", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
+    { id: "ENG102_CESM_Y2223_S1", title: "English Language", code: "ENG102", description: "Communication skills in English.", department: DEPARTMENTS.CESM, lecturerId: "lect_eng", lecturerName: "Ms. Anja", credits: 1, type: "General", level: 200, schedule: "Tue 14:00-15:00, CR15", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
+    { id: "CVE100_CESM_Y2223_S1", title: "Civics and Moral Education", code: "CVE100", description: "Civic responsibilities and ethics.", department: DEPARTMENTS.CESM, lecturerId: "lect_civ", lecturerName: "Dr. Fomba", credits: 1, type: "General", level: 200, schedule: "Wed 10:00-11:00, AMPHI150", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
+    { id: "MGT104_CESM_Y2223_S1", title: "Principle of Management", code: "MGT104", description: "Fundamentals of management.", department: DEPARTMENTS.CESM, lecturerId: "lect_mgt", lecturerName: "Mr. Boma", credits: 1, type: "General", level: 200, schedule: "Thu 8:00-9:00, CR20", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
+    { id: "FRE101_CESM_Y2223_S1", title: "French", code: "FRE101", description: "Basic French communication.", department: DEPARTMENTS.CESM, lecturerId: "lect_fr", lecturerName: "Mme. Abena", credits: 1, type: "General", level: 200, schedule: "Fri 11:00-12:00, CR12", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
+    { id: "ENT106_CESM_Y2223_S1", title: "Enterprise Creation", code: "ENT106", description: "Fundamentals of entrepreneurship.", department: DEPARTMENTS.CESM, lecturerId: "lect_ent", lecturerName: "Dr. Wanki", credits: 2, type: "General", level: 200, schedule: "Mon 10:00-12:00, AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
+    { id: "ECN107_CESM_Y2223_S1", title: "Economics", code: "ECN107", description: "Principles of economics.", department: DEPARTMENTS.CESM, lecturerId: "lect_eco", lecturerName: "Prof. Ndong", credits: 2, type: "General", level: 200, schedule: "Tue 8:00-10:00, CR25", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
+    { id: "SWE108_CESM_Y2223_S1", title: "Information System", code: "SWE108", description: "Introduction to information systems.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Compulsory", level: 200, schedule: "Wed 14:00-17:00, Lab Hall 2", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
+    { id: "SWE109_CESM_Y2223_S1", title: "Multimedia Tech", code: "SWE109", description: "Basics of multimedia technologies.", department: DEPARTMENTS.CESM, lecturerId: "lect_mm", lecturerName: "Mr. Kilo", credits: 3, type: "Compulsory", level: 200, schedule: "Thu 10:00-13:00, Media Lab", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
+    { id: "SWE110_CESM_Y2223_S1", title: "Digital Literacy", code: "SWE110", description: "Essential digital skills.", department: DEPARTMENTS.CESM, lecturerId: "lect_dl", lecturerName: "Ms. Sona", credits: 3, type: "Compulsory", level: 200, schedule: "Fri 8:00-11:00, Comp Lab 1", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
+    { id: "SWE111_CESM_Y2223_S1", title: "Introduction to Software Eng", code: "SWE111", description: "Foundations of software engineering.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 200, schedule: "Mon 14:00-17:00, AMPHI300", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
+    { id: "SWE112_CESM_Y2223_S1", title: "Introduction to Database", code: "SWE112", description: "Database concepts and SQL.", department: DEPARTMENTS.CESM, lecturerId: "lect_db1", lecturerName: "Dr. Ngwa", credits: 3, type: "Compulsory", level: 200, schedule: "Tue 10:00-13:00, Lab Hall 3", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
+    { id: "SWE113_CESM_Y2223_S1", title: "Computer Maintenance", code: "SWE113", description: "Hardware and software maintenance.", department: DEPARTMENTS.CESM, lecturerId: "lect_maint", lecturerName: "Mr. Tabi", credits: 3, type: "Compulsory", level: 200, schedule: "Wed 8:00-11:00, Workshop 1", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
+    { id: "SWE114_CESM_Y2223_S1", title: "Operating System", code: "SWE114", description: "Introduction to operating systems.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Compulsory", level: 200, schedule: "Thu 14:00-17:00, CR30", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
+    { id: "SWE115_CESM_Y2223_S1", title: "Digital Electronics", code: "SWE115", description: "Fundamentals of digital circuits.", department: DEPARTMENTS.CESM, lecturerId: "lect_de", lecturerName: "Dr. Asong", credits: 3, type: "Compulsory", level: 200, schedule: "Fri 14:00-17:00, Elec Lab", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
+    { id: "SWE116_CESM_Y2223_S1", title: "Discrete Maths", code: "SWE116", description: "Discrete mathematics for computing.", department: DEPARTMENTS.CESM, lecturerId: "lect_dm", lecturerName: "Prof. Lima", credits: 3, type: "Compulsory", level: 200, schedule: "Mon 9:00-10:00, Wed 11:00-13:00, CR35", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
     // Second Semester
     { id: "INT100_CESM_Y2223_S2", title: "Internship report Writing", code: "INT100", description: "Guidance on internship report writing.", department: DEPARTMENTS.CESM, lecturerId: "coord01", lecturerName: "Coordinator", credits: 1, type: "General", level: 200, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2022/2023" },
     { id: "SWE7_CESM_Y2223_S2", title: "Legal Regulations", code: "SWE7", description: "Legal aspects of software engineering.", department: DEPARTMENTS.CESM, lecturerId: "lect_law", lecturerName: "Barr. Tabi", credits: 1, type: "General", level: 200, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2022/2023" },
@@ -80,7 +80,7 @@ async function fetchCourses(): Promise<Course[]> {
     { id: "CPT233_CPT_Y2223_S1", title: "Topography and Rural construction", code: "CPT233", description: "Surveying and rural infrastructure.", department: DEPARTMENTS.CPT, lecturerId: "lect_cpt6", lecturerName: "Prof. Land", credits: 3, type: "Compulsory", level: 200, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
 
     // --- Level 300 CESM ---
-    // First Semester (already added CSE301)
+    // First Semester (CSE301 already added at top)
     { id: "CSE303_CESM_Y2324_S1", title: "Web Technologies", code: "CSE303", description: "Advanced web development concepts.", department: DEPARTMENTS.CESM, lecturerId: "lect_web1", lecturerName: "Ms. Bibi", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: ["SWE93"], semester: "First Semester", academicYear: "2023/2024" },
     { id: "MTH301_CESM_Y2324_S1", title: "Probability and Statistics", code: "MTH301", description: "Statistical methods for engineers.", department: DEPARTMENTS.CESM, lecturerId: "lect_stat", lecturerName: "Dr. Stats", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: ["SWE116"], semester: "First Semester", academicYear: "2023/2024" },
     // Second Semester
@@ -89,25 +89,25 @@ async function fetchCourses(): Promise<Course[]> {
     { id: "CSE310_CESM_Y2324_S2", title: "Computer Networks", code: "CSE310", description: "Networking fundamentals and protocols.", department: DEPARTMENTS.CESM, lecturerId: "lect_cn", lecturerName: "Prof. Net", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: ["SWE90"], semester: "Second Semester", academicYear: "2023/2024" },
 
 
-    // --- 400 Level, First Semester, 2024/2025 Academic Year (Existing from previous turn) ---
+    // --- 400 Level, First Semester, 2024/2025 Academic Year ---
     // CESM
-    { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401", description: "Detailed course description for Mobile Application Development. Covers native and cross-platform development.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 10-12, Wed 10-11, Lab Hall 1", prerequisites: ["CSE301"], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "CSE409_CESM_Y2425_S1", title: "Software Development and OOP", code: "CSE409", description: "Detailed course description for Software Development and OOP. Focuses on object-oriented principles and design patterns.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Tue 14-16, Fri 8-9", prerequisites: ["SWE92"], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "MGT403_CESM_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology. Introduction to research methods and academic writing.", department: DEPARTMENTS.CESM, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "AMPHI200, Wed 14-17", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "CSE405_CESM_Y2425_S1", title: "Embedded Systems", code: "CSE405", description: "Detailed course description for Embedded Systems. Design and programming of embedded systems.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Thu 8-11", prerequisites: ["SWE90"], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "NES403_CESM_Y2425_S1", title: "Modeling in Information System", code: "NES403", description: "Detailed course description for Modeling in Information System. Techniques for system modeling.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Elective", level: 400, schedule: "Fri 11-13, CR10", prerequisites: ["SWE108", "SWE95"], semester: "First Semester", academicYear: "2024/2025" },
+    { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401", description: "Detailed course description for Mobile Application Development. Covers native and cross-platform development.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 10:00-12:00, Wed 10:00-11:00, Lab Hall 1", prerequisites: ["CSE301"], semester: "First Semester", academicYear: "2024/2025" },
+    { id: "CSE409_CESM_Y2425_S1", title: "Software Development and OOP", code: "CSE409", description: "Detailed course description for Software Development and OOP. Focuses on object-oriented principles and design patterns.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Tue 14:00-16:00, Fri 8:00-9:00", prerequisites: ["SWE92"], semester: "First Semester", academicYear: "2024/2025" },
+    { id: "MGT403_CESM_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology. Introduction to research methods and academic writing.", department: DEPARTMENTS.CESM, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "AMPHI200, Wed 14:00-17:00", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
+    { id: "CSE405_CESM_Y2425_S1", title: "Embedded Systems", code: "CSE405", description: "Detailed course description for Embedded Systems. Design and programming of embedded systems.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Thu 8:00-11:00", prerequisites: ["SWE90"], semester: "First Semester", academicYear: "2024/2025" },
+    { id: "NES403_CESM_Y2425_S1", title: "Modeling in Information System", code: "NES403", description: "Detailed course description for Modeling in Information System. Techniques for system modeling.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Elective", level: 400, schedule: "Fri 11:00-13:00, CR10", prerequisites: ["SWE108", "SWE95"], semester: "First Semester", academicYear: "2024/2025" },
     
-    // --- 400 Level, Second Semester, 2024/2025 Academic Year (NEWLY ADDED BASED ON USER PROMPT) ---
+    // --- 400 Level, Second Semester, 2024/2025 Academic Year ---
     // CESM
-    { id: "CSE406_CESM_Y2425_S2", title: "Algorithm and Data Structure II", code: "CSE406", description: "In-depth study of algorithms and data structures.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 8-10, CR1", prerequisites: ["CSE301", "SWE94"], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "CSE402_CESM_Y2425_S2", title: "Distributed Programming", code: "CSE402", description: "Concepts and practices in distributed programming.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "Tue 10-12, CR1", prerequisites: ["CSE409"], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "CSE408_CESM_Y2425_S2", title: "Emerging Networks", code: "CSE408", description: "Study of new and upcoming network technologies.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Elective", level: 400, schedule: "Wed 10-12, CR1", prerequisites: ["CSE310"], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "CSE404_CESM_Y2425_S2", title: "Introduction to Artificial Intelligence", code: "CSE404", description: "Fundamentals of Artificial Intelligence.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Compulsory", level: 400, schedule: "Thu 14-16, CR1", prerequisites: ["CSE406"], semester: "Second Semester", academicYear: "2024/2025" },
+    { id: "CSE406_CESM_Y2425_S2", title: "Algorithm and Data Structure II", code: "CSE406", description: "In-depth study of algorithms and data structures.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 8:00-10:00, CR1", prerequisites: ["CSE301", "SWE94"], semester: "Second Semester", academicYear: "2024/2025" },
+    { id: "CSE402_CESM_Y2425_S2", title: "Distributed Programming", code: "CSE402", description: "Concepts and practices in distributed programming.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "Tue 10:00-12:00, CR1", prerequisites: ["CSE409"], semester: "Second Semester", academicYear: "2024/2025" },
+    { id: "CSE408_CESM_Y2425_S2", title: "Emerging Networks", code: "CSE408", description: "Study of new and upcoming network technologies.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Elective", level: 400, schedule: "Wed 10:00-12:00, CR1", prerequisites: ["CSE310"], semester: "Second Semester", academicYear: "2024/2025" },
+    { id: "CSE404_CESM_Y2425_S2", title: "Introduction to Artificial Intelligence", code: "CSE404", description: "Fundamentals of Artificial Intelligence.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Compulsory", level: 400, schedule: "Thu 14:00-16:00, CR1", prerequisites: ["CSE406"], semester: "Second Semester", academicYear: "2024/2025" },
     
     // NES - 400 Level, Second Semester, 2024/2025
     { id: "NES404_NES_Y2425_S2", title: "Information System Security", code: "NES404", description: "Principles and practices of securing information systems.", department: DEPARTMENTS.NES, lecturerId: "lect_nes1", lecturerName: "Dr. Secure", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "NES406_NES_Y2425_S2", title: "Network Security Laboratory", code: "NES406", description: "Hands-on lab for network security tools and techniques.", department: DEPARTMENTS.NES, lecturerId: "lect_nes2", lecturerName: "Prof. NetSecLab", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "CSE40408_NES_Y2425_S2", title: "Emerging Networks", code: "CSE40408", description: "Study of new network technologies (NES specific focus).", department: DEPARTMENTS.NES, lecturerId: "lect_nes3", lecturerName: "Mr. InnovateNet", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" }, // Note: code differs from CSE version
+    { id: "CSE40408_NES_Y2425_S2", title: "Emerging Networks", code: "CSE40408", description: "Study of new network technologies (NES specific focus).", department: DEPARTMENTS.NES, lecturerId: "lect_nes3", lecturerName: "Mr. InnovateNet", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "NES402_NES_Y2425_S2", title: "Telecom and Wireless Communication", code: "NES402", description: "Telecommunications systems and wireless networking.", department: DEPARTMENTS.NES, lecturerId: "lect_nes4", lecturerName: "Dr. Wireless", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
 
     // EPS - 400 Level, Second Semester, 2024/2025
@@ -125,24 +125,24 @@ async function fetchCourses(): Promise<Course[]> {
     // PRM - 400 Level, Second Semester, 2024/2025
     { id: "MGT416_PRM_Y2425_S2", title: "Quantitative Methods", code: "MGT416", description: "Quantitative analysis for project management.", department: DEPARTMENTS.PRM, lecturerId: "lect_mgt_quant", lecturerName: "Dr. Quant", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "PRM406_PRM_Y2425_S2", title: "Project Appraisal and Selection", code: "PRM406", description: "Methods for appraising and selecting projects.", department: DEPARTMENTS.PRM, lecturerId: "lect_prm1", lecturerName: "Dr. Appraise", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "PRM400_PRM_Y2425_S2", title: "Project Design, Monitoring and Evaluation", code: "PRM400", description: "Designing, monitoring, and evaluating projects.", department: DEPARTMENTS.PRM, lecturerId: "lect_prm2", lecturerName: "Prof. Monitor", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" }, // Assuming code PRM400
+    { id: "PRM400_PRM_Y2425_S2", title: "Project Design, Monitoring and Evaluation", code: "PRM400", description: "Designing, monitoring, and evaluating projects.", department: DEPARTMENTS.PRM, lecturerId: "lect_prm2", lecturerName: "Prof. Monitor", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "PRM404_PRM_Y2425_S2", title: "Managing Project Risks and Changes", code: "PRM404", description: "Strategies for managing project risks and changes.", department: DEPARTMENTS.PRM, lecturerId: "lect_prm3", lecturerName: "Ms. RiskManage", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
 
     // ACC - 400 Level, Second Semester, 2024/2025
     { id: "MGT416_ACC_Y2425_S2", title: "Quantitative Methods", code: "MGT416", description: "Quantitative methods for accounting.", department: DEPARTMENTS.ACC, lecturerId: "lect_mgt_quant", lecturerName: "Dr. Quant", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "ACC408_ACC_Y2425_S2", title: "Auditing and Assurance", code: "ACC408", description: "Principles of auditing and assurance services.", department: DEPARTMENTS.ACC, lecturerId: "lect_acc1", lecturerName: "Dr. Audit", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "ACC400_ACC_Y2425_S2", title: "Cost and Managerial Accounting", code: "ACC400", description: "Accounting for costs and managerial decision-making.", department: DEPARTMENTS.ACC, lecturerId: "lect_acc2", lecturerName: "Prof. CostAcc", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" }, // Assuming code ACC400
+    { id: "ACC400_ACC_Y2425_S2", title: "Cost and Managerial Accounting", code: "ACC400", description: "Accounting for costs and managerial decision-making.", department: DEPARTMENTS.ACC, lecturerId: "lect_acc2", lecturerName: "Prof. CostAcc", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "FIN402_ACC_Y2425_S2", title: "Taxation Accounting II", code: "FIN402", description: "Advanced topics in taxation accounting.", department: DEPARTMENTS.ACC, lecturerId: "lect_acc3", lecturerName: "Mr. Tax", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
 
     // HMC - 400 Level, Second Semester, 2024/2025
     { id: "MGT416_HMC_Y2425_S2", title: "Quantitative Methods", code: "MGT416", description: "Quantitative methods for hospitality management.", department: DEPARTMENTS.HMC, lecturerId: "lect_mgt_quant", lecturerName: "Dr. Quant", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "HMC406_HMC_Y2425_S2", title: "Housekeeping and Laundry Operations", code: "HMC406", description: "Management of housekeeping and laundry services.", department: DEPARTMENTS.HMC, lecturerId: "lect_hmc1", lecturerName: "Ms. Clean", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "BFP408_HMC_Y2425_S2", title: "Event Planning and Management", code: "BFP408", description: "Planning and managing events in hospitality.", department: DEPARTMENTS.HMC, lecturerId: "lect_bfp_event", lecturerName: "Dr. EventPlan", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" }, // Assuming BFP408 is cross-listed
+    { id: "BFP408_HMC_Y2425_S2", title: "Event Planning and Management", code: "BFP408", description: "Planning and managing events in hospitality.", department: DEPARTMENTS.HMC, lecturerId: "lect_bfp_event", lecturerName: "Dr. EventPlan", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "HMC401_HMC_Y2425_S2", title: "Hospitality Law", code: "HMC401", description: "Legal aspects relevant to the hospitality industry.", department: DEPARTMENTS.HMC, lecturerId: "lect_hmc2", lecturerName: "Barr. HotelLaw", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
 
     // BFP - 400 Level, Second Semester, 2024/2025
     { id: "BFP406_BFP_Y2425_S2", title: "Waste Management and Effluent Treatment", code: "BFP406", description: "Managing waste and treating effluents in food processing.", department: DEPARTMENTS.BFP, lecturerId: "lect_bfp1", lecturerName: "Dr. WasteTreat", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "MA405_BFP_Y2425_S2", title: "Product Development and Packaging", code: "MA405", description: "Developing and packaging food products.", department: DEPARTMENTS.BFP, lecturerId: "lect_bfp2", lecturerName: "Prof. Packaging", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" }, // Assuming code MA405 from prompt
+    { id: "MA405_BFP_Y2425_S2", title: "Product Development and Packaging", code: "MA405", description: "Developing and packaging food products.", department: DEPARTMENTS.BFP, lecturerId: "lect_bfp2", lecturerName: "Prof. Packaging", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" }, 
     { id: "BFP408_BFP_Y2425_S2", title: "Event Planning and Management", code: "BFP408", description: "Event planning with a focus on food events.", department: DEPARTMENTS.BFP, lecturerId: "lect_bfp_event", lecturerName: "Dr. EventPlan", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
     { id: "BFP402_BFP_Y2425_S2", title: "Food Technology II", code: "BFP402", description: "Advanced topics in food technology.", department: DEPARTMENTS.BFP, lecturerId: "lect_bfp3", lecturerName: "Ms. FoodTech", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
 
@@ -153,16 +153,16 @@ async function fetchCourses(): Promise<Course[]> {
     { id: "CTT406_FCT_Y2425_S2", title: "Techniques of Yarn Manufacturing", code: "CTT406", description: "Manufacturing techniques for yarn.", department: DEPARTMENTS.FCT, lecturerId: "lect_fct4", lecturerName: "Mr. YarnTech", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
 
     // NUS - 400 Level, Second Semester, 2024/2025
-    { id: "NUS402_NUS_Y2425_S2", title: "Teaching and Learning in Nursing", code: "NUS402", description: "Principles of teaching and learning in nursing practice.", department: DEPARTMENTS.NUS, lecturerId: "lect_nus1", lecturerName: "Dr. NurseEdu", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" }, // Schedule was just AMPHI200 in prompt
+    { id: "NUS402_NUS_Y2425_S2", title: "Teaching and Learning in Nursing", code: "NUS402", description: "Principles of teaching and learning in nursing practice.", department: DEPARTMENTS.NUS, lecturerId: "lect_nus1", lecturerName: "Dr. NurseEdu", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
 
     // MLS - 400 Level, Second Semester, 2024/2025
     { id: "MLS402_MLS_Y2425_S2", title: "Medical Microbiology, Virology and Molecular Biology", code: "MLS402", description: "Advanced topics in medical microbiology, virology, and molecular biology.", department: DEPARTMENTS.MLS, lecturerId: "lect_mls1", lecturerName: "Prof. MicroBio", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
     
-    // --- Courses for other departments (simplified list from previous state, First Semester) ---
+    // --- Courses for other departments (simplified list, First Semester) ---
     // NES
-    { id: "NES405_NES_Y2425_S1", title: "Scripting and Programming", code: "NES405", description: "Detailed course description for Scripting and Programming.", department: DEPARTMENTS.NES, lecturerId: "lect006", lecturerName: "Dr. Oumarou", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 8-10, CR22", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
+    { id: "NES405_NES_Y2425_S1", title: "Scripting and Programming", code: "NES405", description: "Detailed course description for Scripting and Programming.", department: DEPARTMENTS.NES, lecturerId: "lect006", lecturerName: "Dr. Oumarou", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 8:00-10:00, CR22", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     // EPS
-    { id: "EPS411_EPS_Y2425_S1", title: "Microcontrollers and Microprocessors", code: "EPS411", description: "Detailed course description for Microcontrollers and Microprocessors.", department: DEPARTMENTS.EPS, lecturerId: "lect009", lecturerName: "Dr. Wato", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 14-16, ELab1", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
+    { id: "EPS411_EPS_Y2425_S1", title: "Microcontrollers and Microprocessors", code: "EPS411", description: "Detailed course description for Microcontrollers and Microprocessors.", department: DEPARTMENTS.EPS, lecturerId: "lect009", lecturerName: "Dr. Wato", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 14:00-16:00, ELab1", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     // LTM
     { id: "LTM403_LTM_Y2425_S1", title: "Humanitarian Logistics", code: "LTM403", description: "Detailed course description for Humanitarian Logistics.", department: DEPARTMENTS.LTM, lecturerId: "lect013", lecturerName: "Dr. Bello", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     // PRM
@@ -187,8 +187,8 @@ async function fetchCourses(): Promise<Course[]> {
 const defaultRegistrationMeta = {
   isOpen: true,
   deadline: "2024-09-15", 
-  academicYear: "2024/2025", 
-  semester: "First Semester",   
+  academicYear: ACADEMIC_YEARS[2], // 2024/2025
+  semester: SEMESTERS[0],   // First Semester
 };
 
 const getLocalStorageKeyForAllRegistrations = (uid?: string) => {
@@ -198,7 +198,7 @@ const getLocalStorageKeyForAllRegistrations = (uid?: string) => {
 
 
 export default function CoursesPage() {
-  const { user, role, profile } = useAuth();
+  const { user, role, profile, loading: authLoading } = useAuth();
   const isStudent = role === 'student';
 
   const [hasLoadedInitialRegistrations, setHasLoadedInitialRegistrations] = useState(false);
@@ -207,7 +207,7 @@ export default function CoursesPage() {
     if (isStudent && profile) { 
       return {
         department: profile.department || DEPARTMENTS.CESM, 
-        level: profile.level || VALID_LEVELS[0],       
+        level: profile.level || VALID_LEVELS[2], // Default to Level 400 for Atem        
         currentAcademicYear: profile.currentAcademicYear || defaultRegistrationMeta.academicYear,
         currentSemester: profile.currentSemester || defaultRegistrationMeta.semester,
       };
@@ -229,11 +229,12 @@ export default function CoursesPage() {
         courseType: "all",
       };
     }
+    // Fallback for non-students or if context not yet loaded
     return {
       academicYear: defaultRegistrationMeta.academicYear,
       semester: defaultRegistrationMeta.semester,
-      department: "all",
-      level: VALID_LEVELS[0].toString(), 
+      department: DEPARTMENTS.CESM, // Default to CESM for general browsing
+      level: VALID_LEVELS[2].toString(), // Default to Level 400 for general browsing
       courseType: "all",
     };
   }, [isStudent, studentAcademicContext]);
@@ -248,44 +249,48 @@ export default function CoursesPage() {
 
   useEffect(() => {
     async function loadData() {
-      setIsLoading(true); // Page-level loading for courses
+      setIsLoading(true);
       const fetchedCourses = await fetchCourses();
       setAllCourses(fetchedCourses);
   
       if (user?.uid && typeof window !== 'undefined') {
         const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
-        if (storageKey) {
-          const storedIds = localStorage.getItem(storageKey);
-          if (storedIds) {
+        let initialRegisteredIds: string[] = [];
+        const storedIdsString = localStorage.getItem(storageKey);
+
+        // Special pre-population for Atem Rolland if his localStorage is empty
+        if (user.uid === 'student-atem-rolland' && (!storedIdsString || JSON.parse(storedIdsString).length === 0)) {
+            initialRegisteredIds = fetchedCourses
+                .filter(c => c.department === DEPARTMENTS.CESM && (c.level === 200 || c.level === 300))
+                .map(c => c.id);
+            localStorage.setItem(storageKey, JSON.stringify(initialRegisteredIds));
+        } else if (storedIdsString) {
             try {
-              const parsedIds = JSON.parse(storedIds);
+              const parsedIds = JSON.parse(storedIdsString);
               if (Array.isArray(parsedIds)) {
-                setRegisteredCourseIds(parsedIds);
+                initialRegisteredIds = parsedIds;
               } else {
-                setRegisteredCourseIds([]);
-                localStorage.removeItem(storageKey); // Clear corrupted data
+                localStorage.removeItem(storageKey); 
               }
             } catch (e) {
               console.error("Failed to parse registered courses from localStorage:", e);
-              setRegisteredCourseIds([]);
-              localStorage.removeItem(storageKey); // Clear corrupted data
+              localStorage.removeItem(storageKey); 
             }
-          } else {
-            setRegisteredCourseIds([]);
-          }
         }
+        setRegisteredCourseIds(initialRegisteredIds);
       } else if (!user?.uid && typeof window !== 'undefined') {
-        setRegisteredCourseIds([]); // Clear if no user
+        setRegisteredCourseIds([]); 
       }
       setHasLoadedInitialRegistrations(true);
       setIsLoading(false);
     }
-    loadData();
-  }, [user?.uid]);
+    if (!authLoading) { 
+        loadData();
+    }
+  }, [user?.uid, authLoading]); // Depend on user.uid and authLoading
   
   // Effect for saving registered courses to localStorage
   useEffect(() => {
-    // Only save if initial load is complete and user is identified
     if (hasLoadedInitialRegistrations && user?.uid && typeof window !== 'undefined') {
       const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
       if (storageKey) {
@@ -295,36 +300,30 @@ export default function CoursesPage() {
   }, [registeredCourseIds, user?.uid, hasLoadedInitialRegistrations]);
   
    useEffect(() => {
-    // This effect ensures that if the student's profile loads *after* initial render,
-    // or if their academic context changes, the filters are updated to reflect their context,
-    // but *only if* the user hasn't already made specific selections for those filters (i.e., filter is "all").
     if (isStudent && studentAcademicContext) {
       setFilters(prevFilters => ({
         ...prevFilters,
-        department: prevFilters.department !== "all" ? prevFilters.department : studentAcademicContext.department,
-        level: prevFilters.level !== "all" ? prevFilters.level : studentAcademicContext.level.toString(),
-        academicYear: prevFilters.academicYear !== "all" ? prevFilters.academicYear : studentAcademicContext.currentAcademicYear,
-        semester: prevFilters.semester !== "all" ? prevFilters.semester : studentAcademicContext.currentSemester,
+        department: prevFilters.department !== "all" && prevFilters.department !== studentAcademicContext.department ? prevFilters.department : studentAcademicContext.department,
+        level: prevFilters.level !== "all" && prevFilters.level !== studentAcademicContext.level.toString() ? prevFilters.level : studentAcademicContext.level.toString(),
+        academicYear: prevFilters.academicYear !== "all" && prevFilters.academicYear !== studentAcademicContext.currentAcademicYear ? prevFilters.academicYear : studentAcademicContext.currentAcademicYear,
+        semester: prevFilters.semester !== "all" && prevFilters.semester !== studentAcademicContext.currentSemester ? prevFilters.semester : studentAcademicContext.currentSemester,
       }));
     }
   }, [isStudent, studentAcademicContext]);
 
   const currentRegistrationMeta = useMemo(() => {
-    // Example for 2024/2025
     if (filters.academicYear === "2024/2025" && filters.semester === "First Semester") {
       return { isOpen: true, deadline: "2024-09-15", academicYear: "2024/2025", semester: "First Semester" };
     }
     if (filters.academicYear === "2024/2025" && filters.semester === "Second Semester") {
       return { isOpen: true, deadline: "2025-02-15", academicYear: "2024/2025", semester: "Second Semester" }; 
     }
-    // Example for 2023/2024 - can be set as closed or with past deadlines
      if (filters.academicYear === "2023/2024" && filters.semester === "First Semester") {
       return { isOpen: false, deadline: "2023-09-15", academicYear: "2023/2024", semester: "First Semester" };
     }
     if (filters.academicYear === "2023/2024" && filters.semester === "Second Semester") {
       return { isOpen: false, deadline: "2024-02-15", academicYear: "2023/2024", semester: "Second Semester" };
     }
-     // Example for 2022/2023 - can be set as closed or with past deadlines
      if (filters.academicYear === "2022/2023" && filters.semester === "First Semester") {
       return { isOpen: false, deadline: "2022-09-15", academicYear: "2022/2023", semester: "First Semester" };
     }
@@ -332,18 +331,13 @@ export default function CoursesPage() {
       return { isOpen: false, deadline: "2023-02-15", academicYear: "2022/2023", semester: "Second Semester" };
     }
 
-    // Fallback for "all" selections or unconfigured periods
      if (filters.academicYear === "all" || filters.semester === "all") {
-      // Attempt to use student's current period if available, otherwise use global default
       const activeYear = (isStudent && studentAcademicContext?.currentAcademicYear) || defaultRegistrationMeta.academicYear;
       const activeSemester = (isStudent && studentAcademicContext?.currentSemester) || defaultRegistrationMeta.semester;
       
-      // Re-check specific meta for this derived active period
       if (activeYear === "2024/2025" && activeSemester === "First Semester") return { isOpen: true, deadline: "2024-09-15", academicYear: activeYear, semester: activeSemester };
       if (activeYear === "2024/2025" && activeSemester === "Second Semester") return { isOpen: true, deadline: "2025-02-15", academicYear: activeYear, semester: activeSemester };
-      // Add more specific fallbacks for other derived active periods if necessary
 
-      // If still no match, use a generic closed state reflecting the "all" filter choice
       return { isOpen: false, deadline: "N/A", academicYear: filters.academicYear, semester: filters.semester, message:"Select specific year/semester for registration status." };
     }
 
@@ -424,7 +418,6 @@ export default function CoursesPage() {
 
     if (isStudent && studentAcademicContext) {
       if (course.department !== studentAcademicContext.department) {
-        // Allow registration for General courses regardless of student's department, if they are for the student's level
         if (course.type !== "General") {
             toast({ title: "Registration Not Allowed", description: `You can only register for courses within your department (${studentAcademicContext.department}) or General courses. This course is for ${course.department}.`, variant: "destructive" });
             return;
@@ -455,7 +448,6 @@ export default function CoursesPage() {
             const registeredPrereqCourse = allCourses.find(c => c.id === regId && c.code === prereqCode);
             if (!registeredPrereqCourse) return false;
             
-            // Compare academic years and semesters numerically
             const targetYearParts = course.academicYear.split('/');
             const prereqYearParts = registeredPrereqCourse.academicYear.split('/');
             const targetStartYear = parseInt(targetYearParts[0]);
@@ -465,8 +457,8 @@ export default function CoursesPage() {
             const targetSemesterOrder = semesterOrder[course.semester as keyof typeof semesterOrder] || 0;
             const prereqSemesterOrder = semesterOrder[registeredPrereqCourse.semester as keyof typeof semesterOrder] || 0;
 
-            if (prereqStartYear < targetStartYear) return true; // Prereq in earlier year
-            if (prereqStartYear === targetStartYear && prereqSemesterOrder < targetSemesterOrder) return true; // Prereq in earlier semester of same year
+            if (prereqStartYear < targetStartYear) return true; 
+            if (prereqStartYear === targetStartYear && prereqSemesterOrder < targetSemesterOrder) return true; 
             
             return false;
         });
@@ -718,12 +710,10 @@ export default function CoursesPage() {
                     canRegisterThisCourse = canRegisterThisCourse && (totalRegisteredCredits + course.credits <= MAX_CREDITS);
                     
                     if (isStudent && studentAcademicContext) {
-                        // Allow registration if course department matches student OR if course type is General (for student's level)
                         const departmentMatch = course.department === studentAcademicContext.department;
                         const isGeneralCourseForLevel = course.type === "General" && course.level === studentAcademicContext.level;
                         canRegisterThisCourse = canRegisterThisCourse && (departmentMatch || isGeneralCourseForLevel);
                         
-                        // Always ensure course level matches student level, unless it's a general course where this might be relaxed (but for now, strict level match)
                         canRegisterThisCourse = canRegisterThisCourse && course.level === studentAcademicContext.level;
 
                         const unmetPrerequisites = course.prerequisites?.filter(prereqCode => {
@@ -920,7 +910,7 @@ export default function CoursesPage() {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="font-headline text-2xl">{selectedCourseForDetail.code} - {selectedCourseForDetail.title}</DialogTitle>
-              <DialogDescription>Level {selectedCourseForDetail.level} - {selectedCourseForDetail.credits} - {selectedCourseForDetail.type}</DialogDescription>
+              <DialogDescription>Level {selectedCourseForDetail.level} - {selectedCourseForDetail.credits} Credits - {selectedCourseForDetail.type}</DialogDescription>
             </DialogHeader>
             <div className="space-y-3 py-2 text-sm">
               <p><strong>Department:</strong> {selectedCourseForDetail.department}</p>
@@ -952,6 +942,3 @@ export default function CoursesPage() {
     </motion.div>
   );
 }
-
-
-    
