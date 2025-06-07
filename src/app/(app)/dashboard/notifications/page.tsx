@@ -53,7 +53,7 @@ const getNotificationIcon = (type: NotificationType): React.ElementType => {
 };
 
 export default function AllNotificationsPage() {
-  const { user } = useAuth(); // Assuming notifications might be user-specific later
+  const { user } = useAuth(); 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -64,7 +64,7 @@ export default function AllNotificationsPage() {
       setNotifications(MOCK_NOTIFICATIONS_ALL.sort((a,b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime()));
       setIsLoading(false);
     }, 800);
-  }, [user]);
+  }, [user?.uid]); // Changed dependency from [user] to [user?.uid]
 
   const handleMarkAsRead = (notificationId: string) => {
     setNotifications(prev =>
@@ -123,12 +123,12 @@ export default function AllNotificationsPage() {
                   const Icon = getNotificationIcon(notif.type);
                   const isClickable = !!notif.link;
                   const NotificationItemWrapper = isClickable ? Link : 'div';
-                  const wrapperProps = isClickable ? { href: notif.link } : {};
+                  const wrapperProps = isClickable ? { href: notif.link! } : {}; // Added non-null assertion
 
                   return (
                     <li key={notif.id}>
-                      <NotificationItemWrapper {...wrapperProps} onClick={() => !isClickable && handleMarkAsRead(notif.id)}>
-                        <div
+                      <NotificationItemWrapper {...wrapperProps} onClick={() => handleMarkAsRead(notif.id)}>
+                        <div // Removed motion.div from here
                           className={cn(
                             "flex items-start gap-4 p-4 transition-colors",
                             !notif.isRead && "bg-primary/5 hover:bg-primary/10",
