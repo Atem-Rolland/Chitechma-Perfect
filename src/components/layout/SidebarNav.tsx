@@ -83,6 +83,7 @@ const iconMap: Record<string, React.ElementType> = {
 const defaultSidebarNav: Record<Role | 'guest', NavItem[]> = {
   student: [
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { title: 'Notifications', href: '/dashboard/notifications', icon: Bell },
     { title: 'My Courses', href: '/courses', icon: BookOpen },
     { title: 'My Timetable', href: '/dashboard/student/timetable', icon: CalendarDays },
     { 
@@ -121,6 +122,7 @@ const defaultSidebarNav: Record<Role | 'guest', NavItem[]> = {
   ],
   lecturer: [
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { title: 'Notifications', href: '/dashboard/notifications', icon: Bell },
     { title: 'My Courses', href: '/dashboard/lecturer/courses', icon: ManageCoursesIcon },
     { 
       title: 'Grading & Evaluation', 
@@ -139,6 +141,7 @@ const defaultSidebarNav: Record<Role | 'guest', NavItem[]> = {
   ],
   admin: [
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { title: 'Notifications', href: '/dashboard/notifications', icon: Bell },
     { title: 'User Management', href: '/dashboard/admin/users', icon: Users },
     { 
       title: 'Academic Setup', 
@@ -154,6 +157,7 @@ const defaultSidebarNav: Record<Role | 'guest', NavItem[]> = {
   ],
   finance: [
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { title: 'Notifications', href: '/dashboard/notifications', icon: Bell },
     { title: 'Payment Records', href: '/dashboard/finance/payments', icon: DollarSign },
     { title: 'Financial Reports', href: '/dashboard/finance/reports', icon: FileText },
   ],

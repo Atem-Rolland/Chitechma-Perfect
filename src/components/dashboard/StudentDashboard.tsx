@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { BookOpen, GraduationCap, CreditCard, FileText, Download, User, Edit3, Settings, LogOut, HelpCircle, History, ChevronDown, Info, Phone, Mail, MapPin, Smartphone, Building, Users as GuardianIcon, Briefcase, CalendarDays, ShieldAlert, Award, Globe, School, Loader2, Bell, AlertTriangle, CheckCircle, MessageSquare, FileWarning, Video } from "lucide-react";
+import { BookOpen, GraduationCap, CreditCard, FileText, Download, User, Edit3, Settings, LogOut, HelpCircle, History, ChevronDown, Info, Phone, Mail, MapPin, Smartphone, Building, Users as GuardianIcon, Briefcase, CalendarDays, ShieldAlert, Award, Globe, School, Loader2, Bell, AlertTriangle, CheckCircle as CheckCircleIcon, MessageSquare, FileWarning, Video } from "lucide-react"; // Renamed CheckCircle
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
@@ -63,7 +63,7 @@ const getNotificationIcon = (type: NotificationType): React.ElementType => {
     case 'forum_reply': return MessageSquare;
     case 'info': return Info;
     case 'warning': return AlertTriangle;
-    case 'success': return CheckCircle;
+    case 'success': return CheckCircleIcon; // Renamed
     case 'course_update': return BookOpen;
     default: return Bell;
   }
@@ -323,7 +323,7 @@ export function StudentDashboard() {
                     const Icon = getNotificationIcon(notif.type);
                     const isClickable = !!notif.link;
                     const NotificationItemWrapper = isClickable ? Link : 'div';
-                    const wrapperProps = isClickable ? { href: notif.link } : {};
+                    const wrapperProps = isClickable ? { href: notif.link! } : {}; // Added non-null assertion for href
 
                     return (
                       <li key={notif.id}>
@@ -365,7 +365,9 @@ export function StudentDashboard() {
             )}
           </CardContent>
           <CardFooter>
-            <Button variant="outline" className="w-full" disabled>View All Notifications (Soon)</Button>
+            <Button variant="outline" className="w-full" asChild>
+                <Link href="/dashboard/notifications">View All Notifications</Link>
+            </Button>
           </CardFooter>
         </Card>
       </motion.div>
