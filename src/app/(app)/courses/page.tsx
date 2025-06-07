@@ -605,6 +605,14 @@ export default function CoursesPage() {
               <div className="space-y-4">
                 {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
               </div>
+            ) : allCourses.length === 0 ? (
+              <div className="text-center py-12">
+                <Image src="https://placehold.co/300x200.png" alt="No courses available" width={200} height={133} className="mx-auto mb-4 rounded-lg" data-ai-hint="empty bookshelf education" />
+                <h3 className="text-xl font-semibold">No Courses Currently Available</h3>
+                <p className="text-muted-foreground mt-1">
+                  There are no courses available in the system for your program or level at this time. Please check back later or contact administration.
+                </p>
+              </div>
             ) : filteredCourses.length > 0 ? (
               <Table>
                 <TableHeader>
@@ -703,7 +711,7 @@ export default function CoursesPage() {
               </Table>
             ) : (
               <div className="text-center py-12">
-                <Image src="https://placehold.co/300x200.png" alt="No courses found" width={200} height={133} className="mx-auto mb-4 rounded-lg" data-ai-hint="empty state education" />
+                <Image src="https://placehold.co/300x200.png" alt="No courses found for filters" width={200} height={133} className="mx-auto mb-4 rounded-lg" data-ai-hint="empty state education" />
                 <h3 className="text-xl font-semibold">No Courses Found</h3>
                 <p className="text-muted-foreground mt-1">
                   Try adjusting your search or filter criteria for the selected Academic Year and Semester.
