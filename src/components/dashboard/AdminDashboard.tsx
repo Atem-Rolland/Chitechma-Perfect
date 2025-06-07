@@ -4,9 +4,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
-  Users, BookOpen, UserCheck, ShieldCheck, Settings, BarChartHorizontalBig, Edit, UsersCog, UserPlus, KeyRound, ScanLine, Trash2, Edit3, Power,
+  Users, BookOpen, UserCheck, ShieldCheck, Settings, BarChartHorizontalBig, Edit, UserCog, UserPlus, KeyRound, ScanLine, Trash2, Edit3, Power,
   GraduationCap, CalendarDays, DollarSign, FileText, MessageSquare, AlertCircle, Search, ListFilter, Eye, UploadCloud,
-  ClipboardCheck, Lock, Unlock, Landmark, Receipt, MailWarning, CreditCard, Megaphone, Bot, PieChart, History, DatabaseZap, Library, ListChecks, SlidersHorizontal
+  ClipboardCheck, Lock, Unlock, Landmark, Receipt, MailWarning, CreditCard, Megaphone, Bot, PieChart, History, DatabaseZap, Library, ListChecks, SlidersHorizontal, FileSignature
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -73,7 +73,7 @@ export function AdminDashboard() {
       {/* User Management Card */}
       <Card className="md:col-span-2 xl:col-span-2">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><UsersCog className="text-primary"/>User Management</CardTitle>
+          <CardTitle className="flex items-center gap-2"><UserCog className="text-primary"/>User Management</CardTitle>
           <CardDescription>Manage all user accounts, roles, and statuses for students, lecturers, and staff.</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">

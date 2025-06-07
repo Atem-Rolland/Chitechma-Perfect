@@ -45,20 +45,23 @@ import {
   FileSignature,
   Bot,
   CalendarDays,
-  BarChartHorizontalBig, // Added
-  UsersCog, // Added
-  Library, // Added
-  ListChecks, // Added
-  AlertCircle as AlertCircleIcon, // Added
-  UploadCloud as UploadCloudIcon, // Added
-  Lock as LockIcon, // Added
-  Landmark as LandmarkIcon, // Added
-  Receipt as ReceiptIcon, // Added
-  MailWarning as MailWarningIcon, // Added
-  Megaphone as MegaphoneIcon, // Added
-  PieChart as PieChartIcon, // Added
-  SlidersHorizontal as SlidersHorizontalIcon, // Added
-  DatabaseZap as DatabaseZapIcon // Added
+  BarChartHorizontalBig,
+  UserCog, 
+  Library, 
+  ListChecks, 
+  AlertCircle as AlertCircleIcon, 
+  UploadCloud as UploadCloudIcon, 
+  Lock as LockIcon, 
+  Landmark as LandmarkIcon, 
+  Receipt as ReceiptIcon, 
+  MailWarning as MailWarningIcon, 
+  Megaphone as MegaphoneIcon, 
+  PieChart as PieChartIcon, 
+  SlidersHorizontal as SlidersHorizontalIcon, 
+  DatabaseZap as DatabaseZapIcon,
+  Eye,
+  UserPlus,
+  Edit3
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -92,22 +95,25 @@ const iconMap: Record<string, React.ElementType> = {
   Bot,
   CalendarDays,
   BarChartHorizontalBig,
-  UsersCog,
-  Library,
-  ListChecks,
-  AlertCircleIcon,
-  UploadCloudIcon,
-  LockIcon,
-  LandmarkIcon,
-  ReceiptIcon,
-  MailWarningIcon,
-  MegaphoneIcon,
-  PieChartIcon,
-  SlidersHorizontalIcon,
-  DatabaseZapIcon
+  UserCog, 
+  Library, 
+  ListChecks, 
+  AlertCircleIcon, 
+  UploadCloudIcon, 
+  LockIcon, 
+  LandmarkIcon, 
+  ReceiptIcon, 
+  MailWarningIcon, 
+  MegaphoneIcon, 
+  PieChartIcon, 
+  SlidersHorizontalIcon, 
+  DatabaseZapIcon,
+  Eye,
+  UserPlus,
+  Edit3
 };
 
-const defaultSidebarNav: Record<Role | 'guest', NavItem[]> = {
+const defaultSidebarNav: Record<Role | 'guest' | 'null', NavItem[]> = {
   student: [
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { title: 'My Courses', href: '/courses', icon: BookOpen },
@@ -172,7 +178,7 @@ const defaultSidebarNav: Record<Role | 'guest', NavItem[]> = {
     { 
       title: 'User Management', 
       href: '#', 
-      icon: UsersCog,
+      icon: UserCog,
       subItems: [
         { title: 'View All Users', href: '/dashboard/admin/users/view-all', icon: Eye},
         { title: 'Create User', href: '/dashboard/admin/users/create', icon: UserPlus},
@@ -241,7 +247,7 @@ const defaultSidebarNav: Record<Role | 'guest', NavItem[]> = {
     { title: 'Payment Records', href: '/dashboard/finance/payments', icon: DollarSign },
     { title: 'Financial Reports', href: '/dashboard/finance/reports', icon: FileText },
     { title: 'Fee Management', href: '/dashboard/finance/fees', icon: Settings},
-    { title: 'Student Financials', href: '/dashboard/finance/student-records', icon: UsersCog},
+    { title: 'Student Financials', href: '/dashboard/finance/student-records', icon: UserCog},
     { title: 'Issue Reminders', href: '/dashboard/finance/reminders', icon: MailWarningIcon},
 
   ],
@@ -267,7 +273,7 @@ const SidebarNavItem: React.FC<SidebarNavItemProps> = ({ item, pathname }) => {
   React.useEffect(() => {
     if (item.subItems && item.subItems.some(sub => pathname === sub.href || (sub.href !== '/dashboard' && sub.href !== '#' && pathname.startsWith(sub.href)))) {
       setIsSubmenuOpen(true);
-    } else if (item.subItems && !isActive) { // Close if no sub-item is active
+    } else if (item.subItems && !isActive) { 
         // setIsSubmenuOpen(false); // This line might be too aggressive, let's test behavior
     }
   }, [pathname, item.subItems, isActive]);
