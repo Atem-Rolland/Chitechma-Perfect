@@ -34,7 +34,7 @@ export async function elearningChat(input: ElearningChatInput): Promise<Elearnin
 
 const prompt = ai.definePrompt({
   name: 'elearningChatPrompt',
-  model: 'googleai/gemini-2.0-flash', // Explicitly set the model
+  // model: 'openai/gpt-3.5-turbo', // Temporarily remove explicit model selection
   input: { schema: ElearningChatInputSchema },
   output: { schema: ElearningChatOutputSchema },
   prompt: `You are a friendly, empathetic, and knowledgeable e-learning assistant chatbot for Chitechma University.
@@ -80,6 +80,8 @@ const elearningChatFlow = ai.defineFlow(
         userMessage = "I'm sorry, I cannot respond to that query due to safety guidelines. Please try a different question.";
       } else if (error instanceof Error && error.message.toLowerCase().includes('blocked')) {
          userMessage = "I'm sorry, I cannot respond to that query as it may have been blocked. Please try rephrasing your question or ask something else.";
+      } else if (error instanceof Error && error.message.toLowerCase().includes('plugin')) {
+         userMessage = "I'm sorry, the AI model service is currently unavailable. Please try again later.";
       } else if (error instanceof Error) {
         // Log more details for debugging if it's a general error
         console.error('Detailed error message for prompt execution failure:', error.message);
@@ -110,4 +112,3 @@ const elearningChatFlow = ai.defineFlow(
     return flowOutput;
   }
 );
-
