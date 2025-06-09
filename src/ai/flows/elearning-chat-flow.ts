@@ -70,20 +70,25 @@ const elearningChatFlow = ai.defineFlow(
     try {
       promptResult = await prompt(input);
     } catch (error: any) {
-      console.error('Elearning Chat Flow: Error during AI prompt execution.', 'Error Message:', error.message, 'Error Details:', JSON.stringify(error, null, 2), 'Input was:', JSON.stringify(input, null, 2));
+      // Enhanced error logging for the Genkit server console
+      console.error('Elearning Chat Flow: Error during AI prompt execution.', 
+                    'Error Name:', error.name,
+                    'Error Message:', error.message, 
+                    'Error Details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2),
+                    'Input was:', JSON.stringify(input, null, 2));
       
       let userMessage = "I'm sorry, an unexpected error occurred while processing your request. Please try again later.";
       
       const errorMessageLower = error.message?.toLowerCase() || "";
 
-      if (errorMessageLower.includes('api key not valid') || errorMessageLower.includes('api_key_invalid') || errorMessageLower.includes('permission denied') && (errorMessageLower.includes('api key') || errorMessageLower.includes('credential'))) {
-        userMessage = "I'm sorry, there seems to be an issue with the AI service configuration (e.g., API key). Please notify support.";
-      } else if (errorMessageLower.includes('safety') || errorMessageLower.includes('blocked by safety policy') || error.finish_reason === 'SAFETY') {
+      if (errorMessageLower.includes('api key not valid') || errorMessageLower.includes('api_key_invalid') || (errorMessageLower.includes('permission denied') && (errorMessageLower.includes('api key') || errorMessageLower.includes('credential'))) || errorMessageLower.includes('incorrect api key')) {
+        userMessage = "I'm sorry, there seems to be an issue with the AI service configuration (e.g., API key). Please ensure your API key is correct and has the necessary permissions, then notify support if the issue persists.";
+      } else if (errorMessageLower.includes('safety') || errorMessageLower.includes('blocked by safety policy') || (error.finish_reason && error.finish_reason === 'SAFETY') || (error.candidates && error.candidates[0] && error.candidates[0].finishReason === 'SAFETY') ) {
         userMessage = "I'm sorry, I cannot respond to that query due to safety guidelines. Please try a different question.";
       } else if (errorMessageLower.includes('model_not_found') || errorMessageLower.includes('resource exhausted') || errorMessageLower.includes('quota')) {
-         userMessage = "I'm sorry, the AI model service is currently unavailable or experiencing issues. Please try again later.";
-      } else if (errorMessageLower.includes('plugin') || errorMessageLower.includes('failed to fetch')) { // Genkit dev server not running or network issue
-         userMessage = "I'm sorry, I couldn't connect to the AI service. Please ensure the Genkit development server is running and your network connection is stable.";
+         userMessage = "I'm sorry, the AI model service is currently unavailable or experiencing issues (e.g., model not found or quota exceeded). Please try again later.";
+      } else if (errorMessageLower.includes('plugin') || errorMessageLower.includes('failed to fetch') || errorMessageLower.includes('connect ECONNREFUSED')) { 
+         userMessage = "I'm sorry, I couldn't connect to the AI service. Please check if the Genkit development server is running and your API key is correctly configured.";
       }
       
       return { response: userMessage };
@@ -94,11 +99,13 @@ const elearningChatFlow = ai.defineFlow(
     if (!flowOutput) {
       console.error('Elearning Chat Flow: AI Model did not return a valid structured output. Input was:', JSON.stringify(input, null, 2) , 'Raw prompt result (if any):', JSON.stringify(promptResult, null, 2));
       
-      const finishReason = (promptResult as any)?.candidates?.[0]?.finishReason;
-      if (finishReason === 'SAFETY' || finishReason === 'BLOCK') {
+      // Attempt to get finish_reason from different possible structures
+      const finishReason = (promptResult as any)?.candidates?.[0]?.finishReason || (promptResult as any)?.choices?.[0]?.finish_reason;
+
+      if (finishReason === 'SAFETY' || finishReason === 'BLOCK' || finishReason === 'content_filter') {
            return { response: "I'm sorry, your request could not be processed due to content filters. Please try a different question." };
       }
-      if (finishReason === 'OTHER' || finishReason === 'UNKNOWN' || finishReason === 'MAX_TOKENS' || finishReason === 'RECITATION') {
+      if (finishReason === 'OTHER' || finishReason === 'UNKNOWN' || finishReason === 'MAX_TOKENS' || finishReason === 'RECITATION' || finishReason === 'length') {
         return { response: "I'm sorry, I couldn't fully process your request. It might be too long or complex. Could you try rephrasing or shortening it?" };
       }
       
