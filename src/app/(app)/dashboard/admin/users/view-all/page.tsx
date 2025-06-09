@@ -19,16 +19,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import type { UserProfile, Role } from "@/types";
 import { DEPARTMENTS, VALID_LEVELS } from "@/config/data"; 
-import { Users, Search, Filter, PlusCircle, MoreHorizontal, Edit, ShieldAlert, Trash2, UserCheck, UserX } from "lucide-react";
+import { Users, Search, Filter, PlusCircle, MoreHorizontal, Edit, ShieldAlert, Trash2, UserCheck, UserX, GraduationCap, Briefcase } from "lucide-react";
 
 // Mock data generation function
 function generateMockUsers(count: number = 50): UserProfile[] {
   const users: UserProfile[] = [];
   const roles: Role[] = ["student", "lecturer", "admin", "finance"];
   const statuses: UserProfile['status'][] = ['active', 'suspended', 'pending_approval'];
-  const firstNames = ["Amina", "Bello", "Chinedu", "Fatima", "Garba", "Hassan", "Ibrahim", "Jamilu", "Khadija", "Lamin"];
-  const lastNames = ["Abubakar", "Bakare", "Chukwu", "Dauda", "Eze", "Folarin", "Gbadamosi", "Haruna", "Idris", "Jibril"];
-  const departments = Object.values(DEPARTMENTS);
+  const firstNames = ["Amina", "Bello", "Chinedu", "Fatima", "Garba", "Hassan", "Ibrahim", "Jamilu", "Khadija", "Lamin", "Atem", "Rolland"];
+  const lastNames = ["Abubakar", "Bakare", "Chukwu", "Dauda", "Eze", "Folarin", "Gbadamosi", "Haruna", "Idris", "Jibril", "Ndifor", "Enow"];
+  const allDepartments = Object.values(DEPARTMENTS);
 
   for (let i = 0; i < count; i++) {
     const role = roles[Math.floor(Math.random() * roles.length)];
@@ -41,14 +41,27 @@ function generateMockUsers(count: number = 50): UserProfile[] {
     
     let userSpecifics: Partial<UserProfile> = {};
     if (role === 'student') {
+      const department = allDepartments[Math.floor(Math.random() * allDepartments.length)];
+      const level = VALID_LEVELS[Math.floor(Math.random() * VALID_LEVELS.length)];
+      let program = `${department} Program (Mock)`;
+      if (department === DEPARTMENTS.CESM) {
+          program = "B.Eng. Computer Engineering and System Maintenance";
+      } else if (department === DEPARTMENTS.LTM) {
+          program = "B.Tech. Logistics and Transport Management";
+      } else if (department === DEPARTMENTS.ACC) {
+          program = "B.Sc. Accounting";
+      }
+
+
       userSpecifics = {
-        department: departments[Math.floor(Math.random() * departments.length)],
-        level: VALID_LEVELS[Math.floor(Math.random() * VALID_LEVELS.length)],
-        matricule: `CUSMS/S/${new Date().getFullYear().toString().slice(-2)}${Math.floor(1000 + Math.random() * 9000)}`,
+        department: department,
+        level: level,
+        program: program,
+        matricule: `CUSMS/S/${new Date().getFullYear().toString().slice(-2)}${level.toString()[0]}${Math.floor(1000 + Math.random() * 9000)}`,
       };
     } else if (role === 'lecturer') {
        userSpecifics = {
-        department: departments[Math.floor(Math.random() * departments.length)],
+        department: allDepartments[Math.floor(Math.random() * allDepartments.length)],
       };
     }
 
@@ -64,6 +77,24 @@ function generateMockUsers(count: number = 50): UserProfile[] {
       ...userSpecifics,
     });
   }
+  // Ensure Atem Rolland is in the list for demo purposes
+  if (!users.find(u => u.displayName === "Atem Rolland")) {
+      users.push({
+        uid: `student-atem-rolland`,
+        email: 'atem.rolland@example.com',
+        displayName: 'Atem Rolland',
+        role: 'student',
+        photoURL: `https://placehold.co/40x40.png?text=AR`,
+        status: 'active',
+        lastLogin: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        department: DEPARTMENTS.CESM,
+        level: 400,
+        program: "B.Eng. Computer Engineering and System Maintenance",
+        matricule: `CUSMS/S/2440001`
+      });
+  }
+
   return users;
 }
 
@@ -98,11 +129,12 @@ export default function ViewAllUsersPage() {
       .filter(user =>
         user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.matricule?.toLowerCase().includes(searchTerm.toLowerCase())
+        user.matricule?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.program?.toLowerCase().includes(searchTerm.toLowerCase())
       );
   }, [users, searchTerm, filters]);
 
-  const getStatusBadgeVariant = (status: UserProfile['status']) => {
+  const getStatusBadgeVariant = (status?: UserProfile['status']) => {
     switch (status) {
       case "active": return "default";
       case "suspended": return "destructive";
@@ -160,7 +192,7 @@ export default function ViewAllUsersPage() {
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
-                placeholder="Search by name, email, matricule..."
+                placeholder="Search by name, email, matricule, program..."
                 className="pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -236,9 +268,16 @@ export default function ViewAllUsersPage() {
                           {user.role}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {user.role === 'student' && `Matricule: ${user.matricule || 'N/A'}`}
-                        {(user.role === 'student' || user.role === 'lecturer') && <span className="block">Dept: {user.department || 'N/A'}</span>}
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                        {user.role === 'student' && (
+                          <>
+                            <span className="block">Matricule: {user.matricule || 'N/A'}</span>
+                            <span className="block">Dept: {user.department || 'N/A'}</span>
+                            <span className="block">Level: {user.level || 'N/A'}</span>
+                            <span className="block truncate max-w-xs" title={user.program || 'N/A'}>Prog: {user.program || 'N/A'}</span>
+                          </>
+                        )}
+                        {user.role === 'lecturer' && <span className="block">Dept: {user.department || 'N/A'}</span>}
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge variant={getStatusBadgeVariant(user.status)} className="capitalize text-xs">
