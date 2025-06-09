@@ -417,11 +417,9 @@ export default function CoursesPage() {
     }
 
     if (isStudent && studentAcademicContext) {
-      if (course.department !== studentAcademicContext.department) {
-        if (course.type !== "General") {
-            toast({ title: "Registration Not Allowed", description: `You can only register for courses within your department (${studentAcademicContext.department}) or General courses. This course is for ${course.department}.`, variant: "destructive" });
-            return;
-        }
+      if (course.type !== "General" && course.department !== studentAcademicContext.department) {
+          toast({ title: "Registration Not Allowed", description: `You can only register for courses within your department (${studentAcademicContext.department}) or General courses. This course is for ${course.department}.`, variant: "destructive" });
+          return;
       }
       if (course.level !== studentAcademicContext.level) {
         toast({ title: "Registration Not Allowed", description: `You can only register for courses at your current level (${studentAcademicContext.level}). This course is Level ${course.level}.`, variant: "destructive" });
@@ -710,35 +708,42 @@ export default function CoursesPage() {
                     canRegisterThisCourse = canRegisterThisCourse && (totalRegisteredCredits + course.credits <= MAX_CREDITS);
                     
                     if (isStudent && studentAcademicContext) {
-                        const departmentMatch = course.department === studentAcademicContext.department;
-                        const isGeneralCourseForLevel = course.type === "General" && course.level === studentAcademicContext.level;
-                        canRegisterThisCourse = canRegisterThisCourse && (departmentMatch || isGeneralCourseForLevel);
-                        
-                        canRegisterThisCourse = canRegisterThisCourse && course.level === studentAcademicContext.level;
+                        let academicEligibility = false;
+                        if (course.type === "General") {
+                            academicEligibility = course.level === studentAcademicContext.level;
+                        } else { // Compulsory or Elective
+                            academicEligibility = (
+                                course.department === studentAcademicContext.department &&
+                                course.level === studentAcademicContext.level
+                            );
+                        }
+                        canRegisterThisCourse = canRegisterThisCourse && academicEligibility;
 
-                        const unmetPrerequisites = course.prerequisites?.filter(prereqCode => {
-                            const isPrereqMetOnRecord = registeredCourseIds.some(regId => {
-                                const registeredPrereq = allCourses.find(c => c.id === regId && c.code === prereqCode);
-                                if (!registeredPrereq) return false;
+                        if (canRegisterThisCourse) { // Only check prerequisites if academically eligible
+                            const unmetPrerequisites = course.prerequisites?.filter(prereqCode => {
+                                const isPrereqMetOnRecord = registeredCourseIds.some(regId => {
+                                    const registeredPrereq = allCourses.find(c => c.id === regId && c.code === prereqCode);
+                                    if (!registeredPrereq) return false;
 
-                                const targetYearPartsVal = course.academicYear.split('/');
-                                const prereqYearPartsVal = registeredPrereq.academicYear.split('/');
-                                const targetStartYearVal = parseInt(targetYearPartsVal[0]);
-                                const prereqStartYearVal = parseInt(prereqYearPartsVal[0]);
+                                    const targetYearPartsVal = course.academicYear.split('/');
+                                    const prereqYearPartsVal = registeredPrereq.academicYear.split('/');
+                                    const targetStartYearVal = parseInt(targetYearPartsVal[0]);
+                                    const prereqStartYearVal = parseInt(prereqYearPartsVal[0]);
 
-                                const semesterOrderVal = {"First Semester": 1, "Second Semester": 2, "Resit Semester": 3};
-                                const targetSemesterOrderVal = semesterOrderVal[course.semester as keyof typeof semesterOrderVal] || 0;
-                                const prereqSemesterOrderVal = semesterOrderVal[registeredPrereq.semester as keyof typeof semesterOrderVal] || 0;
+                                    const semesterOrderVal = {"First Semester": 1, "Second Semester": 2, "Resit Semester": 3};
+                                    const targetSemesterOrderVal = semesterOrderVal[course.semester as keyof typeof semesterOrderVal] || 0;
+                                    const prereqSemesterOrderVal = semesterOrderVal[registeredPrereq.semester as keyof typeof semesterOrderVal] || 0;
 
-                                if (prereqStartYearVal < targetStartYearVal) return true; 
-                                if (prereqStartYearVal === targetStartYearVal && prereqSemesterOrderVal < targetSemesterOrderVal) return true;
-                                
-                                return false;
-                            });
-                            return !isPrereqMetOnRecord;
-                          });
-                        if (unmetPrerequisites && unmetPrerequisites.length > 0) {
-                            canRegisterThisCourse = false;
+                                    if (prereqStartYearVal < targetStartYearVal) return true; 
+                                    if (prereqStartYearVal === targetStartYearVal && prereqSemesterOrderVal < targetSemesterOrderVal) return true;
+                                    
+                                    return false;
+                                });
+                                return !isPrereqMetOnRecord;
+                              });
+                            if (unmetPrerequisites && unmetPrerequisites.length > 0) {
+                                canRegisterThisCourse = false;
+                            }
                         }
                     }
 
@@ -942,3 +947,5 @@ export default function CoursesPage() {
     </motion.div>
   );
 }
+
+    
