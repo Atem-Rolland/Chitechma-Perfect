@@ -23,11 +23,15 @@ export default function ChatbotPage() {
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return "U";
-    const names = name.split(' ');
-    if (names.length > 1 && names[0] && names[names.length - 1]) {
-      return names[0][0] + names[names.length - 1][0];
+    const names = name.split(' ').filter(Boolean); // filter out empty strings from multiple spaces
+    if (names.length > 1) {
+      return (names[0][0] || "") + (names[names.length - 1][0] || "");
+    } else if (names.length === 1 && names[0].length > 1) {
+      return names[0].substring(0, 2).toUpperCase();
+    } else if (names.length === 1 && names[0].length === 1) {
+      return names[0][0].toUpperCase();
     }
-    return name.substring(0, 2).toUpperCase();
+    return name.length > 1 ? name.substring(0, 2).toUpperCase() : name.toUpperCase();
   };
   
   useEffect(() => {
@@ -193,4 +197,3 @@ export default function ChatbotPage() {
     </motion.div>
   );
 }
-
