@@ -1,13 +1,9 @@
+
 import type { Metadata } from 'next';
-import { Inter, Urbanist } from 'next/font/google'; // Import specific fonts
+// Removed Inter and Urbanist imports as per project guidelines for font handling.
 import './globals.css';
 import { Providers } from '@/components/Providers';
 import { siteConfig } from '@/config/site';
-
-// Using next/font as per guidelines is not allowed for this project.
-// The guidelines state: "IMPORTANT: This project will NOT manage fonts through the standard NextJS package.
-// It will intentionally use <link> elements in <head> to import Google Fonts."
-// Therefore, the next/font imports are removed, and <link> tags are used.
 
 export const metadata: Metadata = {
   title: {
@@ -15,7 +11,11 @@ export const metadata: Metadata = {
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
-  // Add more metadata as needed: icons, openGraph, etc.
+  icons: {
+    icon: '/favicon.ico', // Path relative to the 'public' folder
+    apple: '/apple-icon.png', // Path relative to the 'public' folder
+  },
+  // Add more metadata as needed: openGraph, etc.
 };
 
 export default function RootLayout({
