@@ -68,51 +68,43 @@ const elearningChatFlow = ai.defineFlow(
   async (input) => {
     let promptResult;
     try {
-      // Attempt to get a response from the AI model using the defined prompt
       promptResult = await prompt(input);
-    } catch (error) {
-      // Log errors that occur during the execution of the prompt (e.g., API errors, network issues)
-      console.error('Elearning Chat Flow: Error during prompt execution.', error, 'Input was:', JSON.stringify(input, null, 2));
+    } catch (error: any) {
+      console.error('Elearning Chat Flow: Error during AI prompt execution.', 'Error Message:', error.message, 'Error Details:', JSON.stringify(error, null, 2), 'Input was:', JSON.stringify(input, null, 2));
       
       let userMessage = "I'm sorry, an unexpected error occurred while processing your request. Please try again later.";
-      // Check if the error message indicates a safety-related issue
-      if (error instanceof Error && error.message.toLowerCase().includes('safety')) {
+      
+      const errorMessageLower = error.message?.toLowerCase() || "";
+
+      if (errorMessageLower.includes('api key not valid') || errorMessageLower.includes('api_key_invalid') || errorMessageLower.includes('permission denied') && (errorMessageLower.includes('api key') || errorMessageLower.includes('credential'))) {
+        userMessage = "I'm sorry, there seems to be an issue with the AI service configuration (e.g., API key). Please notify support.";
+      } else if (errorMessageLower.includes('safety') || errorMessageLower.includes('blocked by safety policy') || error.finish_reason === 'SAFETY') {
         userMessage = "I'm sorry, I cannot respond to that query due to safety guidelines. Please try a different question.";
-      } else if (error instanceof Error && error.message.toLowerCase().includes('blocked')) {
-         userMessage = "I'm sorry, I cannot respond to that query as it may have been blocked. Please try rephrasing your question or ask something else.";
-      } else if (error instanceof Error && error.message.toLowerCase().includes('plugin')) {
-         userMessage = "I'm sorry, the AI model service is currently unavailable. Please try again later.";
-      } else if (error instanceof Error) {
-        // Log more details for debugging if it's a general error
-        console.error('Detailed error message for prompt execution failure:', error.message);
-        if (error.message.toLowerCase().includes('api key not valid')) {
-          userMessage = "I'm sorry, there's an issue with the AI service configuration (API key). Please contact support.";
-        }
+      } else if (errorMessageLower.includes('model_not_found') || errorMessageLower.includes('resource exhausted') || errorMessageLower.includes('quota')) {
+         userMessage = "I'm sorry, the AI model service is currently unavailable or experiencing issues. Please try again later.";
+      } else if (errorMessageLower.includes('plugin') || errorMessageLower.includes('failed to fetch')) { // Genkit dev server not running or network issue
+         userMessage = "I'm sorry, I couldn't connect to the AI service. Please ensure the Genkit development server is running and your network connection is stable.";
       }
+      
       return { response: userMessage };
     }
 
-    // Extract the structured output from the prompt result
-    // The 'output' field is expected based on Genkit's handling of prompts with an outputSchema
     const flowOutput = promptResult?.output;
 
     if (!flowOutput) {
-      // This case handles scenarios where the prompt executed without throwing an error,
-      // but the model's response was empty, blocked by safety filters post-generation,
-      // or could not be successfully parsed into the ElearningChatOutputSchema.
-      console.error('Elearning Chat Flow: Model did not return a valid structured output. Input was:', JSON.stringify(input, null, 2) , 'Raw prompt result (if any):', JSON.stringify(promptResult, null, 2));
+      console.error('Elearning Chat Flow: AI Model did not return a valid structured output. Input was:', JSON.stringify(input, null, 2) , 'Raw prompt result (if any):', JSON.stringify(promptResult, null, 2));
       
-      // Check if the prompt result itself indicates a finish reason related to safety
       const finishReason = (promptResult as any)?.candidates?.[0]?.finishReason;
       if (finishReason === 'SAFETY' || finishReason === 'BLOCK') {
-           return { response: "I'm sorry, your request could not be processed due to safety content filters. Please try a different question." };
+           return { response: "I'm sorry, your request could not be processed due to content filters. Please try a different question." };
+      }
+      if (finishReason === 'OTHER' || finishReason === 'UNKNOWN' || finishReason === 'MAX_TOKENS' || finishReason === 'RECITATION') {
+        return { response: "I'm sorry, I couldn't fully process your request. It might be too long or complex. Could you try rephrasing or shortening it?" };
       }
       
-      return { response: "I'm sorry, I couldn't generate a response at this moment. This might be due to content filters or an issue with understanding the request. Please try rephrasing your question." };
+      return { response: "I'm sorry, I couldn't generate a response at this moment. This might be due to an unexpected issue or content filters. Please try rephrasing your question." };
     }
     
-    // If a valid structured output is received, return it
     return flowOutput;
   }
 );
-

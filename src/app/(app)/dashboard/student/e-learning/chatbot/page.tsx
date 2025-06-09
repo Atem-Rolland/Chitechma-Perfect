@@ -35,13 +35,12 @@ export default function ChatbotPage() {
   };
   
   useEffect(() => {
-    // Add an initial greeting from the bot only if messages are empty and profile is loaded
     if (messages.length === 0 && profile) {
       setMessages([
         {
           id: 'initial-greeting',
           sender: 'bot',
-          text: `Hello ${profile.displayName?.split(' ')[0] || 'Student'}! I am your Chitechma University e-learning assistant. How can I help you today?\n\n(Developer Tip: If running locally, ensure your Genkit development server is active for the AI to respond. You can usually start it with 'npm run genkit:dev' or 'npm run genkit:watch' in a separate terminal.)`,
+          text: `Hello ${profile.displayName?.split(' ')[0] || 'Student'}! I'm the Chitechma University e-learning assistant. How can I assist you with your studies today?`,
           timestamp: new Date().toISOString(),
         },
       ]);
@@ -49,11 +48,9 @@ export default function ChatbotPage() {
   }, [profile, messages.length]); 
 
   useEffect(() => {
-    // Scroll to bottom when new messages are added
     if (scrollAreaRef.current) {
       const scrollViewport = scrollAreaRef.current.querySelector<HTMLDivElement>('[data-radix-scroll-area-viewport]');
       if(scrollViewport) {
-        // Using requestAnimationFrame to ensure scrolling happens after layout calculation
         requestAnimationFrame(() => {
           scrollViewport.scrollTop = scrollViewport.scrollHeight;
         });
@@ -97,7 +94,7 @@ export default function ChatbotPage() {
       const errorMessage: ChatMessage = {
         id: `error-${Date.now()}`,
         sender: 'bot',
-        text: 'Sorry, I encountered an error processing your request. Please check if the Genkit development server is running and your API key is correctly configured.',
+        text: 'Sorry, I encountered an error processing your request. Please try again later or contact support if the issue persists.',
         timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -124,7 +121,7 @@ export default function ChatbotPage() {
         <CardContent className="flex-grow p-0 flex flex-col">
           <ScrollArea className="flex-grow p-4 space-y-4" ref={scrollAreaRef}>
             {messages.map((message) => (
-              <div // Removed motion.div from here as per previous fix for flickering
+              <div
                 key={message.id}
                 className={cn(
                   "flex items-end gap-2 max-w-[85%] sm:max-w-[75%]",
