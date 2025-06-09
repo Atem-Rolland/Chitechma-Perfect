@@ -3,10 +3,11 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { ThemeToggle } from '@/components/ThemeToggle'; // Ensure this path is correct
+import { ThemeToggle } from '@/components/ThemeToggle'; 
 import { motion } from 'framer-motion';
-import { Palette, Bell, Shield, KeyRound } from 'lucide-react'; // Corrected ShieldLock to Shield
-import { Button } from '@/components/ui/button'; // Added import for Button
+import { Palette, Bell, Shield, KeyRound } from 'lucide-react'; 
+import { Button } from '@/components/ui/button'; 
+import Link from 'next/link'; // Added Link import
 
 export default function SettingsPage() {
   return (
@@ -34,9 +35,9 @@ export default function SettingsPage() {
                 Switch between light and dark mode.
               </p>
             </div>
-            <ThemeToggle /> {/* Placed ThemeToggle here */}
+            <ThemeToggle /> 
           </div>
-          {/* Placeholder for more appearance settings like font size, density etc. */}
+          
         </CardContent>
       </Card>
 
@@ -47,7 +48,7 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">Notification settings are not yet available.</p>
-          {/* Placeholder for notification settings */}
+          
         </CardContent>
       </Card>
 
@@ -64,7 +65,11 @@ export default function SettingsPage() {
                 Update your account password.
               </p>
             </div>
-            <Button variant="outline" disabled><KeyRound className="mr-2 h-4 w-4"/>Change Password</Button>
+            <Button variant="outline" asChild>
+              <Link href="/reset-password">
+                <KeyRound className="mr-2 h-4 w-4"/>Change Password
+              </Link>
+            </Button>
           </div>
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div>
@@ -75,7 +80,7 @@ export default function SettingsPage() {
             </div>
             <Button variant="outline" disabled>Setup MFA</Button>
           </div>
-          {/* Placeholder for more security settings */}
+          
         </CardContent>
       </Card>
     </motion.div>
