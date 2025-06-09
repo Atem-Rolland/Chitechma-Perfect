@@ -253,22 +253,25 @@ export default function CoursesPage() {
       const fetchedCourses = await fetchCourses();
       setAllCourses(fetchedCourses);
   
-      if (user?.uid && typeof window !== 'undefined') {
+      if (user?.uid && typeof window !== 'undefined' && profile) { // Ensure profile is loaded
         const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
+        if (!storageKey) {
+            setRegisteredCourseIds([]);
+            setHasLoadedInitialRegistrations(true);
+            setIsLoading(false);
+            return;
+        }
+        
         let initialRegisteredIds: string[] = [];
         const storedIdsString = localStorage.getItem(storageKey);
+        let successfullyLoadedFromStorage = false;
 
-        // Special pre-population for Atem Rolland if his localStorage is empty
-        if (user.uid === 'student-atem-rolland' && (!storedIdsString || JSON.parse(storedIdsString).length === 0)) {
-            initialRegisteredIds = fetchedCourses
-                .filter(c => c.department === DEPARTMENTS.CESM && (c.level === 200 || c.level === 300))
-                .map(c => c.id);
-            localStorage.setItem(storageKey, JSON.stringify(initialRegisteredIds));
-        } else if (storedIdsString) {
+        if (storedIdsString) {
             try {
               const parsedIds = JSON.parse(storedIdsString);
-              if (Array.isArray(parsedIds)) {
+              if (Array.isArray(parsedIds) && parsedIds.length > 0) {
                 initialRegisteredIds = parsedIds;
+                successfullyLoadedFromStorage = true;
               } else {
                 localStorage.removeItem(storageKey); 
               }
@@ -277,17 +280,45 @@ export default function CoursesPage() {
               localStorage.removeItem(storageKey); 
             }
         }
+
+        if (!successfullyLoadedFromStorage && isStudent && studentAcademicContext) {
+            // localStorage is empty, invalid, or didn't exist. Pre-populate based on current context.
+            const { department, level, currentAcademicYear, currentSemester } = studentAcademicContext;
+
+            const departmentalCourses = fetchedCourses.filter(c =>
+                c.department === department &&
+                c.level === level &&
+                c.academicYear === currentAcademicYear &&
+                c.semester === currentSemester &&
+                (c.type === "Compulsory" || c.type === "Elective") 
+            );
+
+            const generalCourses = fetchedCourses.filter(c =>
+                c.type === "General" &&
+                c.level === level &&
+                c.academicYear === currentAcademicYear &&
+                c.semester === currentSemester
+            );
+            
+            // Use Set to ensure no duplicate course IDs if a course somehow matched both general and departmental
+            initialRegisteredIds = [...new Set([...departmentalCourses.map(c => c.id), ...generalCourses.map(c => c.id)])];
+            localStorage.setItem(storageKey, JSON.stringify(initialRegisteredIds));
+        }
+        
         setRegisteredCourseIds(initialRegisteredIds);
+
       } else if (!user?.uid && typeof window !== 'undefined') {
-        setRegisteredCourseIds([]); 
+        // User is not logged in, or localStorage is not available.
+        setRegisteredCourseIds([]);
       }
       setHasLoadedInitialRegistrations(true);
       setIsLoading(false);
     }
+
     if (!authLoading) { 
         loadData();
     }
-  }, [user?.uid, authLoading]); // Depend on user.uid and authLoading
+  }, [user?.uid, authLoading, profile, isStudent, studentAcademicContext]); 
   
   // Effect for saving registered courses to localStorage
   useEffect(() => {
@@ -417,13 +448,16 @@ export default function CoursesPage() {
     }
 
     if (isStudent && studentAcademicContext) {
-      if (course.type !== "General" && course.department !== studentAcademicContext.department) {
-          toast({ title: "Registration Not Allowed", description: `You can only register for courses within your department (${studentAcademicContext.department}) or General courses. This course is for ${course.department}.`, variant: "destructive" });
-          return;
-      }
-      if (course.level !== studentAcademicContext.level) {
-        toast({ title: "Registration Not Allowed", description: `You can only register for courses at your current level (${studentAcademicContext.level}). This course is Level ${course.level}.`, variant: "destructive" });
-        return;
+      if (course.type === "General") {
+        if (course.level !== studentAcademicContext.level) {
+            toast({ title: "Registration Not Allowed", description: `You can only register for General courses at your current level (${studentAcademicContext.level}). This course is Level ${course.level}.`, variant: "destructive" });
+            return;
+        }
+      } else { // Compulsory or Elective
+        if (course.department !== studentAcademicContext.department || course.level !== studentAcademicContext.level) {
+            toast({ title: "Registration Not Allowed", description: `You can only register for courses within your department (${studentAcademicContext.department}) and at your current level (${studentAcademicContext.level}). This course is for ${course.department}, Level ${course.level}.`, variant: "destructive" });
+            return;
+        }
       }
     } else if (isStudent && !studentAcademicContext) {
         toast({ title: "Profile Error", description: "Your academic profile is not fully loaded. Cannot register courses.", variant: "destructive" });
@@ -947,5 +981,7 @@ export default function CoursesPage() {
     </motion.div>
   );
 }
+
+    
 
     
