@@ -1,9 +1,24 @@
 
 import type { Metadata } from 'next';
-// Removed Inter and Urbanist imports as per project guidelines for font handling.
+import { Inter, Urbanist } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/Providers';
 import { siteConfig } from '@/config/site';
+
+// Setup Inter font for body
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter', // CSS variable for Inter
+  display: 'swap',
+});
+
+// Setup Urbanist font for headlines
+const urbanist = Urbanist({
+  subsets: ['latin'],
+  variable: '--font-urbanist', // CSS variable for Urbanist
+  display: 'swap',
+  weight: ['400', '500', '600', '700', '800', '900'], // Include necessary weights
+});
 
 export const metadata: Metadata = {
   title: {
@@ -12,10 +27,9 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   icons: {
-    icon: '/favicon.ico', // Path relative to the 'public' folder
-    apple: '/apple-icon.png', // Path relative to the 'public' folder
+    icon: '/favicon.ico', 
+    apple: '/apple-icon.png', 
   },
-  // Add more metadata as needed: openGraph, etc.
 };
 
 export default function RootLayout({
@@ -24,12 +38,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${urbanist.variable}`}>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+        {/* Removed direct Google Font links, next/font handles this */}
       </head>
       <body className="font-body antialiased min-h-screen bg-background text-foreground">
         <Providers>

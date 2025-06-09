@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -10,8 +11,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['Urbanist', 'sans-serif'],
+        body: ['var(--font-inter)', 'sans-serif'], // Use Inter CSS variable
+        headline: ['var(--font-urbanist)', 'sans-serif'], // Use Urbanist CSS variable
         code: ['monospace'],
       },
       colors: {
