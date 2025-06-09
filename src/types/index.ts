@@ -10,15 +10,21 @@ export interface UserProfile {
   photoURL?: string | null;
   role: Role;
   
-  department?: string; 
-  level?: number; 
-  program?: string; 
-  currentAcademicYear?: string; 
-  currentSemester?: string; 
-  isNewStudent?: boolean; 
-  isGraduating?: boolean; 
-  matricule?: string;
+  // Student-specific academic details
+  // These are crucial for academic operations and should be set for student roles.
+  // For transfer students (e.g., joining at Level 400 from HND), 'previousRecordsId' or similar
+  // might be needed in the future to link to HND/transferred credits and results.
+  // The system will require a new feature to manage the input of these prior academic records.
+  department?: string; // e.g., "Department of Computer Engineering and System Maintenance"
+  level?: number; // e.g., 200, 300, 400
+  program?: string; // e.g., "B.Eng. Computer Engineering and System Maintenance", "HND in Business Studies"
+  currentAcademicYear?: string; // e.g., "2024/2025"
+  currentSemester?: string; // e.g., "First Semester"
+  isNewStudent?: boolean; // Typically true for Level 200, false for transfers or continuing. Admins should verify for transfers.
+  isGraduating?: boolean; // True if in final year of their current program and eligible for graduation.
+  matricule?: string; // Unique student ID
 
+  // Student-specific personal details (often required for registration)
   gender?: "Male" | "Female" | "Other" | string;
   dateOfBirth?: string; 
   placeOfBirth?: string;
@@ -34,11 +40,11 @@ export interface UserProfile {
   guardianPhone?: string;
   guardianAddress?: string;
   
-  status?: 'active' | 'suspended' | 'pending_approval'; // Added status
+  status?: 'active' | 'suspended' | 'pending_approval'; // User account status
   lastLogin?: any; // Firestore Timestamp or ISO string for last login
   
-  createdAt?: any; 
-  updatedAt?: any; 
+  createdAt?: any; // Firestore Timestamp or ISO string when the profile was created
+  updatedAt?: any; // Firestore Timestamp or ISO string when the profile was last updated
 }
 
 export interface AppUser extends FirebaseUser {
