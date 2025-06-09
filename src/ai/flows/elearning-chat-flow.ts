@@ -34,7 +34,7 @@ export async function elearningChat(input: ElearningChatInput): Promise<Elearnin
 
 const prompt = ai.definePrompt({
   name: 'elearningChatPrompt',
-  // model: 'openai/gpt-3.5-turbo', // Temporarily remove explicit model selection
+  model: 'googleai/gemini-1.5-flash-latest', // Explicitly use a Google AI model
   input: { schema: ElearningChatInputSchema },
   output: { schema: ElearningChatOutputSchema },
   prompt: `You are a friendly, empathetic, and knowledgeable e-learning assistant chatbot for Chitechma University.
@@ -85,6 +85,9 @@ const elearningChatFlow = ai.defineFlow(
       } else if (error instanceof Error) {
         // Log more details for debugging if it's a general error
         console.error('Detailed error message for prompt execution failure:', error.message);
+        if (error.message.toLowerCase().includes('api key not valid')) {
+          userMessage = "I'm sorry, there's an issue with the AI service configuration (API key). Please contact support.";
+        }
       }
       return { response: userMessage };
     }
