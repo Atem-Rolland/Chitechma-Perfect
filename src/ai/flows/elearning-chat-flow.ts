@@ -34,7 +34,7 @@ export async function elearningChat(input: ElearningChatInput): Promise<Elearnin
 
 const prompt = ai.definePrompt({
   name: 'elearningChatPrompt',
-  model: 'googleai/gemini-1.5-flash-latest', // Explicitly use a Google AI model
+  // Model will be picked from the default in genkit.ts
   input: { schema: ElearningChatInputSchema },
   output: { schema: ElearningChatOutputSchema },
   prompt: `You are a friendly, empathetic, and knowledgeable e-learning assistant chatbot for Chitechma University.
@@ -115,3 +115,4 @@ const elearningChatFlow = ai.defineFlow(
     return flowOutput;
   }
 );
+
