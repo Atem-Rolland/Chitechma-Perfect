@@ -1,10 +1,12 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { ThemeToggle } from '@/components/ThemeToggle'; // Ensure this path is correct
 import { motion } from 'framer-motion';
-import { Palette, Bell, ShieldLock, KeyRound } from 'lucide-react';
+import { Palette, Bell, Shield, KeyRound } from 'lucide-react'; // Corrected ShieldLock to Shield
+import { Button } from '@/components/ui/button'; // Added import for Button
 
 export default function SettingsPage() {
   return (
@@ -51,7 +53,7 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><ShieldLock className="text-primary"/> Account & Security</CardTitle>
+          <CardTitle className="flex items-center gap-2"><Shield className="text-primary"/> Account & Security</CardTitle>
           <CardDescription>Manage your account security settings.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
