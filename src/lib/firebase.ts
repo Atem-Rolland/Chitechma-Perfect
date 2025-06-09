@@ -39,17 +39,35 @@ let app: FirebaseApp;
 if (!getApps().length) {
   // If initializeApp fails (e.g., due to fundamentally malformed config even if keys are present),
   // it will throw an error here.
-  app = initializeApp(firebaseConfig);
+  try {
+    app = initializeApp(firebaseConfig);
+  } catch (e: any) {
+    console.error("Firebase initialization error:", e);
+    throw new Error(
+      `CRITICAL: Firebase initialization failed. Check your Firebase config and that all required services are enabled in your Firebase project. Original error: ${e.message}`
+    );
+  }
 } else {
   app = getApp();
 }
 
 // If the API key was present but *invalid*, getAuth() or other Firebase service calls will likely fail.
 // The FirebaseError (auth/invalid-api-key) indicates this scenario.
-const auth: Auth = getAuth(app);
-const db: Firestore = getFirestore(app);
-// const storage: FirebaseStorage = getStorage(app); // If using Firebase Storage
+let auth: Auth;
+let db: Firestore;
+// let storage: FirebaseStorage; // If using Firebase Storage
+
+try {
+  auth = getAuth(app);
+  db = getFirestore(app);
+  // storage = getStorage(app); // If using Firebase Storage
+} catch (e: any) {
+  console.error("Error getting Firebase services (Auth, Firestore):", e);
+  throw new Error(
+    `CRITICAL: Failed to get Firebase services after app initialization. This might indicate an issue with the API key's permissions or that services are not enabled in your Firebase project. Original error: ${e.message}`
+  );
+}
+
 
 export { app, auth, db };
 // export { app, auth, db, storage }; // If using Firebase Storage
-

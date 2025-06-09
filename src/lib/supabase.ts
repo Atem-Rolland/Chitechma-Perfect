@@ -1,3 +1,4 @@
+
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -21,4 +22,15 @@ if (!supabaseAnonKey) {
   );
 }
 
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+let supabase: SupabaseClient;
+try {
+  supabase = createClient(supabaseUrl, supabaseAnonKey);
+} catch (e: any) {
+  console.error("Supabase client creation error:", e);
+  throw new Error(
+    `CRITICAL: Supabase client initialization failed. Check your Supabase URL and Anon Key. Original error: ${e.message}`
+  );
+}
+
+
+export { supabase };
