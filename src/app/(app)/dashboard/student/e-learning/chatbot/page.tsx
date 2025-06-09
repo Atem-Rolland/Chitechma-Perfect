@@ -41,12 +41,12 @@ export default function ChatbotPage() {
         {
           id: 'initial-greeting',
           sender: 'bot',
-          text: `Hello ${profile.displayName?.split(' ')[0] || 'Student'}! I am your Chitechma University e-learning assistant. How can I help you today?`,
+          text: `Hello ${profile.displayName?.split(' ')[0] || 'Student'}! I am your Chitechma University e-learning assistant. How can I help you today?\n\n(Developer Tip: If running locally, ensure your Genkit development server is active for the AI to respond. You can usually start it with 'npm run genkit:dev' or 'npm run genkit:watch' in a separate terminal.)`,
           timestamp: new Date().toISOString(),
         },
       ]);
     }
-  }, [profile, messages.length]); // Depend on profile and messages.length
+  }, [profile, messages.length]); 
 
   useEffect(() => {
     // Scroll to bottom when new messages are added
@@ -64,13 +64,13 @@ export default function ChatbotPage() {
   const handleSendMessage = async () => {
     if (inputValue.trim() === '' || isLoading) return;
 
-    const currentInput = inputValue; // Capture input before clearing
-    const historyForFlow = messages.map(msg => ({ sender: msg.sender, text: msg.text })); // Capture history before adding new user message
+    const currentInput = inputValue; 
+    const historyForFlow = messages.map(msg => ({ sender: msg.sender, text: msg.text })); 
 
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       sender: 'user',
-      text: currentInput, // Use captured input
+      text: currentInput, 
       timestamp: new Date().toISOString(),
     };
 
@@ -81,7 +81,7 @@ export default function ChatbotPage() {
     try {
       const flowInput: ElearningChatInput = {
         query: currentInput,
-        history: historyForFlow.slice(-10) // Send last 10 messages for context
+        history: historyForFlow.slice(-10) 
       };
       const result = await elearningChat(flowInput);
 
@@ -97,7 +97,7 @@ export default function ChatbotPage() {
       const errorMessage: ChatMessage = {
         id: `error-${Date.now()}`,
         sender: 'bot',
-        text: 'Sorry, I encountered an error processing your request. Please try again.',
+        text: 'Sorry, I encountered an error processing your request. Please check if the Genkit development server is running and your API key is correctly configured.',
         timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -124,11 +124,8 @@ export default function ChatbotPage() {
         <CardContent className="flex-grow p-0 flex flex-col">
           <ScrollArea className="flex-grow p-4 space-y-4" ref={scrollAreaRef}>
             {messages.map((message) => (
-              <motion.div
+              <div // Removed motion.div from here as per previous fix for flickering
                 key={message.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
                 className={cn(
                   "flex items-end gap-2 max-w-[85%] sm:max-w-[75%]",
                   message.sender === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'
@@ -156,7 +153,7 @@ export default function ChatbotPage() {
                     {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
-              </motion.div>
+              </div>
             ))}
             {isLoading && (
               <div className="flex items-end gap-2 mr-auto max-w-[75%]">
