@@ -3,9 +3,9 @@
 
 import type { ReactNode } from 'react';
 import React, { createContext, useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  User as FirebaseUser, 
-  onAuthStateChanged, 
+import {
+  User as FirebaseUser,
+  onAuthStateChanged,
   signOut as firebaseSignOut,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -49,7 +49,7 @@ interface AuthContextType {
   register: (data: RegistrationData) => Promise<AppUser>; // Updated signature
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
-  fetchUserProfile: (firebaseUser: FirebaseUser) => Promise<UserProfile | null>; 
+  fetchUserProfile: (firebaseUser: FirebaseUser) => Promise<UserProfile | null>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -58,18 +58,16 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Fallback/default details, especially useful for mocking or when Firestore profile is incomplete.
-// This example is tailored for "Atem Rolland", a Level 400 CESM student.
 const FALLBACK_STUDENT_DETAILS = {
   displayName: "Atem Rolland",
-  department: DEPARTMENTS.CESM, 
-  level: 400, 
-  program: "B.Eng. Computer Engineering and System Maintenance", // Specific program for CESM
-  currentAcademicYear: ACADEMIC_YEARS[2], // e.g., 2024/2025
-  currentSemester: SEMESTERS[0],   // e.g., First Semester
-  isNewStudent: false, // A Level 400 student is not "new" in the HND Year 1 sense
-  isGraduating: true, // Level 400 often implies graduating, adjust if program length varies
-  matricule: `CUSMS/S/${ACADEMIC_YEARS[2].slice(2,4)}4${Math.floor(1000 + Math.random() * 9000)}` // Example Level 400 matricule for 24/25
+  department: DEPARTMENTS.CESM,
+  level: 400,
+  program: "B.Eng. Computer Engineering and System Maintenance",
+  currentAcademicYear: ACADEMIC_YEARS[2],
+  currentSemester: SEMESTERS[0],
+  isNewStudent: false,
+  isGraduating: true,
+  matricule: `CUSMS/S/${ACADEMIC_YEARS[2].slice(2,4)}4${Math.floor(1000 + Math.random() * 9000)}`
 };
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
@@ -79,92 +77,81 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [role, setRole] = useState<Role>(null);
   const router = useRouter();
 
-  const currentProfileRef = useRef<UserProfile | null>(null);
-  useEffect(() => {
-    currentProfileRef.current = profile;
-  }, [profile]);
-
   const fetchUserProfile = useCallback(async (firebaseUser: FirebaseUser): Promise<UserProfile | null> => {
+    console.log("AuthContext: Fetching profile for UID:", firebaseUser.uid);
     const userDocRef = doc(db, "users", firebaseUser.uid);
-    const userDocSnap = await getDoc(userDocRef);
+    try {
+      const userDocSnap = await getDoc(userDocRef);
 
-    if (userDocSnap.exists()) {
-      const userProfileData = userDocSnap.data() as UserProfile;
-      
-      const completeProfile: UserProfile = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email, 
-        ...userProfileData, 
-        displayName: userProfileData.displayName || firebaseUser.displayName || (userProfileData.role === 'student' ? FALLBACK_STUDENT_DETAILS.displayName : "User"),
-        role: userProfileData.role || null, 
-        department: userProfileData.role === 'student' ? (userProfileData.department || FALLBACK_STUDENT_DETAILS.department) : userProfileData.department,
-        level: userProfileData.role === 'student' ? (userProfileData.level || FALLBACK_STUDENT_DETAILS.level) : userProfileData.level,
-        program: userProfileData.role === 'student' ? (userProfileData.program || FALLBACK_STUDENT_DETAILS.program) : userProfileData.program,
-        currentAcademicYear: userProfileData.role === 'student' ? (userProfileData.currentAcademicYear || FALLBACK_STUDENT_DETAILS.currentAcademicYear) : userProfileData.currentAcademicYear,
-        currentSemester: userProfileData.role === 'student' ? (userProfileData.currentSemester || FALLBACK_STUDENT_DETAILS.currentSemester) : userProfileData.currentSemester,
-        isNewStudent: userProfileData.role === 'student' ? (userProfileData.isNewStudent === undefined ? (userProfileData.level === VALID_LEVELS[0]) : userProfileData.isNewStudent) : userProfileData.isNewStudent,
-        isGraduating: userProfileData.role === 'student' ? (userProfileData.isGraduating === undefined ? (userProfileData.level === VALID_LEVELS[VALID_LEVELS.length -1]) : userProfileData.isGraduating) : userProfileData.isGraduating,
-        matricule: userProfileData.role === 'student' ? (userProfileData.matricule || FALLBACK_STUDENT_DETAILS.matricule) : userProfileData.matricule,
-        
-        gender: userProfileData.gender,
-        dateOfBirth: userProfileData.dateOfBirth,
-        placeOfBirth: userProfileData.placeOfBirth,
-        regionOfOrigin: userProfileData.regionOfOrigin,
-        maritalStatus: userProfileData.maritalStatus,
-        nidOrPassport: userProfileData.nidOrPassport,
-        nationality: userProfileData.nationality,
-        phone: userProfileData.phone,
-        address: userProfileData.address,
-        guardianName: userProfileData.guardianName,
-        guardianPhone: userProfileData.guardianPhone,
-        guardianAddress: userProfileData.guardianAddress,
-        
-        status: userProfileData.status || 'active',
-        lastLogin: userProfileData.lastLogin, 
-        createdAt: userProfileData.createdAt || serverTimestamp(), 
-        updatedAt: userProfileData.updatedAt || serverTimestamp(), 
-      };
+      if (userDocSnap.exists()) {
+        console.log("AuthContext: Profile document found for UID:", firebaseUser.uid);
+        const userProfileData = userDocSnap.data() as UserProfile; // Assume this is the correct type from Firestore
 
-      let changed = true; 
-      const existingProfile = currentProfileRef.current;
-      if (existingProfile &&
-          existingProfile.uid === completeProfile.uid &&
-          existingProfile.displayName === completeProfile.displayName &&
-          existingProfile.email === completeProfile.email &&
-          existingProfile.role === completeProfile.role &&
-          existingProfile.photoURL === completeProfile.photoURL &&
-          existingProfile.level === completeProfile.level &&
-          existingProfile.department === completeProfile.department &&
-          existingProfile.program === completeProfile.program &&
-          existingProfile.currentAcademicYear === completeProfile.currentAcademicYear &&
-          existingProfile.currentSemester === completeProfile.currentSemester &&
-          existingProfile.matricule === completeProfile.matricule &&
-          existingProfile.phone === completeProfile.phone && 
-          existingProfile.address === completeProfile.address
-        ) {
-        changed = false;
+        // Construct the complete profile, ensuring all expected fields are present, falling back if necessary.
+        const completeProfile: UserProfile = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email || userProfileData.email, // Prefer Firebase's email if available
+          displayName: userProfileData.displayName || firebaseUser.displayName || (userProfileData.role === 'student' ? FALLBACK_STUDENT_DETAILS.displayName : "User"),
+          photoURL: userProfileData.photoURL || firebaseUser.photoURL || null,
+          role: userProfileData.role || null,
+          department: userProfileData.role === 'student' ? (userProfileData.department || FALLBACK_STUDENT_DETAILS.department) : userProfileData.department,
+          level: userProfileData.role === 'student' ? (userProfileData.level || FALLBACK_STUDENT_DETAILS.level) : userProfileData.level,
+          program: userProfileData.role === 'student' ? (userProfileData.program || FALLBACK_STUDENT_DETAILS.program) : userProfileData.program,
+          currentAcademicYear: userProfileData.role === 'student' ? (userProfileData.currentAcademicYear || FALLBACK_STUDENT_DETAILS.currentAcademicYear) : userProfileData.currentAcademicYear,
+          currentSemester: userProfileData.role === 'student' ? (userProfileData.currentSemester || FALLBACK_STUDENT_DETAILS.currentSemester) : userProfileData.currentSemester,
+          isNewStudent: userProfileData.role === 'student' ? (userProfileData.isNewStudent === undefined ? (userProfileData.level === VALID_LEVELS[0]) : userProfileData.isNewStudent) : userProfileData.isNewStudent,
+          isGraduating: userProfileData.role === 'student' ? (userProfileData.isGraduating === undefined ? (userProfileData.level === VALID_LEVELS[VALID_LEVELS.length -1]) : userProfileData.isGraduating) : userProfileData.isGraduating,
+          matricule: userProfileData.role === 'student' ? (userProfileData.matricule || FALLBACK_STUDENT_DETAILS.matricule) : userProfileData.matricule,
+          gender: userProfileData.gender,
+          dateOfBirth: userProfileData.dateOfBirth,
+          placeOfBirth: userProfileData.placeOfBirth,
+          regionOfOrigin: userProfileData.regionOfOrigin,
+          maritalStatus: userProfileData.maritalStatus,
+          nidOrPassport: userProfileData.nidOrPassport,
+          nationality: userProfileData.nationality,
+          phone: userProfileData.phone,
+          address: userProfileData.address,
+          guardianName: userProfileData.guardianName,
+          guardianPhone: userProfileData.guardianPhone,
+          guardianAddress: userProfileData.guardianAddress,
+          status: userProfileData.status || 'active',
+          lastLogin: userProfileData.lastLogin,
+          createdAt: userProfileData.createdAt || serverTimestamp(),
+          updatedAt: userProfileData.updatedAt || serverTimestamp(),
+        };
+        return completeProfile;
+      } else {
+        console.warn("AuthContext: User profile document NOT found in Firestore for UID:", firebaseUser.uid);
+        return null;
       }
-
-      if (changed) {
-        setProfile(completeProfile);
-        setRole(completeProfile.role);
-      }
-      return completeProfile;
-    } else {
-      console.warn("User profile not found in Firestore for UID:", firebaseUser.uid);
-      setProfile(null); 
-      setRole(null);    
+    } catch (error) {
+      console.error("AuthContext: Error fetching user profile from Firestore:", error);
       return null;
     }
-  }, []); 
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log("AuthContext: onAuthStateChanged triggered. Firebase user:", firebaseUser ? firebaseUser.uid : "null");
       setLoading(true);
       if (firebaseUser) {
         const fetchedProfileData = await fetchUserProfile(firebaseUser);
-        setUser({ ...firebaseUser, profile: fetchedProfileData || undefined });
+        if (fetchedProfileData) {
+          setProfile(fetchedProfileData);
+          setRole(fetchedProfileData.role);
+          setUser({ ...firebaseUser, profile: fetchedProfileData });
+          console.log("AuthContext: Profile and AppUser state updated from onAuthStateChanged for UID:", firebaseUser.uid);
+        } else {
+          console.error("AuthContext: CRITICAL - Firebase user exists but no Firestore profile found. UID:", firebaseUser.uid, "Logging out user.");
+          // This is a critical state. User is authenticated with Firebase but has no profile in our system.
+          // Forcing logout.
+          await firebaseSignOut(auth); // This will re-trigger onAuthStateChanged with firebaseUser = null
+          setUser(null);
+          setProfile(null);
+          setRole(null);
+        }
       } else {
+        console.log("AuthContext: Firebase user is null, clearing user, profile, and role state.");
         setUser(null);
         setProfile(null);
         setRole(null);
@@ -172,49 +159,77 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setLoading(false);
     });
     return () => unsubscribe();
-  }, [fetchUserProfile]); 
+  }, [fetchUserProfile]);
 
   const login = async (email: string, password: string): Promise<AppUser> => {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const firebaseUser = userCredential.user;
-    const userProfileData = await fetchUserProfile(firebaseUser); 
-    const appUser = { ...firebaseUser, profile: userProfileData || undefined };
-    setUser(appUser); 
-    if (userProfileData && userProfileData.uid) {
-      const userDocRef = doc(db, "users", userProfileData.uid);
-      try {
-        await updateDoc(userDocRef, { lastLogin: serverTimestamp() });
-      } catch (updateError) {
-        console.error("Error updating lastLogin:", updateError);
+    console.log("AuthContext: Attempting login for:", email);
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log("AuthContext: Firebase signInWithEmailAndPassword successful:", userCredential.user.uid);
+      const firebaseUser = userCredential.user;
+
+      const userProfileData = await fetchUserProfile(firebaseUser);
+
+      if (!userProfileData) {
+        console.error("AuthContext: Login failed - User profile not found in Firestore after successful Firebase Auth. UID:", firebaseUser.uid);
+        // Sign out the user because they authenticated but have no profile, an inconsistent state.
+        await firebaseSignOut(auth); // This will trigger onAuthStateChanged to clear states.
+        throw new Error("Login successful, but your user profile could not be loaded. Please contact support or try registering again if this is your first time.");
       }
+      
+      // If profile fetch is successful, update context state immediately
+      setProfile(userProfileData);
+      setRole(userProfileData.role);
+      const appUser = { ...firebaseUser, profile: userProfileData };
+      setUser(appUser);
+
+      // Update lastLogin
+      if (userProfileData.uid) { // Should always be true if userProfileData exists
+        const userDocRef = doc(db, "users", userProfileData.uid);
+        try {
+          await updateDoc(userDocRef, { lastLogin: serverTimestamp() });
+          console.log("AuthContext: Last login updated for user:", userProfileData.uid);
+        } catch (updateError) {
+          console.error("AuthContext: Error updating lastLogin:", updateError);
+          // Non-critical, so don't re-throw unless necessary for the login flow
+        }
+      }
+      console.log("AuthContext: Login process completed for:", email);
+      return appUser;
+    } catch (error: any) {
+      console.error("AuthContext: Login error caught in login function:", error.code, error.message);
+      // Re-throw the original Firebase auth error or the custom profile error
+      throw error;
     }
-    return appUser;
   };
 
   const register = async (data: RegistrationData): Promise<AppUser> => {
+    console.log("AuthContext: Attempting registration for:", data.email);
     if (!data.password) {
+      console.error("AuthContext: Registration failed - Password is required.");
       throw new Error("Password is required for registration.");
     }
     const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
     const firebaseUser = userCredential.user;
+    console.log("AuthContext: Firebase user created successfully:", firebaseUser.uid);
     
-    const userRole = data.role || 'student'; 
+    const userRole = data.role || 'student';
     
-    // Base profile data common to all users
-    const userProfileDataForFirestore: any = {
+    const userProfileDataForFirestore: Partial<UserProfile> = {
       uid: firebaseUser.uid,
       email: firebaseUser.email,
       displayName: data.displayName,
       role: userRole,
-      status: 'active', 
+      status: 'active',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
+      lastLogin: serverTimestamp(), // Set lastLogin on registration too
     };
-    if (firebaseUser.photoURL) { // Include photoURL if Firebase provided one (e.g. from social auth)
+
+    if (firebaseUser.photoURL) {
       userProfileDataForFirestore.photoURL = firebaseUser.photoURL;
     }
 
-    // Add student-specific fields only if the role is 'student'
     if (userRole === 'student') {
       let studentProgram = "Program to be assigned";
       if (data.department === DEPARTMENTS.CESM) {
@@ -223,87 +238,62 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         studentProgram = `${data.department} Program (Example)`;
       }
 
-      // Required student fields (validated by Zod) or with defaults
       userProfileDataForFirestore.department = data.department || FALLBACK_STUDENT_DETAILS.department;
       userProfileDataForFirestore.level = data.level || VALID_LEVELS[0];
       userProfileDataForFirestore.program = studentProgram;
-      userProfileDataForFirestore.currentAcademicYear = ACADEMIC_YEARS[2]; // Default year
-      userProfileDataForFirestore.currentSemester = SEMESTERS[0];    // Default semester
+      userProfileDataForFirestore.currentAcademicYear = data.level === VALID_LEVELS[0] ? ACADEMIC_YEARS[0] : ACADEMIC_YEARS[2]; // Simplified default
+      userProfileDataForFirestore.currentSemester = SEMESTERS[0];
       userProfileDataForFirestore.isNewStudent = (data.level || VALID_LEVELS[0]) === VALID_LEVELS[0];
       userProfileDataForFirestore.isGraduating = (data.level || VALID_LEVELS[0]) === VALID_LEVELS[VALID_LEVELS.length - 1];
-      userProfileDataForFirestore.matricule = `CUSMS/S/${ACADEMIC_YEARS[2].slice(2,4)}${String(data.level || VALID_LEVELS[0]).charAt(0)}${Math.floor(1000 + Math.random() * 9000)}`;
+      userProfileDataForFirestore.matricule = `CUSMS/S/${(userProfileDataForFirestore.currentAcademicYear || ACADEMIC_YEARS[0]).slice(2,4)}${String(userProfileDataForFirestore.level || VALID_LEVELS[0]).charAt(0)}${Math.floor(1000 + Math.random() * 9000)}`;
       
-      // Student personal details required by Zod schema
-      userProfileDataForFirestore.gender = data.gender;
-      userProfileDataForFirestore.dateOfBirth = data.dateOfBirth;
-      userProfileDataForFirestore.placeOfBirth = data.placeOfBirth;
-      userProfileDataForFirestore.nationality = data.nationality;
-      userProfileDataForFirestore.phone = data.phone;
-      userProfileDataForFirestore.address = data.address;
-      userProfileDataForFirestore.guardianName = data.guardianName;
-      userProfileDataForFirestore.guardianPhone = data.guardianPhone;
-
-      // Optional student personal details (only add if provided in form)
-      if (data.regionOfOrigin) userProfileDataForFirestore.regionOfOrigin = data.regionOfOrigin;
-      if (data.maritalStatus) userProfileDataForFirestore.maritalStatus = data.maritalStatus;
-      if (data.nidOrPassport) userProfileDataForFirestore.nidOrPassport = data.nidOrPassport;
-      if (data.guardianAddress) userProfileDataForFirestore.guardianAddress = data.guardianAddress;
+      if(data.gender) userProfileDataForFirestore.gender = data.gender;
+      if(data.dateOfBirth) userProfileDataForFirestore.dateOfBirth = data.dateOfBirth;
+      if(data.placeOfBirth) userProfileDataForFirestore.placeOfBirth = data.placeOfBirth;
+      if(data.regionOfOrigin) userProfileDataForFirestore.regionOfOrigin = data.regionOfOrigin;
+      if(data.maritalStatus) userProfileDataForFirestore.maritalStatus = data.maritalStatus;
+      if(data.nidOrPassport) userProfileDataForFirestore.nidOrPassport = data.nidOrPassport;
+      if(data.nationality) userProfileDataForFirestore.nationality = data.nationality;
+      if(data.phone) userProfileDataForFirestore.phone = data.phone;
+      if(data.address) userProfileDataForFirestore.address = data.address;
+      if(data.guardianName) userProfileDataForFirestore.guardianName = data.guardianName;
+      if(data.guardianPhone) userProfileDataForFirestore.guardianPhone = data.guardianPhone;
+      if(data.guardianAddress) userProfileDataForFirestore.guardianAddress = data.guardianAddress;
     }
     
+    console.log("AuthContext: Saving user profile to Firestore:", userProfileDataForFirestore);
     await setDoc(doc(db, "users", firebaseUser.uid), userProfileDataForFirestore);
+    console.log("AuthContext: Firestore profile saved for UID:", firebaseUser.uid);
 
-    // Create the UserProfile object for local state based on what was saved
-    // This ensures consistency with the Firestore document structure
-    const finalProfileForState: UserProfile = {
-        uid: userProfileDataForFirestore.uid,
-        email: userProfileDataForFirestore.email,
-        displayName: userProfileDataForFirestore.displayName,
-        role: userProfileDataForFirestore.role,
-        photoURL: userProfileDataForFirestore.photoURL || null, // Ensure it's null if not present
-        department: userProfileDataForFirestore.department, // Will be undefined if not a student, which matches UserProfile type
-        level: userProfileDataForFirestore.level,
-        program: userProfileDataForFirestore.program,
-        currentAcademicYear: userProfileDataForFirestore.currentAcademicYear,
-        currentSemester: userProfileDataForFirestore.currentSemester,
-        isNewStudent: userProfileDataForFirestore.isNewStudent,
-        isGraduating: userProfileDataForFirestore.isGraduating,
-        matricule: userProfileDataForFirestore.matricule,
-        gender: userProfileDataForFirestore.gender,
-        dateOfBirth: userProfileDataForFirestore.dateOfBirth,
-        placeOfBirth: userProfileDataForFirestore.placeOfBirth,
-        regionOfOrigin: userProfileDataForFirestore.regionOfOrigin,
-        maritalStatus: userProfileDataForFirestore.maritalStatus,
-        nidOrPassport: userProfileDataForFirestore.nidOrPassport,
-        nationality: userProfileDataForFirestore.nationality,
-        phone: userProfileDataForFirestore.phone,
-        address: userProfileDataForFirestore.address,
-        guardianName: userProfileDataForFirestore.guardianName,
-        guardianPhone: userProfileDataForFirestore.guardianPhone,
-        guardianAddress: userProfileDataForFirestore.guardianAddress,
-        status: userProfileDataForFirestore.status,
-        // For timestamps, convert to ISO string for local state consistency or keep as serverTimestamp for Firestore
-        // For simplicity and immediate local use, we can use new Date().toISOString() here
-        createdAt: new Date().toISOString(), 
-        updatedAt: new Date().toISOString(),
-    };
+    // Fetch the just-created profile to ensure all server-generated timestamps are resolved for local state
+    const finalProfileForState = await fetchUserProfile(firebaseUser);
+    if (!finalProfileForState) {
+        console.error("AuthContext: CRITICAL - Failed to fetch profile immediately after registration for UID:", firebaseUser.uid);
+        // This is an unexpected state, sign out user to prevent issues.
+        await firebaseSignOut(auth);
+        throw new Error("Registration succeeded but profile could not be loaded. Please contact support.");
+    }
     
-    setProfile(finalProfileForState); 
-    setRole(userRole);       
+    setProfile(finalProfileForState);
+    setRole(finalProfileForState.role); // Ensure role is set from the fetched profile
     const appUser = { ...firebaseUser, profile: finalProfileForState };
-    setUser(appUser);        
+    setUser(appUser);
+    console.log("AuthContext: Registration process completed for:", data.email);
     return appUser;
   };
 
   const logout = async () => {
+    console.log("AuthContext: Logging out user.");
     await firebaseSignOut(auth);
-    setUser(null);
-    setProfile(null);
-    setRole(null);
-    router.push('/login'); 
+    // onAuthStateChanged will handle resetting user, profile, and role states.
+    router.push('/login');
+    console.log("AuthContext: User logged out, redirected to login.");
   };
 
   const resetPassword = async (email: string) => {
+    console.log("AuthContext: Sending password reset email to:", email);
     await sendPasswordResetEmail(auth, email);
+    console.log("AuthContext: Password reset email sent.");
   };
 
   return (
@@ -312,5 +302,3 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     </AuthContext.Provider>
   );
 };
-
-    
