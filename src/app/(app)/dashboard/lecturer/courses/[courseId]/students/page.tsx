@@ -79,17 +79,17 @@ export default function ClassListPage() {
 
   const handleExport = (format: "CSV" | "Excel") => {
     toast({
-      title: `Exporting Class List (${format})`,
-      description: `Simulating export of student list for ${course?.code}. Feature under development.`,
-      duration: 3000,
+      title: `Exporting Class List (${format}) - Simulation`,
+      description: `This is a placeholder action. Actual ${format} export for the student list of ${course?.code} is under development.`,
+      duration: 5000,
     });
   };
 
   const handlePrintRegister = () => {
     toast({
-      title: "Printing Register",
-      description: `Simulating print of student register for ${course?.code}. Feature under development.`,
-      duration: 3000,
+      title: "Printing Register - Simulation",
+      description: `This is a placeholder action. Actual register printing for ${course?.code} is under development.`,
+      duration: 5000,
     });
   };
 
