@@ -11,21 +11,26 @@ import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
 import { useState, useEffect, useMemo } from "react";
-import type { Course, Notification, NotificationType } from "@/types";
+import type { Course, Notification, NotificationType, FeeItem } from "@/types"; // Added FeeItem
 import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS } from "@/config/data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNowStrict, parseISO } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-// Mock data for tuition status
-const tuitionStatus = {
-  totalDue: 1250000, 
-  paid: 1000000,  
-  balance: 250000, 
-  currency: 'XAF',
-  dueDate: '2024-09-15',
-};
+// Fee Constants - ensure these are consistent if used elsewhere or centralize them
+const BASE_TUITION = 350000;
+const REGISTRATION_FEE = 25000;
+const MEDICALS_FEE = 5000;
+const STUDENT_UNION_FEE = 3000;
+const STUDENT_ID_CARD_FEE = 2000;
+const EXCURSION_FEE = 25000;
+const HND_DEFENSE_FEE = 25000;
+const WORK_EXPERIENCE_FEE = 5000;
+const DESIGN_PROJECT_DEFENSE_FEE = 15000;
+const FINAL_DEFENSE_FEE = 30000;
+const GRADUATION_FEE = 15000;
+const CURRENCY = "XAF";
 
 // Copied and adapted from courses/page.tsx for mock course data source
 const MOCK_ALL_COURSES_SOURCE: Course[] = [
@@ -71,11 +76,16 @@ const getNotificationIcon = (type: NotificationType): React.ElementType => {
 
 
 export function StudentDashboard() {
-  const { user, profile, logout } = useAuth();
+  const { user, profile, logout, loading: authLoading } = useAuth(); // Added authLoading
   const [isLoadingCourses, setIsLoadingCourses] = useState(true);
   const [displayedEnrolledCourses, setDisplayedEnrolledCourses] = useState<Course[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
+
+  // States for dynamic fee calculation on dashboard
+  const [totalFeesDue, setTotalFeesDue] = useState(0);
+  const [amountPaid, setAmountPaid] = useState(0); // This will remain mocked
+  const [isLoadingFees, setIsLoadingFees] = useState(true);
 
   useEffect(() => {
     // Load Registered Courses
@@ -123,14 +133,53 @@ export function StudentDashboard() {
         setIsLoadingNotifications(false);
     }
 
+    // Calculate Fees
+    if (profile && !authLoading) {
+      setIsLoadingFees(true);
+      let currentTotal = 0;
+
+      // Fee calculation logic based on profile (mirrors payments/page.tsx)
+      currentTotal += BASE_TUITION;
+      currentTotal += MEDICALS_FEE;
+      currentTotal += STUDENT_UNION_FEE;
+      currentTotal += STUDENT_ID_CARD_FEE;
+      currentTotal += EXCURSION_FEE;
+
+      if (profile.isNewStudent) {
+        currentTotal += REGISTRATION_FEE;
+      }
+      if (profile.level === 300) {
+        currentTotal += HND_DEFENSE_FEE;
+      }
+      if (profile.level === 400) {
+        currentTotal += WORK_EXPERIENCE_FEE;
+        currentTotal += DESIGN_PROJECT_DEFENSE_FEE;
+        currentTotal += FINAL_DEFENSE_FEE;
+      }
+      if ((profile.level === 300 || profile.level === 400) && profile.isGraduating) {
+        currentTotal += GRADUATION_FEE;
+      }
+      
+      const mockPaidAmount = Math.min(currentTotal, 300000 + (profile.level === 400 ? 50000 : 0));
+      setAmountPaid(mockPaidAmount);
+      setTotalFeesDue(currentTotal);
+      setIsLoadingFees(false);
+    } else if (!authLoading && !profile) {
+        setIsLoadingFees(false);
+    }
+
+
     if (profile) { 
         loadRegisteredCoursesForDashboard();
         loadNotifications();
     } else {
         setIsLoadingCourses(false); 
         setIsLoadingNotifications(false);
+        setIsLoadingFees(false);
     }
-  }, [profile, user?.uid]);
+  }, [profile, user?.uid, authLoading]);
+
+  const balance = useMemo(() => totalFeesDue - amountPaid, [totalFeesDue, amountPaid]);
 
 
   const getInitials = (name: string | null | undefined) => {
@@ -146,8 +195,6 @@ export function StudentDashboard() {
     setNotifications(prev => 
       prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
     );
-    // If notification has a link, we'd navigate here.
-    // For now, just marking as read.
   };
 
   const academicProgram = profile?.program || "Program Not Set"; 
@@ -447,22 +494,29 @@ export function StudentDashboard() {
               <CardDescription>Overview of your fee payments.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Total Due:</span>
-                <span className="font-semibold">{tuitionStatus.currency} {tuitionStatus.totalDue.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Amount Paid:</span>
-                <span className="font-semibold">{tuitionStatus.currency} {tuitionStatus.paid.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Balance:</span>
-                <span className="font-semibold text-destructive">{tuitionStatus.currency} {tuitionStatus.balance.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Due Date:</span>
-                <span className="font-semibold">{tuitionStatus.dueDate}</span>
-              </div>
+              {isLoadingFees ? (
+                <>
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-6 w-1/2" />
+                  <Skeleton className="h-6 w-2/3" />
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Total Due:</span>
+                    <span className="font-semibold">{CURRENCY} {totalFeesDue.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Amount Paid:</span>
+                    <span className="font-semibold">{CURRENCY} {amountPaid.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Balance:</span>
+                    <span className={`font-semibold ${balance > 0 ? 'text-destructive' : 'text-green-600 dark:text-green-400'}`}>{CURRENCY} {balance.toLocaleString()}</span>
+                  </div>
+                  {/* Removed static due date display for consistency */}
+                </>
+              )}
               <Button className="w-full mt-4" asChild>
                 <Link href="/dashboard/student/payments">Make a Payment</Link>
               </Button>
