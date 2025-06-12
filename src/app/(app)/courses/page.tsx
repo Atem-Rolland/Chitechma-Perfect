@@ -7,18 +7,25 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog"; // Removed DialogContent, DialogHeader, DialogTitle, DialogClose
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Course } from "@/types";
 import { BookOpen, Search, Filter, Tag, School, Info, CalendarDays, BookUser, PlusCircle, MinusCircle, Download, AlertCircle, XCircle, CheckCircle, Eye, Clock, AlertTriangle, GraduationCap } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react"; // Added Suspense
+import dynamic from 'next/dynamic'; // Added dynamic
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS } from "@/config/data";
+
+// Dynamically import the dialog content component
+const CourseDetailDialog = dynamic(() => import('@/components/courses/CourseDetailDialog'), {
+  suspense: true,
+  loading: () => <p className="p-4 text-center">Loading details...</p> 
+});
 
 
 const MIN_CREDITS = 18;
@@ -300,7 +307,6 @@ export default function CoursesPage() {
                 c.semester === currentSemester
             );
             
-            // Use Set to ensure no duplicate course IDs if a course somehow matched both general and departmental
             initialRegisteredIds = [...new Set([...departmentalCourses.map(c => c.id), ...generalCourses.map(c => c.id)])];
             localStorage.setItem(storageKey, JSON.stringify(initialRegisteredIds));
         }
@@ -743,9 +749,9 @@ export default function CoursesPage() {
                     
                     if (isStudent && studentAcademicContext) {
                         let academicEligibility = false;
-                        if (course.type === "General") {
+                        if (course.type === "General") { // Any student at the correct level can take a general course
                             academicEligibility = course.level === studentAcademicContext.level;
-                        } else { // Compulsory or Elective
+                        } else { // Compulsory or Elective courses must match student's department and level
                             academicEligibility = (
                                 course.department === studentAcademicContext.department &&
                                 course.level === studentAcademicContext.level
@@ -893,11 +899,13 @@ export default function CoursesPage() {
                 onClick={() => {
                   const coursesForFormB = registeredCoursesList.filter(c => c.academicYear === filters.academicYear && c.semester === filters.semester);
                   const totalCreditsForFormB = coursesForFormB.reduce((sum, course) => sum + course.credits, 0);
+                  console.log("Download Form B button clicked. PDF generation is not yet implemented. Simulating with a toast.");
                   if (coursesForFormB.length > 0) {
                     toast({ 
-                      title: "Form B Download", 
-                      description: `Generating Form B for ${filters.semester}, ${filters.academicYear}. (This is a simulation - PDF generation is under development.) Courses: ${coursesForFormB.map(c => c.code).join(', ')}. Credits: ${totalCreditsForFormB}.`,
-                      duration: 5000,
+                      title: "Form B Download (Simulation)", 
+                      description: `This is a placeholder. Actual PDF generation for Form B (${filters.semester}, ${filters.academicYear}) is under development. Courses: ${coursesForFormB.map(c => c.code).join(', ')}. Credits: ${totalCreditsForFormB}.`,
+                      duration: 7000,
+                      variant: "default",
                     });
                   }
                 }}
@@ -943,45 +951,18 @@ export default function CoursesPage() {
            </Card>
         </div>
       </div>
-
+      
       {selectedCourseForDetail && (
-        <Dialog open={!!selectedCourseForDetail} onOpenChange={(isOpen) => !isOpen && setSelectedCourseForDetail(null)}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="font-headline text-2xl">{selectedCourseForDetail.code} - {selectedCourseForDetail.title}</DialogTitle>
-              <DialogDescription>Level {selectedCourseForDetail.level} - {selectedCourseForDetail.credits} Credits - {selectedCourseForDetail.type}</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3 py-2 text-sm">
-              <p><strong>Department:</strong> {selectedCourseForDetail.department}</p>
-              <p><strong>Lecturer:</strong> {selectedCourseForDetail.lecturerName || "N/A"}</p>
-              <p><strong>Description:</strong> {selectedCourseForDetail.description}</p>
-              <p><strong>Semester:</strong> {selectedCourseForDetail.semester}, {selectedCourseForDetail.academicYear}</p>
-              {selectedCourseForDetail.schedule && <p><strong>Schedule:</strong> {selectedCourseForDetail.schedule}</p>}
-              {selectedCourseForDetail.prerequisites && selectedCourseForDetail.prerequisites.length > 0 && (
-                <div>
-                  <strong>Prerequisites:</strong>
-                  <ul className="list-disc list-inside ml-4">
-                    {selectedCourseForDetail.prerequisites.map(prereqCode => {
-                      const prereqCourse = allCourses.find(c => c.code === prereqCode);
-                      return <li key={prereqCode}>{prereqCourse ? `${prereqCourse.code} - ${prereqCourse.title}` : prereqCode}</li>;
-                    })}
-                  </ul>
-                </div>
-              )}
-            </div>
-             <DialogClose asChild>
-                <Button type="button" variant="outline">
-                  Close
-                </Button>
-              </DialogClose>
-          </DialogContent>
-        </Dialog>
+        <Suspense fallback={<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><p className="text-white">Loading details...</p></div>}>
+            <CourseDetailDialog 
+              course={selectedCourseForDetail}
+              allCourses={allCourses}
+              open={!!selectedCourseForDetail}
+              onOpenChange={(isOpen) => !isOpen && setSelectedCourseForDetail(null)}
+            />
+        </Suspense>
       )}
 
     </motion.div>
   );
 }
-
-    
-
-    
