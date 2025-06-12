@@ -9,14 +9,22 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from "@/components/ui/button";
 import type { Grade, CaDetails, Course } from "@/types";
 import { BookCheck, CalendarDays, BookOpen as SemesterIcon, BarChart3, TrendingUp, TrendingDown, CheckCircle, AlertCircle, Eye, Info, HelpCircle } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react"; // Added Suspense
+import dynamic from 'next/dynamic'; // Added dynamic
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
 import { DEPARTMENTS, ACADEMIC_YEARS, SEMESTERS, getGradeDetailsFromScore } from "@/config/data";
-import { Badge } from "@/components/ui/badge"; 
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+
+// Dynamically import the dialog content component
+const GradeDetailDialogContent = dynamic(() => import('@/components/grades/GradeDetailDialogContent'), {
+  suspense: true,
+  loading: () => <div className="p-6 text-center">Loading details...</div>,
+});
+
 
 // Fetch mock courses to get course details like name and credits
 // This simulates having a central course catalog.
@@ -50,7 +58,7 @@ async function fetchAllCoursesMock(): Promise<Course[]> {
 // Mock data fetching function
 async function fetchMockGrades(studentId: string, allCourses: Course[]): Promise<Grade[]> {
   await new Promise(resolve => setTimeout(resolve, 1000));
-  
+
   const studentProfile = { department: DEPARTMENTS.CESM, level: 400 }; // Simulating Atem Rolland
 
   const grades: Grade[] = [];
@@ -114,8 +122,8 @@ export default function ViewGradesPage() {
   const [allGrades, setAllGrades] = useState<Grade[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState({
-    academicYear: "2024/2025", 
-    semester: "First Semester",  
+    academicYear: "2024/2025",
+    semester: "First Semester",
   });
   const [selectedGradeForDetails, setSelectedGradeForDetails] = useState<Grade | null>(null);
 
@@ -124,18 +132,18 @@ export default function ViewGradesPage() {
   }, []);
 
   const semestersForFilter = useMemo(() => {
-    return ["all", ...SEMESTERS]; 
+    return ["all", ...SEMESTERS];
   }, []);
 
   useEffect(() => {
     async function loadData() {
       if (!user?.uid) {
-        setIsLoading(false); 
+        setIsLoading(false);
         return;
       }
       setIsLoading(true);
       const courses = await fetchAllCoursesMock(); // Fetch course catalog
-      const fetchedGrades = await fetchMockGrades(user.uid, courses); 
+      const fetchedGrades = await fetchMockGrades(user.uid, courses);
       setAllGrades(fetchedGrades);
 
       // Set initial filters to the latest available grades period
@@ -160,7 +168,7 @@ export default function ViewGradesPage() {
   };
 
   const filteredGrades = useMemo(() => {
-    return allGrades.filter(grade => 
+    return allGrades.filter(grade =>
       (filters.academicYear === "all" || grade.academicYear === filters.academicYear) &&
       (filters.semester === "all" || grade.semester === filters.semester)
     );
@@ -168,7 +176,7 @@ export default function ViewGradesPage() {
 
   const calculateGpa = (gradesList: Grade[]): { gpa: number, totalCreditsAttempted: number, totalCreditsEarned: number, remarks: string[] } => {
     if (!gradesList || gradesList.length === 0) return { gpa: 0, totalCreditsAttempted: 0, totalCreditsEarned: 0, remarks: [] };
-    
+
     const publishedGradedCourses = gradesList.filter(
         grade => grade.isPublished && grade.gradePoint !== null && grade.gradeLetter !== "NG"
     );
@@ -178,9 +186,9 @@ export default function ViewGradesPage() {
     const totalQualityPoints = publishedGradedCourses.reduce((sum, grade) => sum + (grade.gradePoint! * grade.credits), 0);
     const totalCreditsAttempted = publishedGradedCourses.reduce((sum, grade) => sum + grade.credits, 0);
     const totalCreditsEarned = publishedGradedCourses.reduce((sum, grade) => sum + (grade.isPass ? grade.credits : 0), 0);
-    
+
     const gpa = totalCreditsAttempted > 0 ? parseFloat((totalQualityPoints / totalCreditsAttempted).toFixed(2)) : 0;
-    
+
     const remarks = [];
     if (gpa >= 3.5) remarks.push("Excellent Standing");
     else if (gpa >= 3.0) remarks.push("Very Good Standing");
@@ -257,7 +265,7 @@ export default function ViewGradesPage() {
                 <CardHeader>
                 <CardTitle>Grade Details</CardTitle>
                 <CardDescription>
-                    {filters.academicYear === "all" || filters.semester === "all" 
+                    {filters.academicYear === "all" || filters.semester === "all"
                     ? "Showing all recorded grades."
                     : `Showing grades for ${filters.semester}, ${filters.academicYear}.`}
                 </CardDescription>
@@ -324,7 +332,7 @@ export default function ViewGradesPage() {
             <CardContent className="space-y-4">
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground">
-                  {semesterGpaStats 
+                  {semesterGpaStats
                     ? `SGPA - ${filters.semester}, ${filters.academicYear}`
                     : `Cumulative GPA (CGPA) - All Semesters`}
                 </h3>
@@ -342,7 +350,7 @@ export default function ViewGradesPage() {
                 )}
                 {!gpaAlert && currentGpaToDisplay === 0 && <Alert variant="info" className="mt-2"><Info className="h-4 w-4"/><AlertDescription>GPA is 0.00 or no published grades available for calculation.</AlertDescription></Alert>}
               </div>
-              {semesterGpaStats && ( 
+              {semesterGpaStats && (
                 <div className="pt-3 border-t">
                     <h3 className="text-sm font-medium text-muted-foreground">Cumulative GPA (CGPA)</h3>
                     <p className={`text-2xl font-bold ${getGpaAlertInfo(cumulativeGpaStats.gpa)?.variant === 'destructive' ? 'text-destructive' : getGpaAlertInfo(cumulativeGpaStats.gpa)?.variant === 'warning' ? 'text-yellow-500' : 'text-primary'}`}>{cumulativeGpaStats.gpa.toFixed(2)}</p>
@@ -367,50 +375,12 @@ export default function ViewGradesPage() {
       {selectedGradeForDetails && (
         <Dialog open={!!selectedGradeForDetails} onOpenChange={(isOpen) => !isOpen && setSelectedGradeForDetails(null)}>
           <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="font-headline text-xl">{selectedGradeForDetails.courseCode} - {selectedGradeForDetails.courseName}</DialogTitle>
-              <DialogDescription>
-                {selectedGradeForDetails.isPublished 
-                  ? `Detailed score breakdown for ${selectedGradeForDetails.semester}, ${selectedGradeForDetails.academicYear}`
-                  : "Results for this course are pending publication."}
-              </DialogDescription>
-            </DialogHeader>
-            {selectedGradeForDetails.isPublished ? (
-                <div className="space-y-3 py-2 text-sm">
-                <h4 className="font-semibold text-md text-primary border-b pb-1 mb-2">Continuous Assessment (CA) - Max 30</h4>
-                {selectedGradeForDetails.caDetails ? (
-                    <>
-                    <div className="flex justify-between"><span>Assignments:</span> <span>{selectedGradeForDetails.caDetails.assignments ?? 'N/A'} / 5</span></div>
-                    <div className="flex justify-between"><span>Group Work:</span> <span>{selectedGradeForDetails.caDetails.groupWork ?? 'N/A'} / 5</span></div>
-                    <div className="flex justify-between"><span>Attendance:</span> <span>{selectedGradeForDetails.caDetails.attendance ?? 'N/A'} / 5</span></div>
-                    <div className="flex justify-between"><span>Written CA:</span> <span>{selectedGradeForDetails.caDetails.writtenCA ?? 'N/A'} / 15</span></div>
-                    <div className="flex justify-between font-semibold pt-1 border-t mt-1"><span>Total CA Score:</span> <span>{selectedGradeForDetails.caDetails.totalCaScore ?? 'N/A'} / 30</span></div>
-                    </>
-                ) : <p className="text-muted-foreground">No detailed CA marks available.</p>}
-                
-                <h4 className="font-semibold text-md text-primary border-b pb-1 mt-4 mb-2">Examination - Max 70</h4>
-                <div className="flex justify-between"><span>Exam Score:</span> <span>{selectedGradeForDetails.examScore ?? 'N/A'} / 70</span></div>
-
-                <div className="border-t pt-3 mt-3 space-y-1">
-                    <div className="flex justify-between text-md font-bold"><span className="text-foreground">Final Score:</span> <span>{selectedGradeForDetails.score} / 100</span></div>
-                    <div className="flex justify-between text-md font-bold"><span className="text-foreground">Grade Awarded:</span> <span className={!selectedGradeForDetails.isPass ? "text-destructive" : "text-green-600"}>{selectedGradeForDetails.gradeLetter} ({selectedGradeForDetails.remark})</span></div>
-                </div>
-                </div>
-            ) : (
-                <div className="py-4 text-center text-muted-foreground">
-                    <HelpCircle className="mx-auto h-10 w-10 mb-2" />
-                    Detailed scores are not available as results are pending publication.
-                </div>
-            )}
-             <DialogClose asChild>
-                <Button type="button" variant="outline">
-                  Close
-                </Button>
-              </DialogClose>
+            <Suspense fallback={<div className="p-6 text-center">Loading details...</div>}>
+              <GradeDetailDialogContent selectedGrade={selectedGradeForDetails} />
+            </Suspense>
           </DialogContent>
         </Dialog>
       )}
     </motion.div>
   );
 }
-
