@@ -684,5 +684,4 @@ export default function CoursesPage() {
   );
 }
 
-
     
