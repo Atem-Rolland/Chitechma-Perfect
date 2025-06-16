@@ -11,14 +11,14 @@ import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
 import { useState, useEffect, useMemo } from "react";
-import type { Course, Notification, NotificationType, FeeItem } from "@/types"; // Added FeeItem
+import type { Course, Notification, NotificationType, FeeItem } from "@/types"; 
 import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS } from "@/config/data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNowStrict, parseISO } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-// Fee Constants - ensure these are consistent if used elsewhere or centralize them
+// Fee Constants
 const BASE_TUITION = 350000;
 const REGISTRATION_FEE = 25000;
 const MEDICALS_FEE = 5000;
@@ -32,7 +32,6 @@ const FINAL_DEFENSE_FEE = 30000;
 const GRADUATION_FEE = 15000;
 const CURRENCY = "XAF";
 
-// Copied and adapted from courses/page.tsx for mock course data source
 const MOCK_ALL_COURSES_SOURCE: Course[] = [
   { id: "CSE301_CESM_Y2324_S1", title: "Introduction to Algorithms", code: "CSE301", description: "Fundamental algorithms and data structures. Prerequisite course.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2023/2024" },
   { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401", description: "Detailed course description for Mobile Application Development. Covers native and cross-platform development.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 10-12, Wed 10-11, Lab Hall 1", prerequisites: ["CSE301"], semester: "First Semester", academicYear: "2024/2025" },
@@ -44,6 +43,7 @@ const MOCK_ALL_COURSES_SOURCE: Course[] = [
   { id: "CSE402_CESM_Y2425_S2", title: "Distributed Programming", code: "CSE402", description: "Concepts and practices in distributed programming.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "Tue 10-12, CR1", prerequisites: ["CSE409"], semester: "Second Semester", academicYear: "2024/2025" },
 ];
 
+// Standardized localStorage key function
 const getLocalStorageKeyForAllRegistrations = (uid?: string) => {
   if (!uid) return null;
   return `allRegisteredCourses_${uid}`;
@@ -76,23 +76,20 @@ const getNotificationIcon = (type: NotificationType): React.ElementType => {
 
 
 export function StudentDashboard() {
-  const { user, profile, logout, loading: authLoading } = useAuth(); // Added authLoading
+  const { user, profile, logout, loading: authLoading } = useAuth(); 
   const [isLoadingCourses, setIsLoadingCourses] = useState(true);
   const [displayedEnrolledCourses, setDisplayedEnrolledCourses] = useState<Course[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
 
-  // States for dynamic fee calculation on dashboard
   const [totalFeesDue, setTotalFeesDue] = useState(0);
-  const [amountPaid, setAmountPaid] = useState(0); // This will remain mocked
+  const [amountPaid, setAmountPaid] = useState(0); 
   const [isLoadingFees, setIsLoadingFees] = useState(true);
 
   useEffect(() => {
-    // Load Registered Courses
     async function loadRegisteredCoursesForDashboard() {
       setIsLoadingCourses(true);
-      await new Promise(resolve => setTimeout(resolve, 500)); 
-
+      // No need for API delay here, localStorage is fast
       if (profile && user?.uid && typeof window !== 'undefined') {
         const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
         let studentRegisteredIds: string[] = [];
@@ -125,32 +122,23 @@ export function StudentDashboard() {
       setIsLoadingCourses(false);
     }
 
-    // Load Notifications
     async function loadNotifications() {
         setIsLoadingNotifications(true);
-        await new Promise(resolve => setTimeout(resolve, 700)); // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 700)); 
         setNotifications(MOCK_NOTIFICATIONS.sort((a,b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime()));
         setIsLoadingNotifications(false);
     }
 
-    // Calculate Fees
     if (profile && !authLoading) {
       setIsLoadingFees(true);
       let currentTotal = 0;
-
-      // Fee calculation logic based on profile (mirrors payments/page.tsx)
       currentTotal += BASE_TUITION;
       currentTotal += MEDICALS_FEE;
       currentTotal += STUDENT_UNION_FEE;
       currentTotal += STUDENT_ID_CARD_FEE;
       currentTotal += EXCURSION_FEE;
-
-      if (profile.isNewStudent) {
-        currentTotal += REGISTRATION_FEE;
-      }
-      if (profile.level === 300) {
-        currentTotal += HND_DEFENSE_FEE;
-      }
+      if (profile.isNewStudent) currentTotal += REGISTRATION_FEE;
+      if (profile.level === 300) currentTotal += HND_DEFENSE_FEE;
       if (profile.level === 400) {
         currentTotal += WORK_EXPERIENCE_FEE;
         currentTotal += DESIGN_PROJECT_DEFENSE_FEE;
@@ -159,7 +147,6 @@ export function StudentDashboard() {
       if ((profile.level === 300 || profile.level === 400) && profile.isGraduating) {
         currentTotal += GRADUATION_FEE;
       }
-      
       const mockPaidAmount = Math.min(currentTotal, 300000 + (profile.level === 400 ? 50000 : 0));
       setAmountPaid(mockPaidAmount);
       setTotalFeesDue(currentTotal);
@@ -169,10 +156,10 @@ export function StudentDashboard() {
     }
 
 
-    if (profile) { 
+    if (profile && !authLoading) { 
         loadRegisteredCoursesForDashboard();
         loadNotifications();
-    } else {
+    } else if (!authLoading) { // If auth is done but no profile, still set loading states to false
         setIsLoadingCourses(false); 
         setIsLoadingNotifications(false);
         setIsLoadingFees(false);
@@ -351,7 +338,6 @@ export function StudentDashboard() {
         </CardContent>
       </Card>
 
-       {/* Notifications Section */}
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.1 }}>
         <Card className="shadow-md hover:shadow-lg transition-shadow">
           <CardHeader>
@@ -366,11 +352,11 @@ export function StudentDashboard() {
             ) : notifications.length > 0 ? (
               <ScrollArea className="h-[280px] pr-3">
                 <ul className="space-y-3">
-                  {notifications.slice(0, 5).map(notif => { // Display up to 5 notifications
+                  {notifications.slice(0, 5).map(notif => { 
                     const Icon = getNotificationIcon(notif.type);
                     const isClickable = !!notif.link;
                     const NotificationItemWrapper = isClickable ? Link : 'div';
-                    const wrapperProps = isClickable ? { href: notif.link! } : {}; // Added non-null assertion for href
+                    const wrapperProps = isClickable ? { href: notif.link! } : {}; 
 
                     return (
                       <li key={notif.id}>
@@ -382,7 +368,7 @@ export function StudentDashboard() {
                               notif.isRead && "bg-muted/50 hover:bg-muted/70",
                               isClickable && "cursor-pointer"
                             )}
-                            onClick={() => !isClickable && handleNotificationClick(notif.id)} // Mark as read if not a link
+                            onClick={() => !isClickable && handleNotificationClick(notif.id)} 
                           >
                             <Icon className={cn("h-5 w-5 mt-0.5 shrink-0", 
                                 !notif.isRead ? 'text-primary' : 'text-muted-foreground'
@@ -514,7 +500,6 @@ export function StudentDashboard() {
                     <span className="text-muted-foreground">Balance:</span>
                     <span className={`font-semibold ${balance > 0 ? 'text-destructive' : 'text-green-600 dark:text-green-400'}`}>{CURRENCY} {balance.toLocaleString()}</span>
                   </div>
-                  {/* Removed static due date display for consistency */}
                 </>
               )}
               <Button className="w-full mt-4" asChild>

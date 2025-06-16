@@ -4,24 +4,21 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CalendarDays, Clock, MapPin, UserCircle, BookOpen, Info } from "lucide-react";
+import { CalendarDays, Clock, MapPin, UserCircle, BookOpen, Info, Download } from "lucide-react"; // Added Download
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import type { Course, TimetableEntry } from "@/types";
-import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS } from "@/config/data"; // Import SEMESTERS
+import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS } from "@/config/data"; 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button"; // Added Button
+import { useToast } from "@/hooks/use-toast"; // Added useToast
 
-
-// Mock data for courses - should be consistent with other parts of the app
 const MOCK_ALL_COURSES_TIMETABLE: Course[] = [
-    // Copied from courses/page.tsx for consistency. A real app would fetch this.
-    // Level 200 CESM - First Semester
     { id: "LAW101_CESM_Y2223_S1", title: "Introduction to Law", code: "LAW101", department: DEPARTMENTS.CESM, credits: 1, level: 200, semester: "First Semester", academicYear: "2022/2023", description: "", lecturerId: "lect_law", lecturerName: "Barr. Tabi", type: "General", schedule: "Mon 8:00-9:00, AMPHI100" },
     { id: "ENG102_CESM_Y2223_S1", title: "English Language", code: "ENG102", department: DEPARTMENTS.CESM, credits: 1, level: 200, semester: "First Semester", academicYear: "2022/2023", description: "", lecturerId: "lect_eng", lecturerName: "Ms. Anja", type: "General", schedule: "Tue 14:00-15:00, CR15" },
     { id: "SWE111_CESM_Y2223_S1", title: "Introduction to Software Eng", code: "SWE111", department: DEPARTMENTS.CESM, credits: 3, level: 200, semester: "First Semester", academicYear: "2022/2023", description: "", lecturerId: "lect002", lecturerName: "Prof. Besong", type: "Compulsory", schedule: "Mon 14:00-17:00, AMPHI300" },
-    // Level 400 CESM - First Semester (for Atem Rolland)
     { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401", description: "Covers native and cross-platform development.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 10:00-12:00, Wed 10:00-11:00, Lab Hall 1", prerequisites: ["CSE301"], semester: "First Semester", academicYear: "2024/2025" },
     { id: "CSE409_CESM_Y2425_S1", title: "Software Development and OOP", code: "CSE409", description: "Object-oriented principles and design patterns.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "Tue 14:00-16:00, Fri 8:00-9:00, AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
     { id: "MGT403_CESM_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Research methods and academic writing.", department: DEPARTMENTS.CESM, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "Wed 14:00-17:00, AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
@@ -29,14 +26,9 @@ const MOCK_ALL_COURSES_TIMETABLE: Course[] = [
     { id: "NES403_CESM_Y2425_S1", title: "Modeling in Information System", code: "NES403", description: "Techniques for system modeling.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Elective", level: 400, schedule: "Fri 11:00-13:00, CR10", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
 ];
 
-// Helper function to parse schedule string (simplified)
-// A robust parser would be more complex.
 function parseScheduleToTimetableEntries(course: Course): TimetableEntry[] {
   const entries: TimetableEntry[] = [];
   if (!course.schedule) return entries;
-
-  // Example schedule: "Mon 10:00-12:00, Wed 10:00-11:00, Lab Hall 1"
-  // This simple parser assumes venue is last and applies to all listed slots.
   const parts = course.schedule.split(',').map(p => p.trim());
   const venue = parts.length > 1 && !parts[parts.length - 1].match(/\d{1,2}:\d{2}-\d{1,2}:\d{2}/) ? parts.pop() : "TBD";
 
@@ -65,6 +57,7 @@ function parseScheduleToTimetableEntries(course: Course): TimetableEntry[] {
   return entries;
 }
 
+// Standardized localStorage key function
 const getLocalStorageKeyForAllRegistrations = (uid?: string) => {
   if (!uid) return null;
   return `allRegisteredCourses_${uid}`;
@@ -77,6 +70,7 @@ export default function StudentTimetablePage() {
   const [timetableEntries, setTimetableEntries] = useState<TimetableEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPeriodDisplay, setCurrentPeriodDisplay] = useState<string>("");
+  const { toast } = useToast();
 
   useEffect(() => {
     async function loadTimetable() {
@@ -90,8 +84,8 @@ export default function StudentTimetablePage() {
         return;
       }
       
-      const studentCurrentYear = profile.currentAcademicYear || ACADEMIC_YEARS[2]; // Fallback to 2024/2025
-      const studentCurrentSemester = profile.currentSemester || SEMESTERS[0]; // Fallback to First Semester
+      const studentCurrentYear = profile.currentAcademicYear || ACADEMIC_YEARS[2]; 
+      const studentCurrentSemester = profile.currentSemester || SEMESTERS[0]; 
       setCurrentPeriodDisplay(`${studentCurrentSemester}, ${studentCurrentYear}`);
 
       const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
@@ -108,14 +102,14 @@ export default function StudentTimetablePage() {
         }
       }
       
-      // Find the full course objects for the registered IDs
-      const registeredCoursesFull = MOCK_ALL_COURSES_TIMETABLE.filter(course => studentRegisteredCourseIds.includes(course.id));
+      const registeredCoursesFull = MOCK_ALL_COURSES_TIMETABLE.filter(course => 
+          studentRegisteredCourseIds.includes(course.id)
+      );
       
-      // Filter these for the student's current academic period
       const relevantRegisteredCourses = registeredCoursesFull.filter(course => 
         course.academicYear === studentCurrentYear &&
         course.semester === studentCurrentSemester &&
-        course.department === profile.department && // Assuming timetable is department-specific
+        course.department === profile.department && 
         course.level === profile.level
       );
 
@@ -124,7 +118,6 @@ export default function StudentTimetablePage() {
         generatedEntries.push(...parseScheduleToTimetableEntries(course));
       });
 
-      // Sort entries by start time within each day (already grouped later)
       generatedEntries.sort((a, b) => {
         if (a.dayOfWeek !== b.dayOfWeek) return DAYS_OF_WEEK.indexOf(a.dayOfWeek) - DAYS_OF_WEEK.indexOf(b.dayOfWeek);
         return a.startTime.localeCompare(b.startTime);
@@ -139,7 +132,7 @@ export default function StudentTimetablePage() {
 
   const groupedTimetable = useMemo(() => {
     const groups: Record<string, TimetableEntry[]> = {};
-    DAYS_OF_WEEK.forEach(day => groups[day] = []); // Initialize all days
+    DAYS_OF_WEEK.forEach(day => groups[day] = []); 
 
     timetableEntries.forEach(entry => {
       if (!groups[entry.dayOfWeek]) {
@@ -149,6 +142,14 @@ export default function StudentTimetablePage() {
     });
     return groups;
   }, [timetableEntries]);
+
+  const handleDownloadSchedule = () => {
+    toast({
+      title: "Download Schedule (Simulated)",
+      description: `PDF generation for your timetable (${currentPeriodDisplay}) is under development.`,
+      duration: 5000,
+    });
+  };
 
 
   if (isLoading || authLoading) {
@@ -180,15 +181,20 @@ export default function StudentTimetablePage() {
       className="space-y-6"
     >
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-headline">
-            <CalendarDays className="h-6 w-6 text-primary" />
-            My Timetable
-          </CardTitle>
-          <CardDescription>
-            Your class schedule for {currentPeriodDisplay}. 
-            This timetable is based on your registered courses for the current academic period.
-          </CardDescription>
+        <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+            <div>
+                <CardTitle className="flex items-center gap-2 font-headline">
+                    <CalendarDays className="h-6 w-6 text-primary" />
+                    My Timetable
+                </CardTitle>
+                <CardDescription>
+                    Your class schedule for {currentPeriodDisplay}. 
+                    This timetable is based on your registered courses for the current academic period.
+                </CardDescription>
+            </div>
+            <Button onClick={handleDownloadSchedule} className="mt-4 sm:mt-0" disabled={timetableEntries.length === 0}>
+                <Download className="mr-2 h-4 w-4" /> Download Schedule (PDF)
+            </Button>
         </CardHeader>
         <CardContent>
           {timetableEntries.length === 0 && !isLoading ? (
@@ -237,3 +243,4 @@ export default function StudentTimetablePage() {
     </motion.div>
   );
 }
+

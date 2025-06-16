@@ -26,8 +26,8 @@ const CourseDetailDialog = dynamic(() => import('@/components/courses/CourseDeta
   loading: () => <p className="p-4 text-center">Loading details...</p> 
 });
 
-const MIN_CREDITS = 1; // Loosened for testing
-const MAX_CREDITS = 100; // Loosened for testing
+const MIN_CREDITS = 1; // Loosened
+const MAX_CREDITS = 100; // Loosened
 
 // Mock data fetching function - replace with actual Firestore/Supabase query for courses if needed
 async function fetchCourses(): Promise<Course[]> {
@@ -142,9 +142,10 @@ const defaultRegistrationMeta = {
   semester: SEMESTERS[0],   // First Semester
 };
 
-const getLocalStorageKey = (uid?: string) => {
+// Standardized localStorage key function
+const getLocalStorageKeyForAllRegistrations = (uid?: string) => {
   if (!uid) return null;
-  return `registeredCourses_${uid}`;
+  return `allRegisteredCourses_${uid}`;
 };
 
 
@@ -157,7 +158,11 @@ export default function CoursesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   
-  const [registeredCourseIds, setRegisteredCourseIds] = useState<string[]>([]);
+  // Stores ALL registered course IDs across all semesters/years from localStorage
+  const [allHistoricalRegistrations, setAllHistoricalRegistrations] = useState<string[]>([]);
+  // Stores registered course IDs for the *currently selected/active* academic period for UI display
+  const [registeredCourseIdsForCurrentPeriod, setRegisteredCourseIdsForCurrentPeriod] = useState<string[]>([]);
+  
   const [isSavingRegistration, setIsSavingRegistration] = useState(false);
 
   const studentAcademicContext = useMemo(() => {
@@ -196,60 +201,33 @@ export default function CoursesPage() {
   const [isDeadlineApproaching, setIsDeadlineApproaching] = useState(false);
   const [daysToDeadline, setDaysToDeadline] = useState<number | null>(null);
 
+  // Load all courses and initial registrations from localStorage
   useEffect(() => {
     async function loadData() {
       setIsLoading(true);
       const fetchedCourses = await fetchCourses();
       setAllCourses(fetchedCourses);
   
-      if (user?.uid && typeof window !== 'undefined' && profile && studentAcademicContext) {
-        const storageKey = getLocalStorageKey(user.uid);
-        if (!storageKey) {
-            setRegisteredCourseIds([]);
-            setIsLoading(false);
-            return;
-        }
-        
-        let initialRegisteredIds: string[] = [];
-        const storedIdsString = localStorage.getItem(storageKey);
-        let successfullyLoadedFromStorage = false;
-
-        if (storedIdsString) {
-            try {
-              const parsedIds = JSON.parse(storedIdsString);
-              if (Array.isArray(parsedIds)) {
-                initialRegisteredIds = parsedIds;
-                successfullyLoadedFromStorage = true;
-              } else {
-                localStorage.removeItem(storageKey); 
-              }
-            } catch (e) {
-              console.error("Failed to parse registered courses from localStorage:", e);
-              localStorage.removeItem(storageKey); 
+      let initialAllHistoricalIds: string[] = [];
+      if (user?.uid && typeof window !== 'undefined') {
+        const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
+        if (storageKey) {
+            const storedIdsString = localStorage.getItem(storageKey);
+            if (storedIdsString) {
+                try {
+                    const parsedIds = JSON.parse(storedIdsString);
+                    if (Array.isArray(parsedIds)) {
+                        initialAllHistoricalIds = parsedIds;
+                    }
+                } catch (e) {
+                    console.error("Failed to parse all registered courses from localStorage:", e);
+                    localStorage.removeItem(storageKey); // Clear corrupted data
+                }
             }
         }
-
-        if (!successfullyLoadedFromStorage) {
-            const { department, level, currentAcademicYear, currentSemester } = studentAcademicContext;
-            const departmentalCourses = fetchedCourses.filter(c =>
-                c.department === department && c.level === level &&
-                c.academicYear === currentAcademicYear && c.semester === currentSemester &&
-                (c.type === "Compulsory")
-            );
-            const generalCoursesForLevel = fetchedCourses.filter(c =>
-                c.type === "General" && c.level === level &&
-                c.academicYear === currentAcademicYear && c.semester === currentSemester
-            );
-            
-            initialRegisteredIds = [...new Set([...departmentalCourses.map(c => c.id), ...generalCoursesForLevel.map(c => c.id)])];
-            localStorage.setItem(storageKey, JSON.stringify(initialRegisteredIds));
-            if(initialRegisteredIds.length > 0) {
-                toast({ title: "Courses Auto-Registered", description: "Compulsory and general courses for your level have been pre-selected.", variant: "default" });
-            }
-        }
-        setRegisteredCourseIds(initialRegisteredIds);
+        setAllHistoricalRegistrations(initialAllHistoricalIds);
       } else {
-        setRegisteredCourseIds([]);
+        setAllHistoricalRegistrations([]);
       }
       setIsLoading(false);
     }
@@ -257,7 +235,51 @@ export default function CoursesPage() {
     if (!authLoading) { 
         loadData();
     }
-  }, [user?.uid, authLoading, profile, studentAcademicContext, toast]); 
+  }, [user?.uid, authLoading]);
+
+  // Auto-register and update current period registrations when context or historical data changes
+  useEffect(() => {
+    if (isLoading || !studentAcademicContext || allCourses.length === 0) return;
+
+    const { department, level, currentAcademicYear, currentSemester } = studentAcademicContext;
+    const storageKey = getLocalStorageKeyForAllRegistrations(user?.uid);
+
+    // Filter historical registrations for the current academic context
+    const currentPeriodRegisteredIdsFromStorage = allHistoricalRegistrations.filter(courseId => {
+        const course = allCourses.find(c => c.id === courseId);
+        return course && course.academicYear === currentAcademicYear && course.semester === currentSemester;
+    });
+    
+    let finalCurrentPeriodIds = [...currentPeriodRegisteredIdsFromStorage];
+    let madeAutoRegistrations = false;
+
+    if (currentPeriodRegisteredIdsFromStorage.length === 0 && storageKey) { // Only auto-register if no current period registrations exist
+        const departmentalCourses = allCourses.filter(c =>
+            c.department === department && c.level === level &&
+            c.academicYear === currentAcademicYear && c.semester === currentSemester &&
+            (c.type === "Compulsory")
+        );
+        const generalCoursesForLevel = allCourses.filter(c =>
+            c.type === "General" && c.level === level &&
+            c.academicYear === currentAcademicYear && c.semester === currentSemester
+        );
+        
+        const autoRegisteredIds = [...new Set([...departmentalCourses.map(c => c.id), ...generalCoursesForLevel.map(c => c.id)])];
+        
+        if (autoRegisteredIds.length > 0) {
+            const newHistoricalTotal = Array.from(new Set([...allHistoricalRegistrations, ...autoRegisteredIds]));
+            setAllHistoricalRegistrations(newHistoricalTotal);
+            if (typeof window !== 'undefined') {
+                localStorage.setItem(storageKey, JSON.stringify(newHistoricalTotal));
+            }
+            finalCurrentPeriodIds = autoRegisteredIds;
+            madeAutoRegistrations = true;
+            toast({ title: "Courses Auto-Registered", description: "Compulsory and general courses for your current level and semester have been pre-selected.", variant: "default" });
+        }
+    }
+    setRegisteredCourseIdsForCurrentPeriod(finalCurrentPeriodIds);
+
+  }, [studentAcademicContext, allCourses, isLoading, allHistoricalRegistrations, user?.uid, toast]);
   
    useEffect(() => {
     if (isStudent && studentAcademicContext) {
@@ -340,20 +362,26 @@ export default function CoursesPage() {
       .filter(course => filters.courseType === "all" || course.type === filters.courseType);
   }, [allCourses, searchTerm, filters]);
 
-  const registeredCoursesList = useMemo(() => {
-    return allCourses.filter(course => registeredCourseIds.includes(course.id));
-  }, [allCourses, registeredCourseIds]);
-
-  const totalRegisteredCredits = useMemo(() => {
-    const relevantCourses = registeredCoursesList.filter(course => 
-      course.academicYear === currentRegistrationMeta.academicYear && 
-      course.semester === currentRegistrationMeta.semester
+  const registeredCoursesListForDisplay = useMemo(() => {
+    // This list shows courses from allHistoricalRegistrations that match the *current filters*
+    return allCourses.filter(course => 
+        allHistoricalRegistrations.includes(course.id) &&
+        (filters.academicYear === "all" || course.academicYear === filters.academicYear) &&
+        (filters.semester === "all" || course.semester === filters.semester) &&
+        (filters.department === "all" || course.department === filters.department) && // Consider if this filter should apply to "My Registered Courses"
+        (filters.level === "all" || course.level.toString() === filters.level) // Same as above
     );
-    return relevantCourses.reduce((sum, course) => sum + course.credits, 0);
-  }, [registeredCoursesList, currentRegistrationMeta.academicYear, currentRegistrationMeta.semester]);
+  }, [allCourses, allHistoricalRegistrations, filters]);
 
-  const handleRegisterCourse = async (course: Course) => {
-    setIsSavingRegistration(true); // For UI feedback if needed
+  const totalRegisteredCreditsForFilteredPeriod = useMemo(() => {
+    if (filters.academicYear === "all" || filters.semester === "all") return 0; // Don't calculate for "all"
+    return registeredCoursesListForDisplay
+      .filter(course => course.academicYear === filters.academicYear && course.semester === filters.semester)
+      .reduce((sum, course) => sum + course.credits, 0);
+  }, [registeredCoursesListForDisplay, filters.academicYear, filters.semester]);
+
+  const handleRegisterCourse = (course: Course) => {
+    setIsSavingRegistration(true); 
     
     if (!currentRegistrationMeta.isOpen) {
       toast({ title: "Registration Closed", description: `Course registration for ${currentRegistrationMeta.semester}, ${currentRegistrationMeta.academicYear} is currently closed.`, variant: "destructive" });
@@ -363,25 +391,29 @@ export default function CoursesPage() {
         toast({ title: "Registration Mismatch", description: `You can only register for courses in the currently open registration period: ${currentRegistrationMeta.semester}, ${currentRegistrationMeta.academicYear}.`, variant: "destructive" });
         setIsSavingRegistration(false); return;
     }
-    if (registeredCourseIds.includes(course.id)) {
-      toast({ title: "Already Registered", description: `You are already registered for ${course.code} - ${course.title}.`, variant: "default" });
+    // Check if already in allHistoricalRegistrations for this specific course instance (ID)
+    if (allHistoricalRegistrations.includes(course.id)) {
+      toast({ title: "Already Registered", description: `You are already registered for ${course.code} - ${course.title} for ${course.semester}, ${course.academicYear}.`, variant: "default" });
       setIsSavingRegistration(false); return;
     }
 
-    // Simplified: Loosened checks for prerequisites, credit limits, and department/level match
-    // For this specific user request to "not disable any register button"
-
-    const newRegisteredIds = [...registeredCourseIds, course.id];
-    setRegisteredCourseIds(newRegisteredIds);
-    if (user?.uid && typeof window !== 'undefined') {
-        const storageKey = getLocalStorageKey(user.uid);
-        if (storageKey) localStorage.setItem(storageKey, JSON.stringify(newRegisteredIds));
+    // Permissive registration: Loosened checks
+    const newHistoricalTotal = [...allHistoricalRegistrations, course.id];
+    setAllHistoricalRegistrations(newHistoricalTotal);
+    // Update current period display if this course matches current context
+    if (studentAcademicContext && course.academicYear === studentAcademicContext.currentAcademicYear && course.semester === studentAcademicContext.currentSemester) {
+      setRegisteredCourseIdsForCurrentPeriod(prev => [...prev, course.id]);
     }
-    toast({ title: "Course Registered", description: `${course.code} - ${course.title} successfully registered.`, variant: "default" });
+
+    if (user?.uid && typeof window !== 'undefined') {
+        const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
+        if (storageKey) localStorage.setItem(storageKey, JSON.stringify(newHistoricalTotal));
+    }
+    toast({ title: "Course Registered", description: `${course.code} - ${course.title} successfully registered for ${course.semester}, ${course.academicYear}.`, variant: "default" });
     setIsSavingRegistration(false);
   };
 
-  const handleDropCourse = async (courseIdToDrop: string) => {
+  const handleDropCourse = (courseIdToDrop: string) => {
      const courseToDrop = allCourses.find(c => c.id === courseIdToDrop);
      if (!courseToDrop) return;
      setIsSavingRegistration(true);
@@ -395,34 +427,45 @@ export default function CoursesPage() {
         setIsSavingRegistration(false); return;
     }
     
-    const newRegisteredIds = registeredCourseIds.filter(id => id !== courseIdToDrop);
-    setRegisteredCourseIds(newRegisteredIds);
+    const newHistoricalTotal = allHistoricalRegistrations.filter(id => id !== courseIdToDrop);
+    setAllHistoricalRegistrations(newHistoricalTotal);
+    // Update current period display
+    setRegisteredCourseIdsForCurrentPeriod(prev => prev.filter(id => id !== courseIdToDrop));
+    
     if (user?.uid && typeof window !== 'undefined') {
-        const storageKey = getLocalStorageKey(user.uid);
-        if (storageKey) localStorage.setItem(storageKey, JSON.stringify(newRegisteredIds));
+        const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
+        if (storageKey) localStorage.setItem(storageKey, JSON.stringify(newHistoricalTotal));
     }
-    toast({ title: "Course Dropped", description: `${courseToDrop.code} - ${courseToDrop.title} has been dropped.`, variant: "default" });
+    toast({ title: "Course Dropped", description: `${courseToDrop.code} - ${courseToDrop.title} has been dropped for ${courseToDrop.semester}, ${courseToDrop.academicYear}.`, variant: "default" });
     setIsSavingRegistration(false);
   };
   
   const getCreditStatus = () => {
     const periodYear = currentRegistrationMeta.isOpen ? currentRegistrationMeta.academicYear : filters.academicYear;
     const periodSemester = currentRegistrationMeta.isOpen ? currentRegistrationMeta.semester : filters.semester;
+    
     if (periodYear === "all" || periodSemester === "all") {
-         return { message: `Select specific Year & Semester for credit status.`, variant: "info" as const, credits: registeredCoursesList.reduce((sum, c) => sum + c.credits,0)};
+         return { message: `Select specific Year & Semester for credit status.`, variant: "info" as const, credits: 0}; // Simplified credits for "all" view
     }
-    const creditsForPeriod = registeredCoursesList
-      .filter(c => c.academicYear === periodYear && c.semester === periodSemester)
-      .reduce((sum, c) => sum + c.credits, 0);
+
+    const creditsForPeriod = allHistoricalRegistrations
+        .map(id => allCourses.find(c => c.id === id))
+        .filter(c => c && c.academicYear === periodYear && c.semester === periodSemester)
+        .reduce((sum, c) => sum + (c?.credits || 0), 0);
 
      if (!currentRegistrationMeta.isOpen && (filters.academicYear !== "all" && filters.semester !== "all")) {
         return { message: `Registration for ${filters.semester}, ${filters.academicYear} is closed. Credits: ${creditsForPeriod}.`, variant: "info" as const, credits: creditsForPeriod};
     }
-    if (currentRegistrationMeta.isOpen) {
+    if (currentRegistrationMeta.isOpen) { // This refers to the specific open period, not the filtered view period
+        const creditsForOpenPeriod = allHistoricalRegistrations
+            .map(id => allCourses.find(c => c.id === id))
+            .filter(c => c && c.academicYear === currentRegistrationMeta.academicYear && c.semester === currentRegistrationMeta.semester)
+            .reduce((sum, c) => sum + (c?.credits || 0), 0);
+
         // Loosened checks for this version
-        if (creditsForPeriod < MIN_CREDITS && creditsForPeriod > 0) return { message: `Low credit load. Min ${MIN_CREDITS} (loosened). Current: ${creditsForPeriod}.`, variant: "warning" as const, credits: creditsForPeriod };
-        if (creditsForPeriod > MAX_CREDITS) return { message: `Over max credit load. Max ${MAX_CREDITS} (loosened). Current: ${creditsForPeriod}.`, variant: "destructive" as const, credits: creditsForPeriod };
-        return { message: `Total credits: ${creditsForPeriod}. (Min/Max checks loosened)`, variant: "success" as const, credits: creditsForPeriod };
+        if (creditsForOpenPeriod < MIN_CREDITS && creditsForOpenPeriod > 0) return { message: `Low credit load for open period. Min ${MIN_CREDITS}. Current: ${creditsForOpenPeriod}.`, variant: "warning" as const, credits: creditsForOpenPeriod };
+        if (creditsForOpenPeriod > MAX_CREDITS) return { message: `Over max credit load for open period. Max ${MAX_CREDITS}. Current: ${creditsForOpenPeriod}.`, variant: "destructive" as const, credits: creditsForOpenPeriod };
+        return { message: `Total credits for open period: ${creditsForOpenPeriod}. (Min/Max checks loosened)`, variant: "success" as const, credits: creditsForOpenPeriod };
     }
     return { message: `Credit load for ${periodSemester}, ${periodYear}: ${creditsForPeriod}.`, variant: "info" as const, credits: creditsForPeriod };
   };
@@ -439,7 +482,7 @@ export default function CoursesPage() {
       <header className="space-y-2">
         <h1 className="font-headline text-4xl font-bold flex items-center gap-2"><GraduationCap className="text-primary"/>Course Registration</h1>
         <p className="text-lg text-muted-foreground">
-          Explore courses and manage your registration. Your default department and level are pre-selected.
+          Explore courses and manage your registration. Your default department and level are pre-selected for filters.
         </p>
       </header>
 
@@ -448,22 +491,22 @@ export default function CoursesPage() {
           <CardTitle className="flex items-center gap-2"><Info className="text-primary"/>Registration Status for {currentRegistrationMeta.semester}, {currentRegistrationMeta.academicYear}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {currentRegistrationMeta.message && currentRegistrationMeta.academicYear === "all" && (
+          {currentRegistrationMeta.message && (filters.academicYear === "all" || filters.semester === "all") && (
             <Alert variant="info"><Info className="h-5 w-5" /><AlertTitle>Dynamic Info</AlertTitle><AlertDescription>{currentRegistrationMeta.message}</AlertDescription></Alert>
           )}
-          {currentRegistrationMeta.isOpen && currentRegistrationMeta.academicYear !== "all" ? (
+          {currentRegistrationMeta.isOpen && filters.academicYear !== "all" && filters.semester !== "all" ? (
             <Alert variant="default" className="bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300">
               <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400" />
               <AlertTitle>Registration is OPEN</AlertTitle>
               <AlertDescription>Deadline: <strong>{currentRegistrationMeta.deadline === "N/A" ? "N/A" : new Date(currentRegistrationMeta.deadline).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' })}</strong> for {currentRegistrationMeta.semester}, {currentRegistrationMeta.academicYear}.</AlertDescription>
             </Alert>
-          ) : currentRegistrationMeta.academicYear !== "all" && (
+          ) : filters.academicYear !== "all" && filters.semester !== "all" && (
             <Alert variant="destructive">
               <XCircle className="h-5 w-5" /><AlertTitle>Registration is CLOSED</AlertTitle>
-              <AlertDescription>Registration for {currentRegistrationMeta.semester === "all" ? "selected period" : `${currentRegistrationMeta.semester}, ${currentRegistrationMeta.academicYear}`} is closed.</AlertDescription>
+              <AlertDescription>Registration for {filters.semester === "all" ? "selected period" : `${filters.semester}, ${filters.academicYear}`} is closed.</AlertDescription>
             </Alert>
           )}
-          {isDeadlineApproaching && currentRegistrationMeta.isOpen && daysToDeadline !== null && currentRegistrationMeta.academicYear !== "all" && (
+          {isDeadlineApproaching && currentRegistrationMeta.isOpen && daysToDeadline !== null && filters.academicYear !== "all" && filters.semester !== "all" && (
             <Alert variant="default" className="bg-amber-50 dark:bg-amber-900/30 border-amber-400 dark:border-amber-600 text-amber-700 dark:text-amber-300">
               <AlertTriangle className="h-5 w-5 text-amber-500 dark:text-amber-400" /><AlertTitle>Deadline Approaching!</AlertTitle>
               <AlertDescription>{daysToDeadline === 0 ? "Today is the last day." : `${daysToDeadline} day${daysToDeadline > 1 ? 's' : ''} remaining.`} Deadline: <strong>{new Date(currentRegistrationMeta.deadline).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' })}</strong>.</AlertDescription>
@@ -503,16 +546,24 @@ export default function CoursesPage() {
                 <TableHeader><TableRow><TableHead>Code</TableHead><TableHead>Title</TableHead><TableHead>Credits</TableHead><TableHead>Type</TableHead><TableHead>Level</TableHead><TableHead>Lecturer</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Action</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {filteredCourses.map(course => {
-                    const isRegistered = registeredCourseIds.includes(course.id);
+                    const isRegisteredForThisPeriod = allHistoricalRegistrations.includes(course.id) && 
+                                                      course.academicYear === currentRegistrationMeta.academicYear && 
+                                                      course.semester === currentRegistrationMeta.semester;
                     
-                    // Simplified canRegisterThisCourse for this request
-                    const canRegisterThisCourse = !isRegistered && currentRegistrationMeta.isOpen && !isSavingRegistration &&
+                    const canRegisterThisCourse = !isRegisteredForThisPeriod && 
+                                                  currentRegistrationMeta.isOpen &&
+                                                  !isSavingRegistration &&
                                                   course.academicYear === currentRegistrationMeta.academicYear &&
                                                   course.semester === currentRegistrationMeta.semester;
 
-                    const canDropThisCourse = isRegistered && currentRegistrationMeta.isOpen && !isSavingRegistration && 
+                    const canDropThisCourse = isRegisteredForThisPeriod && 
+                                              currentRegistrationMeta.isOpen && 
+                                              !isSavingRegistration && 
                                               course.academicYear === currentRegistrationMeta.academicYear && 
                                               course.semester === currentRegistrationMeta.semester;
+                    
+                    // For general display status, check if it's in allHistoricalRegistrations for the specific course.id
+                    const isRegisteredHistorically = allHistoricalRegistrations.includes(course.id);
                     
                     return (
                       <TableRow key={course.id}>
@@ -520,10 +571,10 @@ export default function CoursesPage() {
                         <TableCell className="text-center">{course.credits}</TableCell>
                         <TableCell><Badge variant={course.type === 'Compulsory' ? 'default' : course.type === 'Elective' ? 'secondary' : 'outline'}>{course.type}</Badge></TableCell>
                         <TableCell>{course.level}</TableCell><TableCell>{course.lecturerName}</TableCell>
-                        <TableCell>{isRegistered ? <Badge variant="success" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">Registered</Badge> : <Badge variant="outline">Available</Badge>}</TableCell>
+                        <TableCell>{isRegisteredHistorically && course.academicYear === filters.academicYear && course.semester === filters.semester ? <Badge variant="success" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">Registered</Badge> : <Badge variant="outline">Available</Badge>}</TableCell>
                         <TableCell className="text-right space-x-1">
                            <Dialog><DialogTrigger asChild><Button variant="ghost" size="icon" onClick={() => setSelectedCourseForDetail(course)}><Eye className="h-4 w-4"/><span className="sr-only">View Details</span></Button></DialogTrigger></Dialog>
-                          {isRegistered ? (<Button variant="destructive" size="sm" onClick={() => handleDropCourse(course.id)} disabled={!canDropThisCourse || isSavingRegistration}><MinusCircle className="mr-1 h-4 w-4"/> Drop</Button>) 
+                          {isRegisteredForThisPeriod ? (<Button variant="destructive" size="sm" onClick={() => handleDropCourse(course.id)} disabled={!canDropThisCourse || isSavingRegistration}><MinusCircle className="mr-1 h-4 w-4"/> Drop</Button>) 
                                         : (<Button variant="default" size="sm" onClick={() => handleRegisterCourse(course)} disabled={!canRegisterThisCourse || isSavingRegistration || authLoading}><PlusCircle className="mr-1 h-4 w-4"/> Register</Button>)}
                         </TableCell>
                       </TableRow>
@@ -538,9 +589,9 @@ export default function CoursesPage() {
           <Card>
             <CardHeader><CardTitle>My Registered Courses</CardTitle><CardDescription>Courses for {filters.semester === "all" ? "selected period" : filters.semester}, {filters.academicYear === "all" ? "selected period" : filters.academicYear}.</CardDescription></CardHeader>
             <CardContent>
-              {registeredCoursesList.filter(c => (filters.academicYear === "all" || c.academicYear === filters.academicYear) && (filters.semester === "all" || c.semester === filters.semester)).length > 0 ? (
+              {registeredCoursesListForDisplay.length > 0 ? (
                 <ul className="space-y-2">
-                  {registeredCoursesList.filter(c => (filters.academicYear === "all" || c.academicYear === filters.academicYear) && (filters.semester === "all" || c.semester === filters.semester)).map(course => (
+                  {registeredCoursesListForDisplay.map(course => (
                     <li key={course.id} className="flex justify-between items-center p-3 bg-muted rounded-md"><div><p className="font-medium">{course.code} - {course.title}</p><p className="text-xs text-muted-foreground">{course.credits} Credits ({course.semester}, {course.academicYear})</p></div>
                        {currentRegistrationMeta.isOpen && course.academicYear === currentRegistrationMeta.academicYear && course.semester === currentRegistrationMeta.semester && (<Button variant="ghost" size="icon" onClick={() => handleDropCourse(course.id)} className="text-destructive hover:bg-destructive/10" disabled={isSavingRegistration}><XCircle className="h-4 w-4" /><span className="sr-only">Drop</span></Button>)}
                     </li>))}</ul>
@@ -548,11 +599,11 @@ export default function CoursesPage() {
             </CardContent>
             <CardFooter className="flex-col items-start space-y-3">
               <div className="w-full">
-                 <p className="text-lg font-semibold">{creditStatus.credits > 0 && (filters.academicYear !== "all" && filters.semester !== "all") ? `Total Credits for ${filters.semester}, ${filters.academicYear}: ` : currentRegistrationMeta.isOpen && currentRegistrationMeta.academicYear !== "all" ? `Total Credits for Current Registration: ` : "Total Registered Credits:" } <span className={creditStatus.variant === "warning" || creditStatus.variant === "destructive" ? "text-destructive" : "text-green-600 dark:text-green-400"}>{creditStatus.credits}</span></p>
-                {((currentRegistrationMeta.isOpen && currentRegistrationMeta.academicYear !== "all") || (creditStatus.credits > 0 && filters.academicYear !== "all" && filters.semester !== "all" )) && ( 
+                 <p className="text-lg font-semibold">{totalRegisteredCreditsForFilteredPeriod > 0 && (filters.academicYear !== "all" && filters.semester !== "all") ? `Total Credits for ${filters.semester}, ${filters.academicYear}: ` : currentRegistrationMeta.isOpen && currentRegistrationMeta.academicYear !== "all" ? `Total Credits for Current Registration Period: ` : "Total Registered Credits (filtered view):" } <span className={creditStatus.variant === "warning" || creditStatus.variant === "destructive" ? "text-destructive" : "text-green-600 dark:text-green-400"}>{totalRegisteredCreditsForFilteredPeriod}</span></p>
+                {((currentRegistrationMeta.isOpen && currentRegistrationMeta.academicYear !== "all") || (totalRegisteredCreditsForFilteredPeriod > 0 && filters.academicYear !== "all" && filters.semester !== "all" )) && ( 
                    <Alert variant={creditStatus.variant === "success" ? "default" : creditStatus.variant} className="mt-2">{creditStatus.variant === "success" ? <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" /> : creditStatus.variant === "info" ? <Info className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}<AlertTitle>{creditStatus.variant === "warning" ? "Warning" : creditStatus.variant === "destructive" ? "Error" : "Status"}</AlertTitle><AlertDescription>{creditStatus.message}</AlertDescription></Alert>)}
               </div>
-              <Button className="w-full" disabled={filters.academicYear === "all" || filters.semester === "all" || registeredCoursesList.filter(c => c.academicYear === filters.academicYear && c.semester === filters.semester).length === 0} onClick={() => { const coursesForFormB = registeredCoursesList.filter(c => c.academicYear === filters.academicYear && c.semester === filters.semester); if (coursesForFormB.length > 0) { toast({ title: "Form B Download (Simulated)", description: `PDF generation for Form B (${filters.semester}, ${filters.academicYear}) is under development. Courses: ${coursesForFormB.map(c=>c.code).join(', ')}.`, duration: 7000}); }}}>
+              <Button className="w-full" disabled={filters.academicYear === "all" || filters.semester === "all" || registeredCoursesListForDisplay.filter(c => c.academicYear === filters.academicYear && c.semester === filters.semester).length === 0} onClick={() => { const coursesForFormB = registeredCoursesListForDisplay.filter(c => c.academicYear === filters.academicYear && c.semester === filters.semester); if (coursesForFormB.length > 0) { toast({ title: "Form B Download (Simulated)", description: `PDF generation for Form B (${filters.semester}, ${filters.academicYear}) is under development. Courses: ${coursesForFormB.map(c=>c.code).join(', ')}.`, duration: 7000}); }}}>
                 <Download className="mr-2 h-4 w-4"/> Download Form B (PDF)
               </Button>
             </CardFooter>
@@ -561,9 +612,9 @@ export default function CoursesPage() {
            <Card>
             <CardHeader><CardTitle className="flex items-center gap-2"><Clock className="text-primary"/>My Schedule</CardTitle><CardDescription>Schedule for {filters.semester === "all" ? "selected period" : filters.semester}, {filters.academicYear === "all" ? "selected period" : filters.academicYear}.</CardDescription></CardHeader>
             <CardContent>
-                {isLoading ? ( <Skeleton className="h-20 w-full" /> ) : registeredCoursesList.filter(c => (filters.academicYear === "all" || c.academicYear === filters.academicYear) && (filters.semester === "all" || c.semester === filters.semester)).length > 0 ? (
-                <ul className="space-y-3">{registeredCoursesList.filter(c => (filters.academicYear === "all" || c.academicYear === filters.academicYear) && (filters.semester === "all" || c.semester === filters.semester)).map(course => (<li key={`${course.id}-schedule`} className="p-3 bg-muted rounded-md"><p className="font-medium">{course.code} - {course.title}</p><p className="text-sm text-muted-foreground">Schedule: {course.schedule || "Not specified"}</p></li>))}</ul>
-                ) : (<p className="text-sm text-muted-foreground">No courses registered to display schedule.</p>)}
+                {isLoading ? ( <Skeleton className="h-20 w-full" /> ) : registeredCoursesListForDisplay.filter(c => (filters.academicYear === "all" || c.academicYear === filters.academicYear) && (filters.semester === "all" || c.semester === filters.semester)).length > 0 ? (
+                <ul className="space-y-3">{registeredCoursesListForDisplay.filter(c => (filters.academicYear === "all" || c.academicYear === filters.academicYear) && (filters.semester === "all" || c.semester === filters.semester)).map(course => (<li key={`${course.id}-schedule`} className="p-3 bg-muted rounded-md"><p className="font-medium">{course.code} - {course.title}</p><p className="text-sm text-muted-foreground">Schedule: {course.schedule || "Not specified"}</p></li>))}</ul>
+                ) : (<p className="text-sm text-muted-foreground">No courses registered to display schedule for the selected filter.</p>)}
                  <p className="text-xs text-muted-foreground mt-4">Note: Full timetable grid requires detailed day/time information.</p>
             </CardContent>
             <CardFooter><Button className="w-full" disabled><Download className="mr-2 h-4 w-4"/> Download Schedule (PDF)</Button></CardFooter>
@@ -579,3 +630,4 @@ export default function CoursesPage() {
     </motion.div>
   );
 }
+
