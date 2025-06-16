@@ -1,42 +1,53 @@
 
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CalendarDays, Clock, MapPin, UserCircle, BookOpen, Info, Download } from "lucide-react"; // Added Download
+import { CalendarDays, Clock, MapPin, UserCircle, BookOpen, Info, Download, PresentationIcon } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import type { Course, TimetableEntry } from "@/types";
-import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS } from "@/config/data"; 
+import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS, ALL_UNIVERSITY_COURSES } from "@/config/data"; 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button"; // Added Button
-import { useToast } from "@/hooks/use-toast"; // Added useToast
-
-const MOCK_ALL_COURSES_TIMETABLE: Course[] = [
-    { id: "LAW101_CESM_Y2223_S1", title: "Introduction to Law", code: "LAW101", department: DEPARTMENTS.CESM, credits: 1, level: 200, semester: "First Semester", academicYear: "2022/2023", description: "", lecturerId: "lect_law", lecturerName: "Barr. Tabi", type: "General", schedule: "Mon 8:00-9:00, AMPHI100" },
-    { id: "ENG102_CESM_Y2223_S1", title: "English Language", code: "ENG102", department: DEPARTMENTS.CESM, credits: 1, level: 200, semester: "First Semester", academicYear: "2022/2023", description: "", lecturerId: "lect_eng", lecturerName: "Ms. Anja", type: "General", schedule: "Tue 14:00-15:00, CR15" },
-    { id: "SWE111_CESM_Y2223_S1", title: "Introduction to Software Eng", code: "SWE111", department: DEPARTMENTS.CESM, credits: 3, level: 200, semester: "First Semester", academicYear: "2022/2023", description: "", lecturerId: "lect002", lecturerName: "Prof. Besong", type: "Compulsory", schedule: "Mon 14:00-17:00, AMPHI300" },
-    { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401", description: "Covers native and cross-platform development.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 10:00-12:00, Wed 10:00-11:00, Lab Hall 1", prerequisites: ["CSE301"], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "CSE409_CESM_Y2425_S1", title: "Software Development and OOP", code: "CSE409", description: "Object-oriented principles and design patterns.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "Tue 14:00-16:00, Fri 8:00-9:00, AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "MGT403_CESM_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Research methods and academic writing.", department: DEPARTMENTS.CESM, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "Wed 14:00-17:00, AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "CSE405_CESM_Y2425_S1", title: "Embedded Systems", code: "CSE405", description: "Design and programming of embedded systems.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Compulsory", level: 400, schedule: "Thu 8:00-11:00, AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "NES403_CESM_Y2425_S1", title: "Modeling in Information System", code: "NES403", description: "Techniques for system modeling.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Elective", level: 400, schedule: "Fri 11:00-13:00, CR10", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-];
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 function parseScheduleToTimetableEntries(course: Course): TimetableEntry[] {
   const entries: TimetableEntry[] = [];
   if (!course.schedule) return entries;
-  const parts = course.schedule.split(',').map(p => p.trim());
-  const venue = parts.length > 1 && !parts[parts.length - 1].match(/\d{1,2}:\d{2}-\d{1,2}:\d{2}/) ? parts.pop() : "TBD";
 
-  parts.forEach((part, index) => {
-    const match = part.match(/(\w{3})\s*(\d{1,2}:\d{2})-(\d{1,2}:\d{2})/i);
-    if (match) {
+  // Improved parsing: DayOfWeek StartTime-EndTime, Venue (optional)
+  // Example: "Mon 10:00-12:00 Lab Hall 1, Wed 10:00-11:00 Lab Hall 1"
+  // Example: "Tue 14:00-16:00, Fri 8:00-9:00, AMPHI200"
+  // Example: "Wed 14:00-17:00 AMPHI200" (Venue applies to all if at the end)
+  
+  const scheduleParts = course.schedule.split(',').map(s => s.trim());
+  let commonVenue = "TBD";
+
+  // Check if the last part is likely a venue applying to all previous time slots
+  const lastPart = scheduleParts[scheduleParts.length - 1];
+  if (lastPart && !lastPart.match(/\b(Mon|Tue|Wed|Thu|Fri|Sat)\b/i) && !lastPart.match(/\d{1,2}:\d{2}-\d{1,2}:\d{2}/)) {
+    commonVenue = scheduleParts.pop() || "TBD";
+  }
+
+  scheduleParts.forEach((part, index) => {
+    const dayMatch = part.match(/\b(Mon|Tue|Wed|Thu|Fri|Sat)\b/i);
+    const timeMatch = part.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
+    
+    if (dayMatch && timeMatch) {
       const dayMap = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday' } as const;
-      const dayOfWeek = dayMap[match[1] as keyof typeof dayMap];
+      const dayOfWeek = dayMap[dayMatch[1] as keyof typeof dayMap];
+      
+      // Extract venue specific to this part, if any, otherwise use commonVenue
+      let specificVenue = commonVenue;
+      const venuePartMatch = part.substring(timeMatch[0].length + dayMatch[0].length).trim();
+      if (venuePartMatch) {
+        specificVenue = venuePartMatch;
+      }
+
       if (dayOfWeek) {
         entries.push({
           id: `${course.id}-slot${index + 1}`,
@@ -44,20 +55,36 @@ function parseScheduleToTimetableEntries(course: Course): TimetableEntry[] {
           courseCode: course.code,
           courseTitle: course.title,
           dayOfWeek: dayOfWeek,
-          startTime: match[2],
-          endTime: match[3],
-          venue: venue || "TBD",
+          startTime: timeMatch[1],
+          endTime: timeMatch[2],
+          venue: specificVenue,
           lecturerName: course.lecturerName,
           semester: course.semester,
           academicYear: course.academicYear,
         });
       }
+    } else if (part.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/) && entries.length > 0) {
+        // Handle cases like "Mon 8:00-9:00, 10:00-11:00 CR10"
+        // This implies the same day and potentially same venue for the subsequent time slot
+        const previousEntry = entries[entries.length - 1];
+        const subsequentTimeMatch = part.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
+        const venuePartMatch = part.substring(subsequentTimeMatch ? subsequentTimeMatch[0].length : 0).trim();
+        
+        if (subsequentTimeMatch) {
+             entries.push({
+                ...previousEntry,
+                id: `${course.id}-slot${index + 1}`,
+                startTime: subsequentTimeMatch[1],
+                endTime: subsequentTimeMatch[2],
+                venue: venuePartMatch || previousEntry.venue // Use new venue if specified, else previous
+            });
+        }
+
     }
   });
   return entries;
 }
 
-// Standardized localStorage key function
 const getLocalStorageKeyForAllRegistrations = (uid?: string) => {
   if (!uid) return null;
   return `allRegisteredCourses_${uid}`;
@@ -102,7 +129,7 @@ export default function StudentTimetablePage() {
         }
       }
       
-      const registeredCoursesFull = MOCK_ALL_COURSES_TIMETABLE.filter(course => 
+      const registeredCoursesFull = ALL_UNIVERSITY_COURSES.filter(course => 
           studentRegisteredCourseIds.includes(course.id)
       );
       
@@ -119,7 +146,7 @@ export default function StudentTimetablePage() {
       });
 
       generatedEntries.sort((a, b) => {
-        if (a.dayOfWeek !== b.dayOfWeek) return DAYS_OF_WEEK.indexOf(a.dayOfWeek) - DAYS_OF_WEEK.indexOf(b.dayOfWeek);
+        if (DAYS_OF_WEEK.indexOf(a.dayOfWeek) !== DAYS_OF_WEEK.indexOf(b.dayOfWeek)) return DAYS_OF_WEEK.indexOf(a.dayOfWeek) - DAYS_OF_WEEK.indexOf(b.dayOfWeek);
         return a.startTime.localeCompare(b.startTime);
       });
       
@@ -144,13 +171,13 @@ export default function StudentTimetablePage() {
   }, [timetableEntries]);
 
   const handleDownloadSchedule = () => {
+    const coursesForSchedule = timetableEntries.map(entry => `${entry.courseCode}: ${entry.dayOfWeek} ${entry.startTime}-${entry.endTime} at ${entry.venue}`).join('\n');
     toast({
       title: "Download Schedule (Simulated)",
-      description: `PDF generation for your timetable (${currentPeriodDisplay}) is under development.`,
-      duration: 5000,
+      description: `PDF generation for your timetable (${currentPeriodDisplay}) is under development. Courses on schedule: ${timetableEntries.length > 0 ? timetableEntries.map(e => e.courseCode).join(', ') : 'None'}.`,
+      duration: 7000,
     });
   };
-
 
   if (isLoading || authLoading) {
     return (
@@ -183,8 +210,8 @@ export default function StudentTimetablePage() {
       <Card>
         <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
             <div>
-                <CardTitle className="flex items-center gap-2 font-headline">
-                    <CalendarDays className="h-6 w-6 text-primary" />
+                <CardTitle className="flex items-center gap-3 font-headline text-2xl">
+                    <CalendarDays className="h-7 w-7 text-primary" />
                     My Timetable
                 </CardTitle>
                 <CardDescription>
@@ -192,7 +219,7 @@ export default function StudentTimetablePage() {
                     This timetable is based on your registered courses for the current academic period.
                 </CardDescription>
             </div>
-            <Button onClick={handleDownloadSchedule} className="mt-4 sm:mt-0" disabled={timetableEntries.length === 0}>
+            <Button onClick={handleDownloadSchedule} className="mt-4 sm:mt-0 w-full sm:w-auto" disabled={timetableEntries.length === 0}>
                 <Download className="mr-2 h-4 w-4" /> Download Schedule (PDF)
             </Button>
         </CardHeader>
@@ -203,33 +230,41 @@ export default function StudentTimetablePage() {
               <AlertTitle className="text-blue-700 dark:text-blue-300">No Classes Scheduled</AlertTitle>
               <AlertDescription className="text-blue-600 dark:text-blue-400">
                 There are no classes found in your timetable for the current academic period ({currentPeriodDisplay}). 
-                This could be because you haven't registered for courses, or the timetable for your registered courses hasn't been published yet.
+                This could be because you haven't registered for courses, the timetable for your registered courses hasn't been published yet, or courses have no schedule information.
               </AlertDescription>
             </Alert>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-8">
               {DAYS_OF_WEEK.map(day => {
                 const dayEntries = groupedTimetable[day];
                 if (!dayEntries || dayEntries.length === 0) return null;
 
                 return (
                   <div key={day}>
-                    <h3 className="font-semibold text-xl mb-3 text-primary border-b pb-2">{day}</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <h3 className="font-semibold text-xl md:text-2xl mb-4 text-foreground/90 border-b-2 border-primary pb-2">{day}</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                       {dayEntries.map(entry => (
-                        <Card key={entry.id} className="shadow-md hover:shadow-lg transition-shadow">
+                        <Card key={entry.id} className="shadow-lg hover:shadow-xl transition-shadow bg-card flex flex-col">
                           <CardHeader className="pb-3">
-                            <CardTitle className="text-lg flex items-center gap-2">
-                              <BookOpen className="h-5 w-5 text-accent" />
-                              {entry.courseCode}
-                            </CardTitle>
-                            <CardDescription>{entry.courseTitle}</CardDescription>
+                            <div className="flex items-center justify-between mb-1">
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                <PresentationIcon className="h-5 w-5 text-primary" />
+                                {entry.courseCode}
+                                </CardTitle>
+                                <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded-full">
+                                    {entry.startTime} - {entry.endTime}
+                                </span>
+                            </div>
+                            <CardDescription className="text-sm">{entry.courseTitle}</CardDescription>
                           </CardHeader>
-                          <CardContent className="space-y-1 text-sm">
-                            <p className="flex items-center gap-1.5 text-muted-foreground"><Clock className="h-4 w-4" /> {entry.startTime} - {entry.endTime}</p>
-                            <p className="flex items-center gap-1.5 text-muted-foreground"><MapPin className="h-4 w-4" /> {entry.venue}</p>
-                            {entry.lecturerName && <p className="flex items-center gap-1.5 text-muted-foreground"><UserCircle className="h-4 w-4" /> {entry.lecturerName}</p>}
+                          <CardContent className="space-y-2 text-sm text-muted-foreground flex-grow">
+                            <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-accent" /> {entry.venue}</p>
+                            {entry.lecturerName && <p className="flex items-center gap-2"><UserCircle className="h-4 w-4 text-accent" /> {entry.lecturerName}</p>}
                           </CardContent>
+                           {/* Optional Footer for links or actions per entry */}
+                           {/* <CardFooter className="pt-3">
+                                <Button variant="link" size="sm" className="p-0 h-auto">View Details</Button>
+                           </CardFooter> */}
                         </Card>
                       ))}
                     </div>

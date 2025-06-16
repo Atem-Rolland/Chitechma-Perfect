@@ -52,7 +52,6 @@ function generateMockUsers(count: number = 50): UserProfile[] {
           program = "B.Sc. Accounting";
       }
 
-
       userSpecifics = {
         department: department,
         level: level,
@@ -94,10 +93,8 @@ function generateMockUsers(count: number = 50): UserProfile[] {
         matricule: `CUSMS/S/2440001`
       });
   }
-
   return users;
 }
-
 
 export default function ViewAllUsersPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -111,7 +108,6 @@ export default function ViewAllUsersPage() {
 
   useEffect(() => {
     setIsLoading(true);
-    // Simulate API delay
     setTimeout(() => {
       setUsers(generateMockUsers(50));
       setIsLoading(false);
@@ -157,7 +153,6 @@ export default function ViewAllUsersPage() {
     });
   };
 
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -192,14 +187,14 @@ export default function ViewAllUsersPage() {
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
-                placeholder="Search by name, email, matricule, program..."
+                placeholder="Search name, email, matricule, program..."
                 className="pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <Select value={filters.role || "all"} onValueChange={(value) => handleFilterChange("role", value)}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-full sm:w-auto min-w-[160px]">
                 <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
                 <SelectValue placeholder="Filter by Role" />
               </SelectTrigger>
@@ -212,7 +207,7 @@ export default function ViewAllUsersPage() {
               </SelectContent>
             </Select>
             <Select value={filters.status || "all"} onValueChange={(value) => handleFilterChange("status", value)}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-full sm:w-auto min-w-[180px]">
                 <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
                 <SelectValue placeholder="Filter by Status" />
               </SelectTrigger>
@@ -242,52 +237,52 @@ export default function ViewAllUsersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[50px]"></TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead className="text-center">Role</TableHead>
-                    <TableHead>Details</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                    <TableHead className="hidden md:table-cell">Last Login</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="w-[50px] px-2 sm:px-4"></TableHead>
+                    <TableHead className="px-2 sm:px-4">Name</TableHead>
+                    <TableHead className="px-2 sm:px-4">Email</TableHead>
+                    <TableHead className="text-center px-2 sm:px-4">Role</TableHead>
+                    <TableHead className="px-2 sm:px-4 min-w-[200px]">Details</TableHead>
+                    <TableHead className="text-center px-2 sm:px-4">Status</TableHead>
+                    <TableHead className="hidden md:table-cell px-2 sm:px-4">Last Login</TableHead>
+                    <TableHead className="text-right px-2 sm:px-4">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.map((user) => (
                     <TableRow key={user.uid}>
-                      <TableCell>
+                      <TableCell className="px-2 sm:px-4">
                         <Avatar className="h-9 w-9">
                           <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "User"} data-ai-hint="user avatar" />
                           <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
                         </Avatar>
                       </TableCell>
-                      <TableCell className="font-medium">{user.displayName}</TableCell>
-                      <TableCell className="text-muted-foreground text-xs">{user.email}</TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="font-medium px-2 sm:px-4">{user.displayName}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs px-2 sm:px-4">{user.email}</TableCell>
+                      <TableCell className="text-center px-2 sm:px-4">
                         <Badge variant={user.role === 'admin' ? "destructive" : user.role === 'lecturer' ? "secondary" : "outline" } className="capitalize text-xs">
                           {user.role}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap px-2 sm:px-4">
                         {user.role === 'student' && (
                           <>
-                            <span className="block">Matricule: {user.matricule || 'N/A'}</span>
+                            <span className="block">Mat: {user.matricule || 'N/A'}</span>
                             <span className="block">Dept: {user.department || 'N/A'}</span>
-                            <span className="block">Level: {user.level || 'N/A'}</span>
-                            <span className="block truncate max-w-xs" title={user.program || 'N/A'}>Prog: {user.program || 'N/A'}</span>
+                            <span className="block">Lvl: {user.level || 'N/A'}</span>
+                            <span className="block truncate max-w-[150px] sm:max-w-xs" title={user.program || 'N/A'}>Prog: {user.program || 'N/A'}</span>
                           </>
                         )}
                         {user.role === 'lecturer' && <span className="block">Dept: {user.department || 'N/A'}</span>}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center px-2 sm:px-4">
                         <Badge variant={getStatusBadgeVariant(user.status)} className="capitalize text-xs">
                           {user.status?.replace('_', ' ')}
                         </Badge>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell text-xs text-muted-foreground">
+                      <TableCell className="hidden md:table-cell text-xs text-muted-foreground px-2 sm:px-4">
                         {user.lastLogin ? format(parseISO(user.lastLogin as string), "MMM dd, yyyy p") : 'Never'}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right px-2 sm:px-4">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon">
@@ -327,13 +322,11 @@ export default function ViewAllUsersPage() {
           )}
         </CardContent>
         <CardFooter>
-          {/* Placeholder for pagination controls */}
           <p className="text-xs text-muted-foreground">
-            Showing {filteredUsers.length} of {users.length} total users.
+            Showing {filteredUsers.length} of {users.length} total users. Pagination not yet implemented.
           </p>
         </CardFooter>
       </Card>
     </motion.div>
   );
 }
-

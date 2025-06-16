@@ -5,20 +5,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { BookOpen, GraduationCap, CreditCard, FileText, Download, User, Edit3, Settings, LogOut, HelpCircle, History, ChevronDown, Info, Phone, Mail, MapPin, Smartphone, Building, Users as GuardianIcon, Briefcase, CalendarDays, ShieldAlert, Award, Globe, School, Loader2, Bell, AlertTriangle, CheckCircle as CheckCircleIcon, MessageSquare, FileWarning, Video } from "lucide-react";
+import { BookOpen, GraduationCap, CreditCard, FileText, Download, User, Edit3, Settings, LogOut, HelpCircle, History, ChevronDown, Info, Phone, Mail, MapPin, Smartphone, Building, Users as GuardianIcon, Briefcase, CalendarDays, ShieldAlert, Award, Globe, School, Loader2, Bell, AlertTriangle, CheckCircle as CheckCircleIcon, MessageSquare, FileWarning, Video, PresentationIcon } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
 import { useState, useEffect, useMemo } from "react";
 import type { Course, Notification, NotificationType, FeeItem } from "@/types";
-import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS, ALL_UNIVERSITY_COURSES } from "@/config/data"; // Import ALL_UNIVERSITY_COURSES
+import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS, ALL_UNIVERSITY_COURSES, getGradeDetailsFromScore } from "@/config/data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNowStrict, parseISO } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-// Fee Constants
+// Fee Constants (ensure these match what's in payments/page.tsx or central config)
 const BASE_TUITION = 350000;
 const REGISTRATION_FEE = 25000;
 const MEDICALS_FEE = 5000;
@@ -173,56 +173,36 @@ export function StudentDashboard() {
   const currentAcademicYear = profile?.currentAcademicYear || "Academic Year Not Set";
   const currentSemester = profile?.currentSemester || "Semester Not Set";
 
-  const studentMockPersonalData = {
-    matricule: profile?.matricule || "N/A",
-    gender: profile?.gender || "N/A",
-    dateOfBirth: profile?.dateOfBirth || "N/A",
-    placeOfBirth: profile?.placeOfBirth || "N/A",
-    regionOfOrigin: profile?.regionOfOrigin || "N/A",
-    maritalStatus: profile?.maritalStatus || "N/A",
-    nidOrPassport: profile?.nidOrPassport || "N/A",
-    nationality: profile?.nationality || "N/A",
-    admissionDate: "2022-09-01",
-    studentStatus: "Cameroonian (National)",
-    address: profile?.address || "N/A",
-    emergencyContactName: "John Doe (Father)",
-    emergencyContactPhone: "+237 6XX XXX XXX",
-    guardianName: profile?.guardianName || "N/A",
-    guardianAddress: profile?.guardianAddress || "N/A",
-    guardianPhone: profile?.guardianPhone || "N/A",
-    phone: profile?.phone || "N/A"
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="space-y-8"
+      className="space-y-6 md:space-y-8 pb-8"
     >
       <Card className="overflow-hidden shadow-xl">
-        <CardHeader className="bg-gradient-to-r from-primary/10 via-card to-card p-6">
-          <div className="flex flex-col sm:flex-row items-center gap-6">
+        <CardHeader className="bg-gradient-to-r from-primary/10 via-card to-card p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row items-center gap-4 md:gap-6">
             <Link href="/profile" className="relative group">
-              <Avatar className="h-28 w-28 ring-4 ring-primary ring-offset-background ring-offset-2 group-hover:ring-accent transition-all duration-300">
+              <Avatar className="h-20 w-20 sm:h-28 sm:w-28 ring-4 ring-primary ring-offset-background ring-offset-2 group-hover:ring-accent transition-all duration-300">
                 <AvatarImage src={profile?.photoURL || undefined} alt={profile?.displayName || "User"} data-ai-hint="user avatar" />
-                <AvatarFallback className="text-4xl bg-muted">{getInitials(profile?.displayName)}</AvatarFallback>
+                <AvatarFallback className="text-3xl md:text-4xl bg-muted">{getInitials(profile?.displayName)}</AvatarFallback>
               </Avatar>
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <Edit3 className="h-8 w-8 text-white" />
+                <Edit3 className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
               </div>
             </Link>
             <div className="flex-grow text-center sm:text-left">
-              <CardTitle className="font-headline text-4xl text-foreground">Hi, {profile?.displayName || "Student"}!</CardTitle>
-              <CardDescription className="text-lg text-muted-foreground mt-1">
-                {academicProgram} <br />
-                {currentAcademicYear} &bull; {currentSemester}
+              <CardTitle className="font-headline text-3xl md:text-4xl text-foreground">Hi, {profile?.displayName || "Student"}!</CardTitle>
+              <CardDescription className="text-md md:text-lg text-muted-foreground mt-1">
+                {academicProgram} <br className="sm:hidden" />
+                <span className="hidden sm:inline">&bull; </span> {currentAcademicYear} &bull; {currentSemester}
               </CardDescription>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="ml-auto shrink-0">
-                  Profile & Settings <ChevronDown className="ml-2 h-4 w-4" />
+                <Button variant="outline" className="mt-3 sm:mt-0 ml-auto shrink-0">
+                  Account <ChevronDown className="ml-2 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-60">
@@ -263,208 +243,104 @@ export function StudentDashboard() {
         </CardHeader>
       </Card>
 
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-headline text-2xl"><Info className="text-primary h-6 w-6"/>Personal & Academic Information</CardTitle>
-          <CardDescription>
-            Your registered details. Academic information is used for course display. Contact administration for corrections.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6 pt-2">
-
-          <div>
-            <h3 className="font-semibold text-lg text-foreground/90 mt-2 mb-3 border-b pb-2 flex items-center gap-2"><User className="h-5 w-5 text-accent"/>Identity Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Full Name:</strong> <span className="text-foreground/90">{profile?.displayName || "N/A"}</span></div>
-              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Gender:</strong> <span className="text-foreground/90">{profile?.gender || "N/A"}</span></div>
-              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Date of Birth:</strong> <span className="text-foreground/90">{profile?.dateOfBirth || "N/A"}</span></div>
-              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Place of Birth:</strong> <span className="text-foreground/90">{profile?.placeOfBirth || "N/A"}</span></div>
-              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Region of Origin:</strong> <span className="text-foreground/90">{profile?.regionOfOrigin || "N/A"}</span></div>
-              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Marital Status:</strong> <span className="text-foreground/90">{profile?.maritalStatus || "N/A"}</span></div>
-              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">NID/Passport:</strong> <span className="text-foreground/90">{profile?.nidOrPassport || "N/A"}</span></div>
-              <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Nationality:</strong> <span className="text-foreground/90">{profile?.nationality || "N/A"}</span></div>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="font-semibold text-lg text-foreground/90 mt-6 mb-3 border-b pb-2 flex items-center gap-2"><School className="h-5 w-5 text-accent"/>Academic Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Matricule:</strong> <span className="font-mono text-foreground/90">{profile?.matricule || "N/A"}</span></div>
-                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Degree Program:</strong> <span className="text-foreground/90">{academicProgram}</span></div>
-                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Department:</strong> <span className="text-foreground/90">{studentDepartment}</span></div>
-                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Current Level:</strong> <span className="text-foreground/90">{studentLevel}</span></div>
-                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Academic Year:</strong> <span className="text-foreground/90">{currentAcademicYear}</span></div>
-                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Current Semester:</strong> <span className="text-foreground/90">{currentSemester}</span></div>
-                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Admission Date:</strong> <span className="text-foreground/90">{studentMockPersonalData.admissionDate}</span></div>
-                <div className="flex items-start gap-2"><strong className="w-32 text-muted-foreground">Student Status:</strong> <span className="text-foreground/90">{studentMockPersonalData.studentStatus}</span></div>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="font-semibold text-lg text-foreground/90 mt-6 mb-3 border-b pb-2 flex items-center gap-2"><Mail className="h-5 w-5 text-accent"/>Contact Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-              <div className="flex items-start gap-2"><Phone className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Phone:</strong> <span className="text-foreground/90">{profile?.phone || "N/A"}</span></div>
-              <div className="flex items-start gap-2"><Mail className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Email:</strong> <span className="text-foreground/90">{profile?.email || "N/A"}</span></div>
-              <div className="md:col-span-2 flex items-start gap-2"><MapPin className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Address:</strong> <span className="text-foreground/90">{profile?.address || "N/A"}</span></div>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="font-semibold text-lg text-foreground/90 mt-6 mb-3 border-b pb-2 flex items-center gap-2"><GuardianIcon className="h-5 w-5 text-accent"/>Guardian Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-              <div className="flex items-start gap-2"><User className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-32 text-muted-foreground">Guardian Name:</strong> <span className="text-foreground/90">{profile?.guardianName || "N/A"}</span></div>
-              <div className="flex items-start gap-2"><Phone className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Phone:</strong> <span className="text-foreground/90">{profile?.guardianPhone || "N/A"}</span></div>
-              <div className="md:col-span-2 flex items-start gap-2"><MapPin className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Address:</strong> <span className="text-foreground/90">{profile?.guardianAddress || "N/A"}</span></div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.1 }}>
-        <Card className="shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Bell className="text-primary"/>Recent Notifications</CardTitle>
-            <CardDescription>Stay updated with important announcements and alerts.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoadingNotifications ? (
-              <div className="space-y-3">
-                {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
-              </div>
-            ) : notifications.length > 0 ? (
-              <ScrollArea className="h-[280px] pr-3">
-                <ul className="space-y-3">
-                  {notifications.slice(0, 5).map(notif => {
-                    const Icon = getNotificationIcon(notif.type);
-                    const isClickable = !!notif.link;
-                    const NotificationItemWrapper = isClickable ? Link : 'div';
-                    const wrapperProps = isClickable ? { href: notif.link! } : {};
-
-                    return (
-                      <li key={notif.id}>
-                        <NotificationItemWrapper {...wrapperProps}>
-                          <div
-                            className={cn(
-                              "flex items-start gap-3 p-3 rounded-lg border transition-colors",
-                              !notif.isRead && "bg-primary/5 border-primary/20 hover:bg-primary/10",
-                              notif.isRead && "bg-muted/50 hover:bg-muted/70",
-                              isClickable && "cursor-pointer"
-                            )}
-                            onClick={() => !isClickable && handleNotificationClick(notif.id)}
-                          >
-                            <Icon className={cn("h-5 w-5 mt-0.5 shrink-0",
-                                !notif.isRead ? 'text-primary' : 'text-muted-foreground'
-                            )} />
-                            <div className="flex-grow">
-                              <div className="flex justify-between items-start">
-                                <h4 className={cn("font-medium text-sm", !notif.isRead && "text-foreground")}>{notif.title}</h4>
-                                {!notif.isRead && <span className="h-2 w-2 rounded-full bg-primary shrink-0 ml-2 mt-1.5" title="Unread"></span>}
-                              </div>
-                              <p className={cn("text-xs", !notif.isRead ? "text-foreground/80" : "text-muted-foreground")}>{notif.description}</p>
-                              <p className={cn("text-xs mt-1", !notif.isRead ? "text-foreground/60" : "text-muted-foreground/80")}>
-                                {formatDistanceToNowStrict(parseISO(notif.timestamp), { addSuffix: true })}
-                              </p>
-                            </div>
-                          </div>
-                        </NotificationItemWrapper>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </ScrollArea>
-            ) : (
-              <div className="text-center py-6">
-                <Image src="https://placehold.co/200x150.png" alt="No notifications" width={100} height={75} className="mx-auto mb-3 rounded-md opacity-70" data-ai-hint="empty bell notification" />
-                <p className="text-muted-foreground">No new notifications.</p>
-              </div>
-            )}
-          </CardContent>
-          <CardFooter>
-            <Button variant="outline" className="w-full" asChild>
-                <Link href="/dashboard/notifications">View All Notifications</Link>
+      {/* Quick Links Section */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+        {[
+          { title: 'Courses', href: '/courses', icon: BookOpen },
+          { title: 'Timetable', href: '/dashboard/student/timetable', icon: CalendarDays },
+          { title: 'Grades', href: '/dashboard/student/grades', icon: GraduationCap },
+          { title: 'Payments', href: '/dashboard/student/payments', icon: CreditCard },
+          { title: 'Materials', href: '/dashboard/student/e-learning/materials', icon: FolderArchive },
+          { title: 'Assignments', href: '/dashboard/student/e-learning/assignments', icon: ClipboardCheck },
+        ].map(item => (
+          <Link href={item.href} key={item.title} passHref>
+            <Button variant="outline" className="w-full h-20 md:h-24 flex flex-col items-center justify-center gap-1.5 text-center shadow-sm hover:shadow-md hover:border-primary transition-all">
+              <item.icon className="h-6 w-6 md:h-7 md:w-7 text-primary" />
+              <span className="text-xs md:text-sm text-muted-foreground">{item.title}</span>
             </Button>
-          </CardFooter>
-        </Card>
-      </motion.div>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.2 }}>
-          <Card className="lg:col-span-2 h-full shadow-md hover:shadow-lg transition-shadow">
+          </Link>
+        ))}
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+        <motion.div className="lg:col-span-2" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.1 }}>
+          <Card className="shadow-md hover:shadow-lg transition-shadow h-full">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><BookOpen className="text-primary"/>Registered Courses</CardTitle>
-              <CardDescription>Your courses for {currentSemester}, {currentAcademicYear}.</CardDescription>
+              <CardTitle className="flex items-center gap-2"><Bell className="text-primary"/>Recent Notifications</CardTitle>
+              <CardDescription>Stay updated with important announcements and alerts.</CardDescription>
             </CardHeader>
-            <CardContent>
-              {isLoadingCourses ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
+            <CardContent className="p-0">
+              {isLoadingNotifications ? (
+                <div className="p-4 space-y-3">
+                  {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
                 </div>
-              ) : displayedEnrolledCourses.length > 0 ? (
-                <ul className="space-y-3">
-                  {displayedEnrolledCourses.map(course => (
-                    <li key={course.id} className="flex justify-between items-center p-3 bg-secondary/30 rounded-md hover:bg-secondary/50 transition-colors">
-                      <div>
-                        <h3 className="font-medium">{course.title} ({course.code})</h3>
-                        <p className="text-sm text-muted-foreground">{course.credits} Credits</p>
-                      </div>
-                      <span className={`px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300`}>Registered</span>
-                    </li>
-                  ))}
-                </ul>
+              ) : notifications.length > 0 ? (
+                <ScrollArea className="h-[280px] p-4">
+                  <ul className="space-y-3">
+                    {notifications.slice(0, 5).map(notif => {
+                      const Icon = getNotificationIcon(notif.type);
+                      const isClickable = !!notif.link;
+                      const NotificationItemWrapper = isClickable ? Link : 'div';
+                      const wrapperProps = isClickable ? { href: notif.link! } : {};
+
+                      return (
+                        <li key={notif.id}>
+                          <NotificationItemWrapper {...wrapperProps}>
+                            <div
+                              className={cn(
+                                "flex items-start gap-3 p-3 rounded-lg border transition-colors",
+                                !notif.isRead && "bg-primary/5 border-primary/20 hover:bg-primary/10",
+                                notif.isRead && "bg-muted/50 hover:bg-muted/70",
+                                isClickable && "cursor-pointer"
+                              )}
+                              onClick={() => !isClickable && handleNotificationClick(notif.id)}
+                            >
+                              <Icon className={cn("h-5 w-5 mt-0.5 shrink-0",
+                                  !notif.isRead ? 'text-primary' : 'text-muted-foreground'
+                              )} />
+                              <div className="flex-grow">
+                                <div className="flex justify-between items-start">
+                                  <h4 className={cn("font-medium text-sm", !notif.isRead && "text-foreground")}>{notif.title}</h4>
+                                  {!notif.isRead && <span className="h-2 w-2 rounded-full bg-primary shrink-0 ml-2 mt-1.5" title="Unread"></span>}
+                                </div>
+                                <p className={cn("text-xs", !notif.isRead ? "text-foreground/80" : "text-muted-foreground")}>{notif.description}</p>
+                                <p className={cn("text-xs mt-1", !notif.isRead ? "text-foreground/60" : "text-muted-foreground/80")}>
+                                  {formatDistanceToNowStrict(parseISO(notif.timestamp), { addSuffix: true })}
+                                </p>
+                              </div>
+                            </div>
+                          </NotificationItemWrapper>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </ScrollArea>
               ) : (
-                 <div className="text-center py-6">
-                    <Image src="https://placehold.co/200x150.png" alt="No courses registered" width={100} height={75} className="mx-auto mb-3 rounded-md opacity-70" data-ai-hint="empty list book" />
-                    <p className="text-muted-foreground">No courses registered for the current period.</p>
+                <div className="text-center py-6 p-4">
+                  <Image src="https://placehold.co/200x150.png" alt="No notifications" width={100} height={75} className="mx-auto mb-3 rounded-md opacity-70" data-ai-hint="empty bell notification" />
+                  <p className="text-muted-foreground">No new notifications.</p>
                 </div>
               )}
             </CardContent>
-            <CardFooter>
+            <CardFooter className="border-t pt-4">
               <Button variant="outline" className="w-full" asChild>
-                <Link href="/courses">View All Courses & Register</Link>
+                  <Link href="/dashboard/notifications">View All Notifications</Link>
               </Button>
             </CardFooter>
           </Card>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.25 }}>
+        <motion.div className="lg:col-span-1" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.15 }}>
           <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><GraduationCap className="text-primary"/>Recent Grades</CardTitle>
-              <CardDescription>Summary of your academic performance.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-md">
-                <p className="font-medium">Overall GPA</p>
-                <p className="text-xl font-semibold text-primary">3.15</p>
-              </div>
-              <p className="text-sm text-muted-foreground">Detailed results and transcripts are in "Results".</p>
-              <Button className="w-full" asChild>
-                <Link href="/dashboard/student/grades">
-                  <FileText className="mr-2 h-4 w-4"/> View My Results
-                </Link>
-              </Button>
-              <Button variant="outline" className="w-full" asChild>
-                <Link href="/dashboard/student/grades/transcript">
-                  <Download className="mr-2 h-4 w-4"/> Download Transcript
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.3 }}>
-          <Card className="md:col-span-2 lg:col-span-1 h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><CreditCard className="text-primary"/>Tuition Status</CardTitle>
               <CardDescription>Overview of your fee payments.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {isLoadingFees ? (
+              {isLoadingFees || authLoading ? (
                 <>
-                  <Skeleton className="h-6 w-3/4" />
-                  <Skeleton className="h-6 w-1/2" />
+                  <Skeleton className="h-6 w-3/4 mb-1" />
+                  <Skeleton className="h-6 w-1/2 mb-1" />
                   <Skeleton className="h-6 w-2/3" />
                 </>
               ) : (
@@ -475,7 +351,7 @@ export function StudentDashboard() {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Amount Paid:</span>
-                    <span className="font-semibold">{CURRENCY} {amountPaid.toLocaleString()}</span>
+                    <span className="font-semibold text-green-600 dark:text-green-400">{CURRENCY} {amountPaid.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Balance:</span>
@@ -492,25 +368,7 @@ export function StudentDashboard() {
             </CardContent>
           </Card>
         </motion.div>
-
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.35 }}>
-          <Card className="lg:col-span-2 h-full shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Award className="text-primary"/>Announcements &amp; Events</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Image src="https://placehold.co/600x200.png" alt="University Event" width={600} height={200} className="rounded-md mb-4" data-ai-hint="university campus event" />
-              <p className="text-muted-foreground">Stay updated with the latest news and events from the university.</p>
-              <ul className="space-y-2 mt-3">
-                <li className="text-sm p-2 bg-secondary/30 rounded-md hover:bg-secondary/50 transition-colors flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-accent"/>Second semester registration deadline approaching!</li>
-                <li className="text-sm p-2 bg-secondary/30 rounded-md hover:bg-secondary/50 transition-colors flex items-center gap-2"><CalendarDays className="h-4 w-4 text-accent"/>Career fair - Nov 15th.</li>
-              </ul>
-            </CardContent>
-          </Card>
-        </motion.div>
       </div>
     </motion.div>
   );
 }
-
-    
