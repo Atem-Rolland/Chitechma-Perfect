@@ -5,14 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { BookOpen, GraduationCap, CreditCard, FileText, Download, User, Edit3, Settings, LogOut, HelpCircle, History, ChevronDown, Info, Phone, Mail, MapPin, Smartphone, Building, Users as GuardianIcon, Briefcase, CalendarDays, ShieldAlert, Award, Globe, School, Loader2, Bell, AlertTriangle, CheckCircle as CheckCircleIcon, MessageSquare, FileWarning, Video } from "lucide-react"; // Renamed CheckCircle
+import { BookOpen, GraduationCap, CreditCard, FileText, Download, User, Edit3, Settings, LogOut, HelpCircle, History, ChevronDown, Info, Phone, Mail, MapPin, Smartphone, Building, Users as GuardianIcon, Briefcase, CalendarDays, ShieldAlert, Award, Globe, School, Loader2, Bell, AlertTriangle, CheckCircle as CheckCircleIcon, MessageSquare, FileWarning, Video } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
 import { useState, useEffect, useMemo } from "react";
-import type { Course, Notification, NotificationType, FeeItem } from "@/types"; 
-import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS } from "@/config/data";
+import type { Course, Notification, NotificationType, FeeItem } from "@/types";
+import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS, ALL_UNIVERSITY_COURSES } from "@/config/data"; // Import ALL_UNIVERSITY_COURSES
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNowStrict, parseISO } from 'date-fns';
 import { cn } from "@/lib/utils";
@@ -32,23 +32,10 @@ const FINAL_DEFENSE_FEE = 30000;
 const GRADUATION_FEE = 15000;
 const CURRENCY = "XAF";
 
-const MOCK_ALL_COURSES_SOURCE: Course[] = [
-  { id: "CSE301_CESM_Y2324_S1", title: "Introduction to Algorithms", code: "CSE301", description: "Fundamental algorithms and data structures. Prerequisite course.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2023/2024" },
-  { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401", description: "Detailed course description for Mobile Application Development. Covers native and cross-platform development.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 10-12, Wed 10-11, Lab Hall 1", prerequisites: ["CSE301"], semester: "First Semester", academicYear: "2024/2025" },
-  { id: "CSE409_CESM_Y2425_S1", title: "Software Development and OOP", code: "CSE409", description: "Detailed course description for Software Development and OOP. Focuses on object-oriented principles and design patterns.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Tue 14-16, Fri 8-9", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-  { id: "MGT403_CESM_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology. Introduction to research methods and academic writing.", department: DEPARTMENTS.CESM, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "AMPHI200, Wed 14-17", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-  { id: "CSE405_CESM_Y2425_S1", title: "Embedded Systems", code: "CSE405", description: "Detailed course description for Embedded Systems. Design and programming of embedded systems.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Thu 8-11", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-  { id: "NES403_CESM_Y2425_S1", title: "Modeling in Information System", code: "NES403", description: "Detailed course description for Modeling in Information System. Techniques for system modeling.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Elective", level: 400, schedule: "Fri 11-13, CR10", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-  { id: "CSE406_CESM_Y2425_S2", title: "Algorithm and Data Structure", code: "CSE406", description: "In-depth study of algorithms and data structures.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 8-10, CR1", prerequisites: ["CSE301", "CSE401"], semester: "Second Semester", academicYear: "2024/2025" },
-  { id: "CSE402_CESM_Y2425_S2", title: "Distributed Programming", code: "CSE402", description: "Concepts and practices in distributed programming.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "Tue 10-12, CR1", prerequisites: ["CSE409"], semester: "Second Semester", academicYear: "2024/2025" },
-];
-
-// Standardized localStorage key function
 const getLocalStorageKeyForAllRegistrations = (uid?: string) => {
   if (!uid) return null;
   return `allRegisteredCourses_${uid}`;
 };
-
 
 const MOCK_NOTIFICATIONS: Notification[] = [
   { id: "n1", title: "Grades Published for CSE301", description: "Your grades for Introduction to Algorithms are now available.", type: "grade_release", timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), isRead: false, link: "/dashboard/student/grades" },
@@ -68,52 +55,50 @@ const getNotificationIcon = (type: NotificationType): React.ElementType => {
     case 'forum_reply': return MessageSquare;
     case 'info': return Info;
     case 'warning': return AlertTriangle;
-    case 'success': return CheckCircleIcon; // Renamed
+    case 'success': return CheckCircleIcon;
     case 'course_update': return BookOpen;
     default: return Bell;
   }
 };
 
-
 export function StudentDashboard() {
-  const { user, profile, logout, loading: authLoading } = useAuth(); 
+  const { user, profile, logout, loading: authLoading } = useAuth();
   const [isLoadingCourses, setIsLoadingCourses] = useState(true);
   const [displayedEnrolledCourses, setDisplayedEnrolledCourses] = useState<Course[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
 
   const [totalFeesDue, setTotalFeesDue] = useState(0);
-  const [amountPaid, setAmountPaid] = useState(0); 
+  const [amountPaid, setAmountPaid] = useState(0);
   const [isLoadingFees, setIsLoadingFees] = useState(true);
 
   useEffect(() => {
     async function loadRegisteredCoursesForDashboard() {
       setIsLoadingCourses(true);
-      // No need for API delay here, localStorage is fast
       if (profile && user?.uid && typeof window !== 'undefined') {
         const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
         let studentRegisteredIds: string[] = [];
         if (storageKey) {
-            const storedIds = localStorage.getItem(storageKey);
-            if (storedIds) {
-                try {
-                    const parsedIds = JSON.parse(storedIds);
-                    if (Array.isArray(parsedIds)) studentRegisteredIds = parsedIds;
-                } catch (e) {
-                    console.error("Failed to parse registered courses from localStorage for dashboard:", e);
-                }
+          const storedIds = localStorage.getItem(storageKey);
+          if (storedIds) {
+            try {
+              const parsedIds = JSON.parse(storedIds);
+              if (Array.isArray(parsedIds)) studentRegisteredIds = parsedIds;
+            } catch (e) {
+              console.error("Failed to parse registered courses from localStorage for dashboard:", e);
             }
+          }
         }
-        
-        const studentCurrentYear = profile.currentAcademicYear || ACADEMIC_YEARS[2]; 
-        const studentCurrentSemester = profile.currentSemester || SEMESTERS[0]; 
 
-        const filtered = MOCK_ALL_COURSES_SOURCE.filter(course => 
-            studentRegisteredIds.includes(course.id) &&
-            course.academicYear === studentCurrentYear &&
-            course.semester === studentCurrentSemester &&
-            course.department === profile.department &&
-            course.level === profile.level
+        const studentCurrentYear = profile.currentAcademicYear || ACADEMIC_YEARS[2];
+        const studentCurrentSemester = profile.currentSemester || SEMESTERS[0];
+
+        const filtered = ALL_UNIVERSITY_COURSES.filter(course =>
+          studentRegisteredIds.includes(course.id) &&
+          course.academicYear === studentCurrentYear &&
+          course.semester === studentCurrentSemester &&
+          course.department === profile.department &&
+          course.level === profile.level
         );
         setDisplayedEnrolledCourses(filtered);
       } else {
@@ -123,10 +108,10 @@ export function StudentDashboard() {
     }
 
     async function loadNotifications() {
-        setIsLoadingNotifications(true);
-        await new Promise(resolve => setTimeout(resolve, 700)); 
-        setNotifications(MOCK_NOTIFICATIONS.sort((a,b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime()));
-        setIsLoadingNotifications(false);
+      setIsLoadingNotifications(true);
+      await new Promise(resolve => setTimeout(resolve, 700));
+      setNotifications(MOCK_NOTIFICATIONS.sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime()));
+      setIsLoadingNotifications(false);
     }
 
     if (profile && !authLoading) {
@@ -152,22 +137,20 @@ export function StudentDashboard() {
       setTotalFeesDue(currentTotal);
       setIsLoadingFees(false);
     } else if (!authLoading && !profile) {
-        setIsLoadingFees(false);
+      setIsLoadingFees(false);
     }
 
-
-    if (profile && !authLoading) { 
-        loadRegisteredCoursesForDashboard();
-        loadNotifications();
-    } else if (!authLoading) { // If auth is done but no profile, still set loading states to false
-        setIsLoadingCourses(false); 
-        setIsLoadingNotifications(false);
-        setIsLoadingFees(false);
+    if (profile && !authLoading) {
+      loadRegisteredCoursesForDashboard();
+      loadNotifications();
+    } else if (!authLoading) {
+      setIsLoadingCourses(false);
+      setIsLoadingNotifications(false);
+      setIsLoadingFees(false);
     }
   }, [profile, user?.uid, authLoading]);
 
   const balance = useMemo(() => totalFeesDue - amountPaid, [totalFeesDue, amountPaid]);
-
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return "U";
@@ -179,12 +162,12 @@ export function StudentDashboard() {
   };
 
   const handleNotificationClick = (notificationId: string) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
+    setNotifications(prev =>
+      prev.map(n => (n.id === notificationId ? { ...n, isRead: true } : n))
     );
   };
 
-  const academicProgram = profile?.program || "Program Not Set"; 
+  const academicProgram = profile?.program || "Program Not Set";
   const studentDepartment = profile?.department || "Department Not Set";
   const studentLevel = profile?.level ? `Level ${profile.level}` : "Level Not Set";
   const currentAcademicYear = profile?.currentAcademicYear || "Academic Year Not Set";
@@ -199,20 +182,19 @@ export function StudentDashboard() {
     maritalStatus: profile?.maritalStatus || "N/A",
     nidOrPassport: profile?.nidOrPassport || "N/A",
     nationality: profile?.nationality || "N/A",
-    admissionDate: "2022-09-01", 
-    studentStatus: "Cameroonian (National)", 
+    admissionDate: "2022-09-01",
+    studentStatus: "Cameroonian (National)",
     address: profile?.address || "N/A",
-    emergencyContactName: "John Doe (Father)", 
-    emergencyContactPhone: "+237 6XX XXX XXX", 
+    emergencyContactName: "John Doe (Father)",
+    emergencyContactPhone: "+237 6XX XXX XXX",
     guardianName: profile?.guardianName || "N/A",
     guardianAddress: profile?.guardianAddress || "N/A",
     guardianPhone: profile?.guardianPhone || "N/A",
     phone: profile?.phone || "N/A"
   };
 
-
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
@@ -258,14 +240,14 @@ export function StudentDashboard() {
                     Settings
                   </DropdownMenuItem>
                 </Link>
-                <Link href="/dashboard/student/payments/history" passHref> 
-                   <DropdownMenuItem>
+                <Link href="/dashboard/student/payments/history" passHref>
+                  <DropdownMenuItem>
                     <History className="mr-2 h-4 w-4" />
                     View Transaction History
                   </DropdownMenuItem>
                 </Link>
                 <DropdownMenuSeparator />
-                <Link href="/help" passHref> 
+                <Link href="/help" passHref>
                   <DropdownMenuItem>
                     <HelpCircle className="mr-2 h-4 w-4" />
                     Contact Support (Placeholder)
@@ -289,7 +271,7 @@ export function StudentDashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 pt-2">
-          
+
           <div>
             <h3 className="font-semibold text-lg text-foreground/90 mt-2 mb-3 border-b pb-2 flex items-center gap-2"><User className="h-5 w-5 text-accent"/>Identity Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
@@ -326,7 +308,7 @@ export function StudentDashboard() {
               <div className="md:col-span-2 flex items-start gap-2"><MapPin className="h-4 w-4 mr-1 mt-0.5 text-muted-foreground shrink-0"/><strong className="w-28 text-muted-foreground">Address:</strong> <span className="text-foreground/90">{profile?.address || "N/A"}</span></div>
             </div>
           </div>
-          
+
           <div>
             <h3 className="font-semibold text-lg text-foreground/90 mt-6 mb-3 border-b pb-2 flex items-center gap-2"><GuardianIcon className="h-5 w-5 text-accent"/>Guardian Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
@@ -352,25 +334,25 @@ export function StudentDashboard() {
             ) : notifications.length > 0 ? (
               <ScrollArea className="h-[280px] pr-3">
                 <ul className="space-y-3">
-                  {notifications.slice(0, 5).map(notif => { 
+                  {notifications.slice(0, 5).map(notif => {
                     const Icon = getNotificationIcon(notif.type);
                     const isClickable = !!notif.link;
                     const NotificationItemWrapper = isClickable ? Link : 'div';
-                    const wrapperProps = isClickable ? { href: notif.link! } : {}; 
+                    const wrapperProps = isClickable ? { href: notif.link! } : {};
 
                     return (
                       <li key={notif.id}>
                         <NotificationItemWrapper {...wrapperProps}>
-                          <div 
+                          <div
                             className={cn(
                               "flex items-start gap-3 p-3 rounded-lg border transition-colors",
                               !notif.isRead && "bg-primary/5 border-primary/20 hover:bg-primary/10",
                               notif.isRead && "bg-muted/50 hover:bg-muted/70",
                               isClickable && "cursor-pointer"
                             )}
-                            onClick={() => !isClickable && handleNotificationClick(notif.id)} 
+                            onClick={() => !isClickable && handleNotificationClick(notif.id)}
                           >
-                            <Icon className={cn("h-5 w-5 mt-0.5 shrink-0", 
+                            <Icon className={cn("h-5 w-5 mt-0.5 shrink-0",
                                 !notif.isRead ? 'text-primary' : 'text-muted-foreground'
                             )} />
                             <div className="flex-grow">
@@ -404,7 +386,6 @@ export function StudentDashboard() {
           </CardFooter>
         </Card>
       </motion.div>
-
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.2 }}>
@@ -441,7 +422,7 @@ export function StudentDashboard() {
             </CardContent>
             <CardFooter>
               <Button variant="outline" className="w-full" asChild>
-                <Link href="/courses">View All Courses & Register</Link> 
+                <Link href="/courses">View All Courses & Register</Link>
               </Button>
             </CardFooter>
           </Card>
@@ -456,7 +437,7 @@ export function StudentDashboard() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-md">
                 <p className="font-medium">Overall GPA</p>
-                <p className="text-xl font-semibold text-primary">3.15</p> 
+                <p className="text-xl font-semibold text-primary">3.15</p>
               </div>
               <p className="text-sm text-muted-foreground">Detailed results and transcripts are in "Results".</p>
               <Button className="w-full" asChild>
@@ -465,14 +446,14 @@ export function StudentDashboard() {
                 </Link>
               </Button>
               <Button variant="outline" className="w-full" asChild>
-                <Link href="/dashboard/student/grades/transcript"> 
+                <Link href="/dashboard/student/grades/transcript">
                   <Download className="mr-2 h-4 w-4"/> Download Transcript
                 </Link>
               </Button>
             </CardContent>
           </Card>
         </motion.div>
-        
+
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.3 }}>
           <Card className="md:col-span-2 lg:col-span-1 h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
@@ -532,3 +513,4 @@ export function StudentDashboard() {
   );
 }
 
+    

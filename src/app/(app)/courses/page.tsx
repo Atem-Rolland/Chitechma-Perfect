@@ -19,135 +19,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS } from "@/config/data";
+import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS, ALL_UNIVERSITY_COURSES } from "@/config/data"; // Import ALL_UNIVERSITY_COURSES
 
 const CourseDetailDialog = dynamic(() => import('@/components/courses/CourseDetailDialog'), {
   suspense: true,
-  loading: () => <p className="p-4 text-center">Loading details...</p> 
+  loading: () => <p className="p-4 text-center">Loading details...</p>
 });
 
-const MIN_CREDITS = 1; // Loosened
-const MAX_CREDITS = 100; // Loosened
+const MIN_CREDITS = 1;
+const MAX_CREDITS = 100;
 
-// Mock data fetching function - replace with actual Firestore/Supabase query for courses if needed
-async function fetchCourses(): Promise<Course[]> {
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  const mockCourses: Course[] = [
-    { id: "CSE301_CESM_Y2324_S1", title: "Introduction to Algorithms", code: "CSE301", description: "Fundamental algorithms and data structures.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2023/2024" },
-    { id: "LAW101_CESM_Y2223_S1", title: "Introduction to Law", code: "LAW101", description: "Basic legal principles.", department: DEPARTMENTS.CESM, lecturerId: "lect_law", lecturerName: "Barr. Tabi", credits: 1, type: "General", level: 200, schedule: "Mon 8:00-9:00, AMPHI100", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "ENG102_CESM_Y2223_S1", title: "English Language", code: "ENG102", description: "Communication skills in English.", department: DEPARTMENTS.CESM, lecturerId: "lect_eng", lecturerName: "Ms. Anja", credits: 1, type: "General", level: 200, schedule: "Tue 14:00-15:00, CR15", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "CVE100_CESM_Y2223_S1", title: "Civics and Moral Education", code: "CVE100", description: "Civic responsibilities and ethics.", department: DEPARTMENTS.CESM, lecturerId: "lect_civ", lecturerName: "Dr. Fomba", credits: 1, type: "General", level: 200, schedule: "Wed 10:00-11:00, AMPHI150", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "MGT104_CESM_Y2223_S1", title: "Principle of Management", code: "MGT104", description: "Fundamentals of management.", department: DEPARTMENTS.CESM, lecturerId: "lect_mgt", lecturerName: "Mr. Boma", credits: 1, type: "General", level: 200, schedule: "Thu 8:00-9:00, CR20", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "FRE101_CESM_Y2223_S1", title: "French", code: "FRE101", description: "Basic French communication.", department: DEPARTMENTS.CESM, lecturerId: "lect_fr", lecturerName: "Mme. Abena", credits: 1, type: "General", level: 200, schedule: "Fri 11:00-12:00, CR12", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "ENT106_CESM_Y2223_S1", title: "Enterprise Creation", code: "ENT106", description: "Fundamentals of entrepreneurship.", department: DEPARTMENTS.CESM, lecturerId: "lect_ent", lecturerName: "Dr. Wanki", credits: 2, type: "General", level: 200, schedule: "Mon 10:00-12:00, AMPHI200", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "ECN107_CESM_Y2223_S1", title: "Economics", code: "ECN107", description: "Principles of economics.", department: DEPARTMENTS.CESM, lecturerId: "lect_eco", lecturerName: "Prof. Ndong", credits: 2, type: "General", level: 200, schedule: "Tue 8:00-10:00, CR25", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "SWE108_CESM_Y2223_S1", title: "Information System", code: "SWE108", description: "Introduction to information systems.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Compulsory", level: 200, schedule: "Wed 14:00-17:00, Lab Hall 2", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "SWE109_CESM_Y2223_S1", title: "Multimedia Tech", code: "SWE109", description: "Basics of multimedia technologies.", department: DEPARTMENTS.CESM, lecturerId: "lect_mm", lecturerName: "Mr. Kilo", credits: 3, type: "Compulsory", level: 200, schedule: "Thu 10:00-13:00, Media Lab", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "SWE110_CESM_Y2223_S1", title: "Digital Literacy", code: "SWE110", description: "Essential digital skills.", department: DEPARTMENTS.CESM, lecturerId: "lect_dl", lecturerName: "Ms. Sona", credits: 3, type: "Compulsory", level: 200, schedule: "Fri 8:00-11:00, Comp Lab 1", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "SWE111_CESM_Y2223_S1", title: "Introduction to Software Eng", code: "SWE111", description: "Foundations of software engineering.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 200, schedule: "Mon 14:00-17:00, AMPHI300", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "SWE112_CESM_Y2223_S1", title: "Introduction to Database", code: "SWE112", description: "Database concepts and SQL.", department: DEPARTMENTS.CESM, lecturerId: "lect_db1", lecturerName: "Dr. Ngwa", credits: 3, type: "Compulsory", level: 200, schedule: "Tue 10:00-13:00, Lab Hall 3", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "SWE113_CESM_Y2223_S1", title: "Computer Maintenance", code: "SWE113", description: "Hardware and software maintenance.", department: DEPARTMENTS.CESM, lecturerId: "lect_maint", lecturerName: "Mr. Tabi", credits: 3, type: "Compulsory", level: 200, schedule: "Wed 8:00-11:00, Workshop 1", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "SWE114_CESM_Y2223_S1", title: "Operating System", code: "SWE114", description: "Introduction to operating systems.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Compulsory", level: 200, schedule: "Thu 14:00-17:00, CR30", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "SWE115_CESM_Y2223_S1", title: "Digital Electronics", code: "SWE115", description: "Fundamentals of digital circuits.", department: DEPARTMENTS.CESM, lecturerId: "lect_de", lecturerName: "Dr. Asong", credits: 3, type: "Compulsory", level: 200, schedule: "Fri 14:00-17:00, Elec Lab", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "SWE116_CESM_Y2223_S1", title: "Discrete Maths", code: "SWE116", description: "Discrete mathematics for computing.", department: DEPARTMENTS.CESM, lecturerId: "lect_dm", lecturerName: "Prof. Lima", credits: 3, type: "Compulsory", level: 200, schedule: "Mon 9:00-10:00, Wed 11:00-13:00, CR35", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "INT100_CESM_Y2223_S2", title: "Internship report Writing", code: "INT100", description: "Guidance on internship report writing.", department: DEPARTMENTS.CESM, lecturerId: "coord01", lecturerName: "Coordinator", credits: 1, type: "General", level: 200, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2022/2023" },
-    { id: "SWE7_CESM_Y2223_S2", title: "Legal Regulations", code: "SWE7", description: "Legal aspects of software engineering.", department: DEPARTMENTS.CESM, lecturerId: "lect_law", lecturerName: "Barr. Tabi", credits: 1, type: "General", level: 200, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2022/2023" },
-    { id: "SWE90_CESM_Y2223_S2", title: "Computer Architechture", code: "SWE90", description: "Structure of computer systems.", department: DEPARTMENTS.CESM, lecturerId: "lect_ca", lecturerName: "Dr. Fai", credits: 3, type: "Compulsory", level: 200, schedule: "TBD", prerequisites: ["SWE115"], semester: "Second Semester", academicYear: "2022/2023" },
-    { id: "SWE91_CESM_Y2223_S2", title: "Discrete Math I", code: "SWE91", description: "Further discrete mathematics.", department: DEPARTMENTS.CESM, lecturerId: "lect_dm", lecturerName: "Prof. Lima", credits: 3, type: "Compulsory", level: 200, schedule: "TBD", prerequisites: ["SWE116"], semester: "Second Semester", academicYear: "2022/2023" },
-    { id: "SWE92_CESM_Y2223_S2", title: "Computer Programming I", code: "SWE92", description: "Introduction to programming (e.g., Python/Java).", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 200, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2022/2023" },
-    { id: "SWE93_CESM_Y2223_S2", title: "Introduction to web Programming", code: "SWE93", description: "HTML, CSS, JavaScript basics.", department: DEPARTMENTS.CESM, lecturerId: "lect_web1", lecturerName: "Ms. Bibi", credits: 3, type: "Compulsory", level: 200, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2022/2023" },
-    { id: "SWE94_CESM_Y2223_S2", title: "Data Structures and Algorithms", code: "SWE94", description: "Fundamental data structures and algorithms.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 200, schedule: "TBD", prerequisites: ["SWE92"], semester: "Second Semester", academicYear: "2022/2023" },
-    { id: "SWE95_CESM_Y2223_S2", title: "Information System II", code: "SWE95", description: "Advanced topics in information systems.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Compulsory", level: 200, schedule: "TBD", prerequisites: ["SWE108"], semester: "Second Semester", academicYear: "2022/2023" },
-    { id: "SWE96_CESM_Y2223_S2", title: "Operating System II", code: "SWE96", description: "Advanced operating system concepts.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Compulsory", level: 200, schedule: "TBD", prerequisites: ["SWE114"], semester: "Second Semester", academicYear: "2022/2023" },
-    { id: "LAW101_CPT_Y2223_S1", title: "Introduction to Law", code: "LAW101", description: "Basic legal principles for CPT.", department: DEPARTMENTS.CPT, lecturerId: "lect_law", lecturerName: "Barr. Tabi", credits: 1, type: "General", level: 200, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "ENG102_CPT_Y2223_S1", title: "English", code: "ENG102", description: "English for CPT.", department: DEPARTMENTS.CPT, lecturerId: "lect_eng", lecturerName: "Ms. Anja", credits: 1, type: "General", level: 200, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "CVE100_CPT_Y2223_S1", title: "Civics and Moral Education", code: "CVE100", description: "Civics for CPT.", department: DEPARTMENTS.CPT, lecturerId: "lect_civ", lecturerName: "Dr. Fomba", credits: 1, type: "General", level: 200, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "MGT104_CPT_Y2223_S1", title: "Principle of Management", code: "MGT104", description: "Management for CPT.", department: DEPARTMENTS.CPT, lecturerId: "lect_mgt", lecturerName: "Mr. Boma", credits: 1, type: "General", level: 200, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "FRE101_CPT_Y2223_S1", title: "French", code: "FRE101", description: "French for CPT.", department: DEPARTMENTS.CPT, lecturerId: "lect_fr", lecturerName: "Mme. Abena", credits: 1, type: "General", level: 200, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "ENT106_CPT_Y2223_S1", title: "Enterprise Creation", code: "ENT106", description: "Entrepreneurship for CPT.", department: DEPARTMENTS.CPT, lecturerId: "lect_ent", lecturerName: "Dr. Wanki", credits: 2, type: "General", level: 200, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "ECN107_CPT_Y2223_S1", title: "Economics", code: "ECN107", description: "Economics for CPT.", department: DEPARTMENTS.CPT, lecturerId: "lect_eco", lecturerName: "Prof. Ndong", credits: 2, type: "General", level: 200, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "CPT116_CPT_Y2223_S1", title: "Soil and Fertilization", code: "CPT116", description: "Soil science and fertilization techniques.", department: DEPARTMENTS.CPT, lecturerId: "lect_cpt1", lecturerName: "Dr. Soil", credits: 3, type: "Compulsory", level: 200, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "CPT114_CPT_Y2223_S1", title: "Crop physiology and Nutrition", code: "CPT114", description: "Understanding plant physiology and nutrition.", department: DEPARTMENTS.CPT, lecturerId: "lect_cpt2", lecturerName: "Prof. Plant", credits: 3, type: "Compulsory", level: 200, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "CPT234_CPT_Y2223_S1", title: "Cereal production", code: "CPT234", description: "Techniques for cereal crop production.", department: DEPARTMENTS.CPT, lecturerId: "lect_cpt3", lecturerName: "Mr. Grain", credits: 3, type: "Compulsory", level: 200, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "CPT237_CPT_Y2223_S1", title: "Economics and Business Mgt", code: "CPT237", description: "Agribusiness management.", department: DEPARTMENTS.CPT, lecturerId: "lect_cpt4", lecturerName: "Ms. Biz", credits: 3, type: "Compulsory", level: 200, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "CPT231_CPT_Y2223_S1", title: "Genetics and Plant Physiology", code: "CPT231", description: "Plant genetics and advanced physiology.", department: DEPARTMENTS.CPT, lecturerId: "lect_cpt5", lecturerName: "Dr. Gene", credits: 3, type: "Compulsory", level: 200, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "CPT233_CPT_Y2223_S1", title: "Topography and Rural construction", code: "CPT233", description: "Surveying and rural infrastructure.", department: DEPARTMENTS.CPT, lecturerId: "lect_cpt6", lecturerName: "Prof. Land", credits: 3, type: "Compulsory", level: 200, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "CSE303_CESM_Y2324_S1", title: "Web Technologies", code: "CSE303", description: "Advanced web development concepts.", department: DEPARTMENTS.CESM, lecturerId: "lect_web1", lecturerName: "Ms. Bibi", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: ["SWE93"], semester: "First Semester", academicYear: "2023/2024" },
-    { id: "MTH301_CESM_Y2324_S1", title: "Probability and Statistics", code: "MTH301", description: "Statistical methods for engineers.", department: DEPARTMENTS.CESM, lecturerId: "lect_stat", lecturerName: "Dr. Stats", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: ["SWE116"], semester: "First Semester", academicYear: "2023/2024" },
-    { id: "CSE302_CESM_Y2324_S2", title: "Database Systems", code: "CSE302", description: "Design and implementation of database systems.", department: DEPARTMENTS.CESM, lecturerId: "lect_db1", lecturerName: "Dr. Ngwa", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: ["SWE112"], semester: "Second Semester", academicYear: "2023/2024" },
-    { id: "CSE308_CESM_Y2324_S2", title: "Operating Systems II", code: "CSE308", description: "Advanced OS concepts.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: ["SWE114", "SWE96"], semester: "Second Semester", academicYear: "2023/2024" },
-    { id: "CSE310_CESM_Y2324_S2", title: "Computer Networks", code: "CSE310", description: "Networking fundamentals and protocols.", department: DEPARTMENTS.CESM, lecturerId: "lect_cn", lecturerName: "Prof. Net", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: ["SWE90"], semester: "Second Semester", academicYear: "2023/2024" },
-    { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401", description: "Detailed course description for Mobile Application Development. Covers native and cross-platform development.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 10:00-12:00, Wed 10:00-11:00, Lab Hall 1", prerequisites: ["CSE301"], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "CSE409_CESM_Y2425_S1", title: "Software Development and OOP", code: "CSE409", description: "Detailed course description for Software Development and OOP. Focuses on object-oriented principles and design patterns.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Tue 14:00-16:00, Fri 8:00-9:00", prerequisites: ["SWE92"], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "MGT403_CESM_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Detailed course description for Research Methodology. Introduction to research methods and academic writing.", department: DEPARTMENTS.CESM, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "AMPHI200, Wed 14:00-17:00", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "CSE405_CESM_Y2425_S1", title: "Embedded Systems", code: "CSE405", description: "Detailed course description for Embedded Systems. Design and programming of embedded systems.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Thu 8:00-11:00", prerequisites: ["SWE90"], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "NES403_CESM_Y2425_S1", title: "Modeling in Information System", code: "NES403", description: "Detailed course description for Modeling in Information System. Techniques for system modeling.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Elective", level: 400, schedule: "Fri 11:00-13:00, CR10", prerequisites: ["SWE108", "SWE95"], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "CSE406_CESM_Y2425_S2", title: "Algorithm and Data Structure II", code: "CSE406", description: "In-depth study of algorithms and data structures.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 8:00-10:00, CR1", prerequisites: ["CSE301", "SWE94"], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "CSE402_CESM_Y2425_S2", title: "Distributed Programming", code: "CSE402", description: "Concepts and practices in distributed programming.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "Tue 10:00-12:00, CR1", prerequisites: ["CSE409"], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "CSE408_CESM_Y2425_S2", title: "Emerging Networks", code: "CSE408", description: "Study of new and upcoming network technologies.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Elective", level: 400, schedule: "Wed 10:00-12:00, CR1", prerequisites: ["CSE310"], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "CSE404_CESM_Y2425_S2", title: "Introduction to Artificial Intelligence", code: "CSE404", description: "Fundamentals of Artificial Intelligence.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Compulsory", level: 400, schedule: "Thu 14:00-16:00, CR1", prerequisites: ["CSE406"], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "NES404_NES_Y2425_S2", title: "Information System Security", code: "NES404", description: "Principles and practices of securing information systems.", department: DEPARTMENTS.NES, lecturerId: "lect_nes1", lecturerName: "Dr. Secure", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "NES406_NES_Y2425_S2", title: "Network Security Laboratory", code: "NES406", description: "Hands-on lab for network security tools and techniques.", department: DEPARTMENTS.NES, lecturerId: "lect_nes2", lecturerName: "Prof. NetSecLab", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "CSE40408_NES_Y2425_S2", title: "Emerging Networks", code: "CSE40408", description: "Study of new network technologies (NES specific focus).", department: DEPARTMENTS.NES, lecturerId: "lect_nes3", lecturerName: "Mr. InnovateNet", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "NES402_NES_Y2425_S2", title: "Telecom and Wireless Communication", code: "NES402", description: "Telecommunications systems and wireless networking.", department: DEPARTMENTS.NES, lecturerId: "lect_nes4", lecturerName: "Dr. Wireless", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "EPS404_EPS_Y2425_S2", title: "Industrial Computing", code: "EPS404", description: "Computing applications in industrial power systems.", department: DEPARTMENTS.EPS, lecturerId: "lect_eps1", lecturerName: "Dr. IndComp", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "EPS408_EPS_Y2425_S2", title: "Power System Analysis", code: "EPS408", description: "Analysis and modeling of power systems.", department: DEPARTMENTS.EPS, lecturerId: "lect_eps2", lecturerName: "Prof. PowerSys", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "EPS406_EPS_Y2425_S2", title: "Power System Laboratory", code: "EPS406", description: "Practical laboratory work for power systems.", department: DEPARTMENTS.EPS, lecturerId: "lect_eps3", lecturerName: "Mr. LabPower", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "EPS402_EPS_Y2425_S2", title: "Electrical Power System II", code: "EPS402", description: "Advanced topics in electrical power systems.", department: DEPARTMENTS.EPS, lecturerId: "lect_eps4", lecturerName: "Dr. AdvPower", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "MGT416_LTM_Y2425_S2", title: "Quantitative Methods", code: "MGT416", description: "Quantitative analysis techniques for LTM.", department: DEPARTMENTS.LTM, lecturerId: "lect_mgt_quant", lecturerName: "Dr. Quant", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "LTM406_LTM_Y2425_S2", title: "Aviation Management and Operations", code: "LTM406", description: "Management of aviation systems and operations.", department: DEPARTMENTS.LTM, lecturerId: "lect_ltm1", lecturerName: "Capt. Pilot", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "LTM404_LTM_Y2425_S2", title: "Traffic Management and Control", code: "LTM404", description: "Systems and strategies for traffic management.", department: DEPARTMENTS.LTM, lecturerId: "lect_ltm2", lecturerName: "Prof. Traffic", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "LTM402_LTM_Y2425_S2", title: "Manufacturing Logistics", code: "LTM402", description: "Logistics within manufacturing environments.", department: DEPARTMENTS.LTM, lecturerId: "lect_ltm3", lecturerName: "Mr. FactoryLog", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "MGT416_PRM_Y2425_S2", title: "Quantitative Methods", code: "MGT416", description: "Quantitative analysis for project management.", department: DEPARTMENTS.PRM, lecturerId: "lect_mgt_quant", lecturerName: "Dr. Quant", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "PRM406_PRM_Y2425_S2", title: "Project Appraisal and Selection", code: "PRM406", description: "Methods for appraising and selecting projects.", department: DEPARTMENTS.PRM, lecturerId: "lect_prm1", lecturerName: "Dr. Appraise", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "PRM400_PRM_Y2425_S2", title: "Project Design, Monitoring and Evaluation", code: "PRM400", description: "Designing, monitoring, and evaluating projects.", department: DEPARTMENTS.PRM, lecturerId: "lect_prm2", lecturerName: "Prof. Monitor", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "PRM404_PRM_Y2425_S2", title: "Managing Project Risks and Changes", code: "PRM404", description: "Strategies for managing project risks and changes.", department: DEPARTMENTS.PRM, lecturerId: "lect_prm3", lecturerName: "Ms. RiskManage", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "MGT416_ACC_Y2425_S2", title: "Quantitative Methods", code: "MGT416", description: "Quantitative methods for accounting.", department: DEPARTMENTS.ACC, lecturerId: "lect_mgt_quant", lecturerName: "Dr. Quant", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "ACC408_ACC_Y2425_S2", title: "Auditing and Assurance", code: "ACC408", description: "Principles of auditing and assurance services.", department: DEPARTMENTS.ACC, lecturerId: "lect_acc1", lecturerName: "Dr. Audit", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "ACC400_ACC_Y2425_S2", title: "Cost and Managerial Accounting", code: "ACC400", description: "Accounting for costs and managerial decision-making.", department: DEPARTMENTS.ACC, lecturerId: "lect_acc2", lecturerName: "Prof. CostAcc", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "FIN402_ACC_Y2425_S2", title: "Taxation Accounting II", code: "FIN402", description: "Advanced topics in taxation accounting.", department: DEPARTMENTS.ACC, lecturerId: "lect_acc3", lecturerName: "Mr. Tax", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "MGT416_HMC_Y2425_S2", title: "Quantitative Methods", code: "MGT416", description: "Quantitative methods for hospitality management.", department: DEPARTMENTS.HMC, lecturerId: "lect_mgt_quant", lecturerName: "Dr. Quant", credits: 3, type: "General", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "HMC406_HMC_Y2425_S2", title: "Housekeeping and Laundry Operations", code: "HMC406", description: "Management of housekeeping and laundry services.", department: DEPARTMENTS.HMC, lecturerId: "lect_hmc1", lecturerName: "Ms. Clean", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "BFP408_HMC_Y2425_S2", title: "Event Planning and Management", code: "BFP408", description: "Planning and managing events in hospitality.", department: DEPARTMENTS.HMC, lecturerId: "lect_bfp_event", lecturerName: "Dr. EventPlan", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "HMC401_HMC_Y2425_S2", title: "Hospitality Law", code: "HMC401", description: "Legal aspects relevant to the hospitality industry.", department: DEPARTMENTS.HMC, lecturerId: "lect_hmc2", lecturerName: "Barr. HotelLaw", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "BFP406_BFP_Y2425_S2", title: "Waste Management and Effluent Treatment", code: "BFP406", description: "Managing waste and treating effluents in food processing.", department: DEPARTMENTS.BFP, lecturerId: "lect_bfp1", lecturerName: "Dr. WasteTreat", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "MA405_BFP_Y2425_S2", title: "Product Development and Packaging", code: "MA405", description: "Developing and packaging food products.", department: DEPARTMENTS.BFP, lecturerId: "lect_bfp2", lecturerName: "Prof. Packaging", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" }, 
-    { id: "BFP408_BFP_Y2425_S2", title: "Event Planning and Management", code: "BFP408", description: "Event planning with a focus on food events.", department: DEPARTMENTS.BFP, lecturerId: "lect_bfp_event", lecturerName: "Dr. EventPlan", credits: 3, type: "Elective", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "BFP402_BFP_Y2425_S2", title: "Food Technology II", code: "BFP402", description: "Advanced topics in food technology.", department: DEPARTMENTS.BFP, lecturerId: "lect_bfp3", lecturerName: "Ms. FoodTech", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "CTT402_FCT_Y2425_S2", title: "Computer Aided Design and Printing Techniques of Fabrics", code: "CTT402", description: "CAD and printing for fabric design.", department: DEPARTMENTS.FCT, lecturerId: "lect_fct1", lecturerName: "Dr. CADFabric", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "CCT404_FCT_Y2425_S2", title: "Apparel Marketing and Merchandising", code: "CCT404", description: "Marketing and merchandising apparel.", department: DEPARTMENTS.FCT, lecturerId: "lect_fct2", lecturerName: "Prof. ApparelMark", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "CTT408_FCT_Y2425_S2", title: "Creative Design and Working Drawing", code: "CTT408", description: "Creative design processes and technical drawing.", department: DEPARTMENTS.FCT, lecturerId: "lect_fct3", lecturerName: "Ms. CreativeDraw", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "CTT406_FCT_Y2425_S2", title: "Techniques of Yarn Manufacturing", code: "CTT406", description: "Manufacturing techniques for yarn.", department: DEPARTMENTS.FCT, lecturerId: "lect_fct4", lecturerName: "Mr. YarnTech", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "NUS402_NUS_Y2425_S2", title: "Teaching and Learning in Nursing", code: "NUS402", description: "Principles of teaching and learning in nursing practice.", department: DEPARTMENTS.NUS, lecturerId: "lect_nus1", lecturerName: "Dr. NurseEdu", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "MLS402_MLS_Y2425_S2", title: "Medical Microbiology, Virology and Molecular Biology", code: "MLS402", description: "Advanced topics in medical microbiology, virology, and molecular biology.", department: DEPARTMENTS.MLS, lecturerId: "lect_mls1", lecturerName: "Prof. MicroBio", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "Second Semester", academicYear: "2024/2025" },
-    { id: "NES405_NES_Y2425_S1", title: "Scripting and Programming", code: "NES405", description: "Detailed course description for Scripting and Programming.", department: DEPARTMENTS.NES, lecturerId: "lect006", lecturerName: "Dr. Oumarou", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 8:00-10:00, CR22", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "EPS411_EPS_Y2425_S1", title: "Microcontrollers and Microprocessors", code: "EPS411", description: "Detailed course description for Microcontrollers and Microprocessors.", department: DEPARTMENTS.EPS, lecturerId: "lect009", lecturerName: "Dr. Wato", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 14:00-16:00, ELab1", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "LTM403_LTM_Y2425_S1", title: "Humanitarian Logistics", code: "LTM403", description: "Detailed course description for Humanitarian Logistics.", department: DEPARTMENTS.LTM, lecturerId: "lect013", lecturerName: "Dr. Bello", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "HRM407_PRM_Y2425_S1", title: "Performance Management and Motivation", code: "HRM407", description: "Detailed course description for Performance Management and Motivation.", department: DEPARTMENTS.PRM, lecturerId: "lect018", lecturerName: "Prof. Etta", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "ACC403_ACC_Y2425_S1", title: "Computerized Accounting", code: "ACC403", description: "Detailed course description for Computerized Accounting.", department: DEPARTMENTS.ACC, lecturerId: "lect021", lecturerName: "Dr. Obi", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "HRM407_HMC_Y2425_S1", title: "Performance Management and Motivation", code: "HRM407", description: "Detailed course description for Performance Management and Motivation.", department: DEPARTMENTS.HMC, lecturerId: "lect018", lecturerName: "Prof. Etta", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "BFP403_BFP_Y2425_S1", title: "Postharvest, Handling, Transformation and Storage", code: "BFP403", description: "Detailed course description for Postharvest, Handling, Transformation and Storage.", department: DEPARTMENTS.BFP, lecturerId: "lect026", lecturerName: "Dr. Yemisi", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "CCT401_FCT_Y2425_S1", title: "Interior and Exterior Decoration", code: "CCT401", description: "Detailed course description for Interior and Exterior Decoration.", department: DEPARTMENTS.FCT, lecturerId: "lect030", lecturerName: "Dr. Aisha", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "NUS405_NUS_Y2425_S1", title: "Traumatology Critical Care & Emergence", code: "NUS405", description: "Detailed course description for Traumatology Critical Care & Emergence.", department: DEPARTMENTS.NUS, lecturerId: "lect034", lecturerName: "Dr. Ibrahim", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "MLS405_MLS_Y2425_S1", title: "Histochemistry and histopathology", code: "MLS405", description: "Detailed course description for Histochemistry and histopathology.", department: DEPARTMENTS.MLS, lecturerId: "lect039", lecturerName: "Dr. Coulibaly", credits: 3, type: "Compulsory", level: 400, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-  ];
-  return mockCourses;
-}
-
-// Default registration meta, can be overridden by specific semester/year settings
-const defaultRegistrationMeta = {
-  isOpen: true,
-  deadline: "2024-09-15", 
-  academicYear: ACADEMIC_YEARS[2], // 2024/2025
-  semester: SEMESTERS[0],   // First Semester
-};
-
-// Standardized localStorage key function
 const getLocalStorageKeyForAllRegistrations = (uid?: string) => {
   if (!uid) return null;
   return `allRegisteredCourses_${uid}`;
 };
-
 
 export default function CoursesPage() {
   const { user, role, profile, loading: authLoading } = useAuth();
@@ -157,26 +42,32 @@ export default function CoursesPage() {
   const [allCourses, setAllCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  
-  // Stores ALL registered course IDs across all semesters/years from localStorage
+
   const [allHistoricalRegistrations, setAllHistoricalRegistrations] = useState<string[]>([]);
-  // Stores registered course IDs for the *currently selected/active* academic period for UI display
   const [registeredCourseIdsForCurrentPeriod, setRegisteredCourseIdsForCurrentPeriod] = useState<string[]>([]);
-  
+
   const [isSavingRegistration, setIsSavingRegistration] = useState(false);
 
   const studentAcademicContext = useMemo(() => {
-    if (isStudent && profile) { 
+    if (isStudent && profile) {
       return {
-        department: profile.department || DEPARTMENTS.CESM, 
-        level: profile.level || VALID_LEVELS[2],         
-        currentAcademicYear: profile.currentAcademicYear || defaultRegistrationMeta.academicYear,
-        currentSemester: profile.currentSemester || defaultRegistrationMeta.semester,
+        department: profile.department || DEPARTMENTS.CESM,
+        level: profile.level || VALID_LEVELS[2],
+        currentAcademicYear: profile.currentAcademicYear || ACADEMIC_YEARS[2], // Default to 2024/2025
+        currentSemester: profile.currentSemester || SEMESTERS[0], // Default to First Semester
       };
     }
     return null;
   }, [isStudent, profile]);
-  
+
+  const defaultRegistrationMeta = useMemo(() => ({
+    isOpen: true,
+    deadline: "2024-09-15",
+    academicYear: studentAcademicContext?.currentAcademicYear || ACADEMIC_YEARS[2],
+    semester: studentAcademicContext?.currentSemester || SEMESTERS[0],
+  }), [studentAcademicContext]);
+
+
   const initialFilters = useMemo(() => {
     if (isStudent && studentAcademicContext) {
       return {
@@ -190,40 +81,39 @@ export default function CoursesPage() {
     return {
       academicYear: defaultRegistrationMeta.academicYear,
       semester: defaultRegistrationMeta.semester,
-      department: DEPARTMENTS.CESM, 
-      level: VALID_LEVELS[2].toString(), 
+      department: DEPARTMENTS.CESM,
+      level: VALID_LEVELS[2].toString(),
       courseType: "all",
     };
-  }, [isStudent, studentAcademicContext]);
+  }, [isStudent, studentAcademicContext, defaultRegistrationMeta]);
 
   const [filters, setFilters] = useState(initialFilters);
   const [selectedCourseForDetail, setSelectedCourseForDetail] = useState<Course | null>(null);
   const [isDeadlineApproaching, setIsDeadlineApproaching] = useState(false);
   const [daysToDeadline, setDaysToDeadline] = useState<number | null>(null);
 
-  // Load all courses and initial registrations from localStorage
   useEffect(() => {
     async function loadData() {
       setIsLoading(true);
-      const fetchedCourses = await fetchCourses();
-      setAllCourses(fetchedCourses);
-  
+      // Use the centralized course list
+      setAllCourses(ALL_UNIVERSITY_COURSES);
+
       let initialAllHistoricalIds: string[] = [];
       if (user?.uid && typeof window !== 'undefined') {
         const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
         if (storageKey) {
-            const storedIdsString = localStorage.getItem(storageKey);
-            if (storedIdsString) {
-                try {
-                    const parsedIds = JSON.parse(storedIdsString);
-                    if (Array.isArray(parsedIds)) {
-                        initialAllHistoricalIds = parsedIds;
-                    }
-                } catch (e) {
-                    console.error("Failed to parse all registered courses from localStorage:", e);
-                    localStorage.removeItem(storageKey); // Clear corrupted data
-                }
+          const storedIdsString = localStorage.getItem(storageKey);
+          if (storedIdsString) {
+            try {
+              const parsedIds = JSON.parse(storedIdsString);
+              if (Array.isArray(parsedIds)) {
+                initialAllHistoricalIds = parsedIds;
+              }
+            } catch (e) {
+              console.error("Failed to parse all registered courses from localStorage:", e);
+              localStorage.removeItem(storageKey);
             }
+          }
         }
         setAllHistoricalRegistrations(initialAllHistoricalIds);
       } else {
@@ -232,56 +122,52 @@ export default function CoursesPage() {
       setIsLoading(false);
     }
 
-    if (!authLoading) { 
-        loadData();
+    if (!authLoading) {
+      loadData();
     }
   }, [user?.uid, authLoading]);
 
-  // Auto-register and update current period registrations when context or historical data changes
   useEffect(() => {
     if (isLoading || !studentAcademicContext || allCourses.length === 0) return;
 
     const { department, level, currentAcademicYear, currentSemester } = studentAcademicContext;
     const storageKey = getLocalStorageKeyForAllRegistrations(user?.uid);
 
-    // Filter historical registrations for the current academic context
     const currentPeriodRegisteredIdsFromStorage = allHistoricalRegistrations.filter(courseId => {
-        const course = allCourses.find(c => c.id === courseId);
-        return course && course.academicYear === currentAcademicYear && course.semester === currentSemester;
+      const course = allCourses.find(c => c.id === courseId);
+      return course && course.academicYear === currentAcademicYear && course.semester === currentSemester;
     });
-    
-    let finalCurrentPeriodIds = [...currentPeriodRegisteredIdsFromStorage];
-    let madeAutoRegistrations = false;
 
-    if (currentPeriodRegisteredIdsFromStorage.length === 0 && storageKey) { // Only auto-register if no current period registrations exist
-        const departmentalCourses = allCourses.filter(c =>
-            c.department === department && c.level === level &&
-            c.academicYear === currentAcademicYear && c.semester === currentSemester &&
-            (c.type === "Compulsory")
-        );
-        const generalCoursesForLevel = allCourses.filter(c =>
-            c.type === "General" && c.level === level &&
-            c.academicYear === currentAcademicYear && c.semester === currentSemester
-        );
-        
-        const autoRegisteredIds = [...new Set([...departmentalCourses.map(c => c.id), ...generalCoursesForLevel.map(c => c.id)])];
-        
-        if (autoRegisteredIds.length > 0) {
-            const newHistoricalTotal = Array.from(new Set([...allHistoricalRegistrations, ...autoRegisteredIds]));
-            setAllHistoricalRegistrations(newHistoricalTotal);
-            if (typeof window !== 'undefined') {
-                localStorage.setItem(storageKey, JSON.stringify(newHistoricalTotal));
-            }
-            finalCurrentPeriodIds = autoRegisteredIds;
-            madeAutoRegistrations = true;
-            toast({ title: "Courses Auto-Registered", description: "Compulsory and general courses for your current level and semester have been pre-selected.", variant: "default" });
+    let finalCurrentPeriodIds = [...currentPeriodRegisteredIdsFromStorage];
+
+    if (currentPeriodRegisteredIdsFromStorage.length === 0 && storageKey && role === 'student') {
+      const departmentalCourses = allCourses.filter(c =>
+        c.department === department && c.level === level &&
+        c.academicYear === currentAcademicYear && c.semester === currentSemester &&
+        (c.type === "Compulsory")
+      );
+      const generalCoursesForLevel = allCourses.filter(c =>
+        c.type === "General" && c.level === level &&
+        c.academicYear === currentAcademicYear && c.semester === currentSemester
+      );
+
+      const autoRegisteredIds = [...new Set([...departmentalCourses.map(c => c.id), ...generalCoursesForLevel.map(c => c.id)])];
+
+      if (autoRegisteredIds.length > 0) {
+        const newHistoricalTotal = Array.from(new Set([...allHistoricalRegistrations, ...autoRegisteredIds]));
+        setAllHistoricalRegistrations(newHistoricalTotal);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(storageKey, JSON.stringify(newHistoricalTotal));
         }
+        finalCurrentPeriodIds = autoRegisteredIds;
+        toast({ title: "Courses Auto-Registered", description: "Compulsory and general courses for your current level and semester have been pre-selected from localStorage.", variant: "default" });
+      }
     }
     setRegisteredCourseIdsForCurrentPeriod(finalCurrentPeriodIds);
 
-  }, [studentAcademicContext, allCourses, isLoading, allHistoricalRegistrations, user?.uid, toast]);
-  
-   useEffect(() => {
+  }, [studentAcademicContext, allCourses, isLoading, allHistoricalRegistrations, user?.uid, toast, role]);
+
+  useEffect(() => {
     if (isStudent && studentAcademicContext) {
       setFilters(prevFilters => ({
         ...prevFilters,
@@ -294,41 +180,26 @@ export default function CoursesPage() {
   }, [isStudent, studentAcademicContext]);
 
   const currentRegistrationMeta = useMemo(() => {
-    if (filters.academicYear === "2024/2025" && filters.semester === "First Semester") {
-      return { isOpen: true, deadline: "2024-09-15", academicYear: "2024/2025", semester: "First Semester" };
-    }
-    if (filters.academicYear === "2024/2025" && filters.semester === "Second Semester") {
-      return { isOpen: true, deadline: "2025-02-15", academicYear: "2024/2025", semester: "Second Semester" }; 
-    }
-     if (filters.academicYear === "2023/2024" && filters.semester === "First Semester") {
-      return { isOpen: false, deadline: "2023-09-15", academicYear: "2023/2024", semester: "First Semester" };
-    }
-    if (filters.academicYear === "2023/2024" && filters.semester === "Second Semester") {
-      return { isOpen: false, deadline: "2024-02-15", academicYear: "2023/2024", semester: "Second Semester" };
-    }
-     if (filters.academicYear === "2022/2023" && filters.semester === "First Semester") {
-      return { isOpen: false, deadline: "2022-09-15", academicYear: "2022/2023", semester: "First Semester" };
-    }
-    if (filters.academicYear === "2022/2023" && filters.semester === "Second Semester") {
-      return { isOpen: false, deadline: "2023-02-15", academicYear: "2022/2023", semester: "Second Semester" };
-    }
-     if (filters.academicYear === "all" || filters.semester === "all") {
-      const activeYear = (isStudent && studentAcademicContext?.currentAcademicYear) || defaultRegistrationMeta.academicYear;
-      const activeSemester = (isStudent && studentAcademicContext?.currentSemester) || defaultRegistrationMeta.semester;
-      
-      if (activeYear === "2024/2025" && activeSemester === "First Semester") return { isOpen: true, deadline: "2024-09-15", academicYear: activeYear, semester: activeSemester };
-      if (activeYear === "2024/2025" && activeSemester === "Second Semester") return { isOpen: true, deadline: "2025-02-15", academicYear: activeYear, semester: activeSemester };
+    // This logic determines if the *currently filtered view* corresponds to an open registration period
+    const activeYear = filters.academicYear === "all" ? defaultRegistrationMeta.academicYear : filters.academicYear;
+    const activeSemester = filters.semester === "all" ? defaultRegistrationMeta.semester : filters.semester;
 
-      return { isOpen: false, deadline: "N/A", academicYear: filters.academicYear, semester: filters.semester, message:"Select specific year/semester for registration status." };
+    if (activeYear === "2024/2025" && activeSemester === "First Semester") {
+      return { isOpen: true, deadline: "2024-09-15", academicYear: activeYear, semester: activeSemester };
     }
-    return { isOpen: false, deadline: "N/A", academicYear: filters.academicYear, semester: filters.semester };
-  }, [filters.academicYear, filters.semester, isStudent, studentAcademicContext]);
+    if (activeYear === "2024/2025" && activeSemester === "Second Semester") {
+      return { isOpen: true, deadline: "2025-02-15", academicYear: activeYear, semester: activeSemester };
+    }
+    // Add more conditions for other open periods or make it dynamic from a config
+    return { isOpen: false, deadline: "N/A", academicYear: activeYear, semester: activeSemester, message: (filters.academicYear === "all" || filters.semester === "all") ? "Select specific year/semester for registration status." : undefined };
+  }, [filters.academicYear, filters.semester, defaultRegistrationMeta]);
+
 
   useEffect(() => {
     if (currentRegistrationMeta.isOpen && currentRegistrationMeta.deadline && currentRegistrationMeta.deadline !== "N/A") {
       const deadlineDate = new Date(currentRegistrationMeta.deadline);
       const today = new Date();
-      today.setHours(0, 0, 0, 0); 
+      today.setHours(0, 0, 0, 0);
       const diffTime = deadlineDate.getTime() - today.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       setDaysToDeadline(diffDays);
@@ -340,7 +211,7 @@ export default function CoursesPage() {
   }, [currentRegistrationMeta.isOpen, currentRegistrationMeta.deadline]);
 
   const staticDepartments = useMemo(() => ["all", ...Object.values(DEPARTMENTS)], []);
-  const staticLevels = useMemo(() => ["all", ...VALID_LEVELS.map(l => l.toString())], []); 
+  const staticLevels = useMemo(() => ["all", ...VALID_LEVELS.map(l => l.toString())], []);
   const courseTypes = ["all", "Compulsory", "Elective", "General"];
   const academicYearsForFilter = useMemo(() => ["all", ...ACADEMIC_YEARS], []);
   const semestersForFilter = useMemo(() => ["all", ...SEMESTERS], []);
@@ -355,7 +226,7 @@ export default function CoursesPage() {
       .filter(course => filters.level === "all" || course.level.toString() === filters.level)
       .filter(course => filters.academicYear === "all" || course.academicYear === filters.academicYear)
       .filter(course => filters.semester === "all" || course.semester === filters.semester)
-      .filter(course => 
+      .filter(course =>
         course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         course.code.toLowerCase().includes(searchTerm.toLowerCase())
       )
@@ -363,113 +234,107 @@ export default function CoursesPage() {
   }, [allCourses, searchTerm, filters]);
 
   const registeredCoursesListForDisplay = useMemo(() => {
-    // This list shows courses from allHistoricalRegistrations that match the *current filters*
-    return allCourses.filter(course => 
-        allHistoricalRegistrations.includes(course.id) &&
-        (filters.academicYear === "all" || course.academicYear === filters.academicYear) &&
-        (filters.semester === "all" || course.semester === filters.semester) &&
-        (filters.department === "all" || course.department === filters.department) && // Consider if this filter should apply to "My Registered Courses"
-        (filters.level === "all" || course.level.toString() === filters.level) // Same as above
+    return allCourses.filter(course =>
+      allHistoricalRegistrations.includes(course.id) &&
+      (filters.academicYear === "all" || course.academicYear === filters.academicYear) &&
+      (filters.semester === "all" || course.semester === filters.semester)
+      // Removed department and level filters for "My Registered Courses" list,
+      // as allHistoricalRegistrations already represents what the student chose.
     );
-  }, [allCourses, allHistoricalRegistrations, filters]);
+  }, [allCourses, allHistoricalRegistrations, filters.academicYear, filters.semester]);
 
   const totalRegisteredCreditsForFilteredPeriod = useMemo(() => {
-    if (filters.academicYear === "all" || filters.semester === "all") return 0; // Don't calculate for "all"
+    if (filters.academicYear === "all" || filters.semester === "all") return 0;
     return registeredCoursesListForDisplay
       .filter(course => course.academicYear === filters.academicYear && course.semester === filters.semester)
       .reduce((sum, course) => sum + course.credits, 0);
   }, [registeredCoursesListForDisplay, filters.academicYear, filters.semester]);
 
   const handleRegisterCourse = (course: Course) => {
-    setIsSavingRegistration(true); 
-    
+    setIsSavingRegistration(true);
     if (!currentRegistrationMeta.isOpen) {
-      toast({ title: "Registration Closed", description: `Course registration for ${currentRegistrationMeta.semester}, ${currentRegistrationMeta.academicYear} is currently closed.`, variant: "destructive" });
+      toast({ title: "Registration Closed", description: `Course registration for ${currentRegistrationMeta.academicYear}, ${currentRegistrationMeta.semester} is currently closed.`, variant: "destructive" });
       setIsSavingRegistration(false); return;
     }
     if (course.academicYear !== currentRegistrationMeta.academicYear || course.semester !== currentRegistrationMeta.semester) {
-        toast({ title: "Registration Mismatch", description: `You can only register for courses in the currently open registration period: ${currentRegistrationMeta.semester}, ${currentRegistrationMeta.academicYear}.`, variant: "destructive" });
-        setIsSavingRegistration(false); return;
+      toast({ title: "Registration Mismatch", description: `You can only register for courses in the currently open registration period: ${currentRegistrationMeta.semester}, ${currentRegistrationMeta.academicYear}. This course is for ${course.semester}, ${course.academicYear}.`, variant: "destructive" });
+      setIsSavingRegistration(false); return;
     }
-    // Check if already in allHistoricalRegistrations for this specific course instance (ID)
     if (allHistoricalRegistrations.includes(course.id)) {
       toast({ title: "Already Registered", description: `You are already registered for ${course.code} - ${course.title} for ${course.semester}, ${course.academicYear}.`, variant: "default" });
       setIsSavingRegistration(false); return;
     }
 
-    // Permissive registration: Loosened checks
     const newHistoricalTotal = [...allHistoricalRegistrations, course.id];
     setAllHistoricalRegistrations(newHistoricalTotal);
-    // Update current period display if this course matches current context
+
     if (studentAcademicContext && course.academicYear === studentAcademicContext.currentAcademicYear && course.semester === studentAcademicContext.currentSemester) {
       setRegisteredCourseIdsForCurrentPeriod(prev => [...prev, course.id]);
     }
 
     if (user?.uid && typeof window !== 'undefined') {
-        const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
-        if (storageKey) localStorage.setItem(storageKey, JSON.stringify(newHistoricalTotal));
+      const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
+      if (storageKey) localStorage.setItem(storageKey, JSON.stringify(newHistoricalTotal));
     }
-    toast({ title: "Course Registered", description: `${course.code} - ${course.title} successfully registered for ${course.semester}, ${course.academicYear}.`, variant: "default" });
+    toast({ title: "Course Registered", description: `${course.code} - ${course.title} successfully registered.`, variant: "default" });
     setIsSavingRegistration(false);
   };
 
   const handleDropCourse = (courseIdToDrop: string) => {
-     const courseToDrop = allCourses.find(c => c.id === courseIdToDrop);
-     if (!courseToDrop) return;
-     setIsSavingRegistration(true);
+    const courseToDrop = allCourses.find(c => c.id === courseIdToDrop);
+    if (!courseToDrop) return;
+    setIsSavingRegistration(true);
 
-     if (!currentRegistrationMeta.isOpen) {
+    if (!currentRegistrationMeta.isOpen) {
       toast({ title: "Registration Closed", description: `Cannot drop courses as registration is closed.`, variant: "destructive" });
       setIsSavingRegistration(false); return;
     }
     if (courseToDrop.academicYear !== currentRegistrationMeta.academicYear || courseToDrop.semester !== currentRegistrationMeta.semester) {
-        toast({ title: "Drop Mismatch", description: `Can only drop courses from the open registration period.`, variant: "destructive" });
-        setIsSavingRegistration(false); return;
+      toast({ title: "Drop Mismatch", description: `Can only drop courses from the open registration period.`, variant: "destructive" });
+      setIsSavingRegistration(false); return;
     }
-    
+
     const newHistoricalTotal = allHistoricalRegistrations.filter(id => id !== courseIdToDrop);
     setAllHistoricalRegistrations(newHistoricalTotal);
-    // Update current period display
     setRegisteredCourseIdsForCurrentPeriod(prev => prev.filter(id => id !== courseIdToDrop));
-    
+
     if (user?.uid && typeof window !== 'undefined') {
-        const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
-        if (storageKey) localStorage.setItem(storageKey, JSON.stringify(newHistoricalTotal));
+      const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
+      if (storageKey) localStorage.setItem(storageKey, JSON.stringify(newHistoricalTotal));
     }
-    toast({ title: "Course Dropped", description: `${courseToDrop.code} - ${courseToDrop.title} has been dropped for ${courseToDrop.semester}, ${courseToDrop.academicYear}.`, variant: "default" });
+    toast({ title: "Course Dropped", description: `${courseToDrop.code} - ${courseToDrop.title} has been dropped.`, variant: "default" });
     setIsSavingRegistration(false);
   };
-  
+
   const getCreditStatus = () => {
     const periodYear = currentRegistrationMeta.isOpen ? currentRegistrationMeta.academicYear : filters.academicYear;
     const periodSemester = currentRegistrationMeta.isOpen ? currentRegistrationMeta.semester : filters.semester;
-    
+
     if (periodYear === "all" || periodSemester === "all") {
-         return { message: `Select specific Year & Semester for credit status.`, variant: "info" as const, credits: 0}; // Simplified credits for "all" view
+      return { message: `Select specific Year & Semester for credit status.`, variant: "info" as const, credits: 0 };
     }
 
     const creditsForPeriod = allHistoricalRegistrations
+      .map(id => allCourses.find(c => c.id === id))
+      .filter(c => c && c.academicYear === periodYear && c.semester === periodSemester)
+      .reduce((sum, c) => sum + (c?.credits || 0), 0);
+
+    if (!currentRegistrationMeta.isOpen && (filters.academicYear !== "all" && filters.semester !== "all")) {
+      return { message: `Registration for ${filters.semester}, ${filters.academicYear} is closed. Credits: ${creditsForPeriod}.`, variant: "info" as const, credits: creditsForPeriod };
+    }
+    if (currentRegistrationMeta.isOpen) {
+      const creditsForOpenPeriod = allHistoricalRegistrations
         .map(id => allCourses.find(c => c.id === id))
-        .filter(c => c && c.academicYear === periodYear && c.semester === periodSemester)
+        .filter(c => c && c.academicYear === currentRegistrationMeta.academicYear && c.semester === currentRegistrationMeta.semester)
         .reduce((sum, c) => sum + (c?.credits || 0), 0);
 
-     if (!currentRegistrationMeta.isOpen && (filters.academicYear !== "all" && filters.semester !== "all")) {
-        return { message: `Registration for ${filters.semester}, ${filters.academicYear} is closed. Credits: ${creditsForPeriod}.`, variant: "info" as const, credits: creditsForPeriod};
-    }
-    if (currentRegistrationMeta.isOpen) { // This refers to the specific open period, not the filtered view period
-        const creditsForOpenPeriod = allHistoricalRegistrations
-            .map(id => allCourses.find(c => c.id === id))
-            .filter(c => c && c.academicYear === currentRegistrationMeta.academicYear && c.semester === currentRegistrationMeta.semester)
-            .reduce((sum, c) => sum + (c?.credits || 0), 0);
-
-        // Loosened checks for this version
-        if (creditsForOpenPeriod < MIN_CREDITS && creditsForOpenPeriod > 0) return { message: `Low credit load for open period. Min ${MIN_CREDITS}. Current: ${creditsForOpenPeriod}.`, variant: "warning" as const, credits: creditsForOpenPeriod };
-        if (creditsForOpenPeriod > MAX_CREDITS) return { message: `Over max credit load for open period. Max ${MAX_CREDITS}. Current: ${creditsForOpenPeriod}.`, variant: "destructive" as const, credits: creditsForOpenPeriod };
-        return { message: `Total credits for open period: ${creditsForOpenPeriod}. (Min/Max checks loosened)`, variant: "success" as const, credits: creditsForOpenPeriod };
+      if (creditsForOpenPeriod < MIN_CREDITS && creditsForOpenPeriod > 0) return { message: `Low credit load. Min ${MIN_CREDITS}. Current: ${creditsForOpenPeriod}.`, variant: "warning" as const, credits: creditsForOpenPeriod };
+      if (creditsForOpenPeriod > MAX_CREDITS) return { message: `Over max credit load. Max ${MAX_CREDITS}. Current: ${creditsForOpenPeriod}.`, variant: "destructive" as const, credits: creditsForOpenPeriod };
+      return { message: `Total credits for open period: ${creditsForOpenPeriod}. (Min/Max checks loosened)`, variant: "success" as const, credits: creditsForOpenPeriod };
     }
     return { message: `Credit load for ${periodSemester}, ${periodYear}: ${creditsForPeriod}.`, variant: "info" as const, credits: creditsForPeriod };
   };
-  
+
   const creditStatus = getCreditStatus();
 
   return (
@@ -488,25 +353,25 @@ export default function CoursesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Info className="text-primary"/>Registration Status for {currentRegistrationMeta.semester}, {currentRegistrationMeta.academicYear}</CardTitle>
+          <CardTitle className="flex items-center gap-2"><Info className="text-primary"/>Registration Status for {currentRegistrationMeta.academicYear}, {currentRegistrationMeta.semester}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {currentRegistrationMeta.message && (filters.academicYear === "all" || filters.semester === "all") && (
+          {currentRegistrationMeta.message && (
             <Alert variant="info"><Info className="h-5 w-5" /><AlertTitle>Dynamic Info</AlertTitle><AlertDescription>{currentRegistrationMeta.message}</AlertDescription></Alert>
           )}
-          {currentRegistrationMeta.isOpen && filters.academicYear !== "all" && filters.semester !== "all" ? (
+          {currentRegistrationMeta.isOpen ? (
             <Alert variant="default" className="bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300">
               <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400" />
               <AlertTitle>Registration is OPEN</AlertTitle>
-              <AlertDescription>Deadline: <strong>{currentRegistrationMeta.deadline === "N/A" ? "N/A" : new Date(currentRegistrationMeta.deadline).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' })}</strong> for {currentRegistrationMeta.semester}, {currentRegistrationMeta.academicYear}.</AlertDescription>
+              <AlertDescription>Deadline: <strong>{currentRegistrationMeta.deadline === "N/A" ? "N/A" : new Date(currentRegistrationMeta.deadline).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' })}</strong> for {currentRegistrationMeta.academicYear}, {currentRegistrationMeta.semester}.</AlertDescription>
             </Alert>
-          ) : filters.academicYear !== "all" && filters.semester !== "all" && (
+          ) : (
             <Alert variant="destructive">
               <XCircle className="h-5 w-5" /><AlertTitle>Registration is CLOSED</AlertTitle>
-              <AlertDescription>Registration for {filters.semester === "all" ? "selected period" : `${filters.semester}, ${filters.academicYear}`} is closed.</AlertDescription>
+              <AlertDescription>Registration for {currentRegistrationMeta.academicYear}, {currentRegistrationMeta.semester} is closed.</AlertDescription>
             </Alert>
           )}
-          {isDeadlineApproaching && currentRegistrationMeta.isOpen && daysToDeadline !== null && filters.academicYear !== "all" && filters.semester !== "all" && (
+          {isDeadlineApproaching && currentRegistrationMeta.isOpen && daysToDeadline !== null && (
             <Alert variant="default" className="bg-amber-50 dark:bg-amber-900/30 border-amber-400 dark:border-amber-600 text-amber-700 dark:text-amber-300">
               <AlertTriangle className="h-5 w-5 text-amber-500 dark:text-amber-400" /><AlertTitle>Deadline Approaching!</AlertTitle>
               <AlertDescription>{daysToDeadline === 0 ? "Today is the last day." : `${daysToDeadline} day${daysToDeadline > 1 ? 's' : ''} remaining.`} Deadline: <strong>{new Date(currentRegistrationMeta.deadline).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' })}</strong>.</AlertDescription>
@@ -534,8 +399,7 @@ export default function CoursesPage() {
           <CardHeader>
             <CardTitle>Available Courses</CardTitle>
              <CardDescription>{`Showing courses for ${filters.department === "all" ? "all departments" : filters.department}, Level ${filters.level === "all" ? "all levels" : filters.level}, ${filters.semester}, ${filters.academicYear}.`}
-               {isStudent && studentAcademicContext && (filters.department !== studentAcademicContext.department || filters.level !== studentAcademicContext.level.toString()) && (<span className="block text-amber-600 dark:text-amber-400 text-xs mt-1"><AlertTriangle className="inline h-3 w-3 mr-1" />Viewing outside primary program (button restrictions eased).</span>)}
-            </CardDescription>
+             </CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (<div className="space-y-4">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
@@ -546,25 +410,25 @@ export default function CoursesPage() {
                 <TableHeader><TableRow><TableHead>Code</TableHead><TableHead>Title</TableHead><TableHead>Credits</TableHead><TableHead>Type</TableHead><TableHead>Level</TableHead><TableHead>Lecturer</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Action</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {filteredCourses.map(course => {
-                    const isRegisteredForThisPeriod = allHistoricalRegistrations.includes(course.id) && 
-                                                      course.academicYear === currentRegistrationMeta.academicYear && 
+                    const isRegisteredForThisPeriod = allHistoricalRegistrations.includes(course.id) &&
+                                                      course.academicYear === currentRegistrationMeta.academicYear &&
                                                       course.semester === currentRegistrationMeta.semester;
-                    
-                    const canRegisterThisCourse = !isRegisteredForThisPeriod && 
-                                                  currentRegistrationMeta.isOpen &&
+
+                    // Permissive registration button logic:
+                    const canRegisterThisCourse = currentRegistrationMeta.isOpen &&
+                                                  !isRegisteredForThisPeriod &&
                                                   !isSavingRegistration &&
                                                   course.academicYear === currentRegistrationMeta.academicYear &&
                                                   course.semester === currentRegistrationMeta.semester;
 
-                    const canDropThisCourse = isRegisteredForThisPeriod && 
-                                              currentRegistrationMeta.isOpen && 
-                                              !isSavingRegistration && 
-                                              course.academicYear === currentRegistrationMeta.academicYear && 
+                    const canDropThisCourse = isRegisteredForThisPeriod &&
+                                              currentRegistrationMeta.isOpen &&
+                                              !isSavingRegistration &&
+                                              course.academicYear === currentRegistrationMeta.academicYear &&
                                               course.semester === currentRegistrationMeta.semester;
-                    
-                    // For general display status, check if it's in allHistoricalRegistrations for the specific course.id
+
                     const isRegisteredHistorically = allHistoricalRegistrations.includes(course.id);
-                    
+
                     return (
                       <TableRow key={course.id}>
                         <TableCell className="font-medium">{course.code}</TableCell><TableCell>{course.title}</TableCell>
@@ -574,7 +438,7 @@ export default function CoursesPage() {
                         <TableCell>{isRegisteredHistorically && course.academicYear === filters.academicYear && course.semester === filters.semester ? <Badge variant="success" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">Registered</Badge> : <Badge variant="outline">Available</Badge>}</TableCell>
                         <TableCell className="text-right space-x-1">
                            <Dialog><DialogTrigger asChild><Button variant="ghost" size="icon" onClick={() => setSelectedCourseForDetail(course)}><Eye className="h-4 w-4"/><span className="sr-only">View Details</span></Button></DialogTrigger></Dialog>
-                          {isRegisteredForThisPeriod ? (<Button variant="destructive" size="sm" onClick={() => handleDropCourse(course.id)} disabled={!canDropThisCourse || isSavingRegistration}><MinusCircle className="mr-1 h-4 w-4"/> Drop</Button>) 
+                          {isRegisteredForThisPeriod ? (<Button variant="destructive" size="sm" onClick={() => handleDropCourse(course.id)} disabled={!canDropThisCourse || isSavingRegistration}><MinusCircle className="mr-1 h-4 w-4"/> Drop</Button>)
                                         : (<Button variant="default" size="sm" onClick={() => handleRegisterCourse(course)} disabled={!canRegisterThisCourse || isSavingRegistration || authLoading}><PlusCircle className="mr-1 h-4 w-4"/> Register</Button>)}
                         </TableCell>
                       </TableRow>
@@ -600,7 +464,7 @@ export default function CoursesPage() {
             <CardFooter className="flex-col items-start space-y-3">
               <div className="w-full">
                  <p className="text-lg font-semibold">{totalRegisteredCreditsForFilteredPeriod > 0 && (filters.academicYear !== "all" && filters.semester !== "all") ? `Total Credits for ${filters.semester}, ${filters.academicYear}: ` : currentRegistrationMeta.isOpen && currentRegistrationMeta.academicYear !== "all" ? `Total Credits for Current Registration Period: ` : "Total Registered Credits (filtered view):" } <span className={creditStatus.variant === "warning" || creditStatus.variant === "destructive" ? "text-destructive" : "text-green-600 dark:text-green-400"}>{totalRegisteredCreditsForFilteredPeriod}</span></p>
-                {((currentRegistrationMeta.isOpen && currentRegistrationMeta.academicYear !== "all") || (totalRegisteredCreditsForFilteredPeriod > 0 && filters.academicYear !== "all" && filters.semester !== "all" )) && ( 
+                {((currentRegistrationMeta.isOpen && currentRegistrationMeta.academicYear !== "all") || (totalRegisteredCreditsForFilteredPeriod > 0 && filters.academicYear !== "all" && filters.semester !== "all" )) && (
                    <Alert variant={creditStatus.variant === "success" ? "default" : creditStatus.variant} className="mt-2">{creditStatus.variant === "success" ? <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" /> : creditStatus.variant === "info" ? <Info className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}<AlertTitle>{creditStatus.variant === "warning" ? "Warning" : creditStatus.variant === "destructive" ? "Error" : "Status"}</AlertTitle><AlertDescription>{creditStatus.message}</AlertDescription></Alert>)}
               </div>
               <Button className="w-full" disabled={filters.academicYear === "all" || filters.semester === "all" || registeredCoursesListForDisplay.filter(c => c.academicYear === filters.academicYear && c.semester === filters.semester).length === 0} onClick={() => { const coursesForFormB = registeredCoursesListForDisplay.filter(c => c.academicYear === filters.academicYear && c.semester === filters.semester); if (coursesForFormB.length > 0) { toast({ title: "Form B Download (Simulated)", description: `PDF generation for Form B (${filters.semester}, ${filters.academicYear}) is under development. Courses: ${coursesForFormB.map(c=>c.code).join(', ')}.`, duration: 7000}); }}}>
@@ -621,7 +485,7 @@ export default function CoursesPage() {
            </Card>
         </div>
       </div>
-      
+
       {selectedCourseForDetail && (
         <Suspense fallback={<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><p className="text-white">Loading details...</p></div>}>
             <CourseDetailDialog course={selectedCourseForDetail} allCourses={allCourses} open={!!selectedCourseForDetail} onOpenChange={(isOpen) => !isOpen && setSelectedCourseForDetail(null)} />
@@ -631,3 +495,4 @@ export default function CoursesPage() {
   );
 }
 
+    
