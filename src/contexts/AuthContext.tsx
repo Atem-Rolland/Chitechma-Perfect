@@ -59,15 +59,15 @@ interface AuthProviderProps {
 }
 
 const FALLBACK_STUDENT_DETAILS = {
-  displayName: "Atem Rolland",
+  displayName: "Atem Rolland", // Keep this specific for the demo user check
   department: DEPARTMENTS.CESM,
   level: 400,
   program: "B.Eng. Computer Engineering and System Maintenance",
-  currentAcademicYear: ACADEMIC_YEARS[2],
-  currentSemester: SEMESTERS[0],
+  currentAcademicYear: ACADEMIC_YEARS[2], // 2024/2025
+  currentSemester: SEMESTERS[0], // First Semester
   isNewStudent: false,
   isGraduating: true,
-  matricule: `CUSMS/S/${ACADEMIC_YEARS[2].slice(2,4)}4${Math.floor(1000 + Math.random() * 9000)}`
+  matricule: `CUSMS/S/${ACADEMIC_YEARS[2].slice(2,4)}4${Math.floor(1000 + Math.random() * 9000)}` // Example matricule for L400
 };
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
@@ -85,23 +85,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       if (userDocSnap.exists()) {
         console.log("AuthContext: Profile document found for UID:", firebaseUser.uid);
-        const userProfileData = userDocSnap.data() as UserProfile; // Assume this is the correct type from Firestore
+        const userProfileData = userDocSnap.data() as UserProfile; 
 
-        // Construct the complete profile, ensuring all expected fields are present, falling back if necessary.
-        const completeProfile: UserProfile = {
+        let completeProfile: UserProfile = {
           uid: firebaseUser.uid,
-          email: firebaseUser.email || userProfileData.email, // Prefer Firebase's email if available
-          displayName: userProfileData.displayName || firebaseUser.displayName || (userProfileData.role === 'student' ? FALLBACK_STUDENT_DETAILS.displayName : "User"),
+          email: firebaseUser.email || userProfileData.email,
+          displayName: userProfileData.displayName || firebaseUser.displayName || "User",
           photoURL: userProfileData.photoURL || firebaseUser.photoURL || null,
           role: userProfileData.role || null,
-          department: userProfileData.role === 'student' ? (userProfileData.department || FALLBACK_STUDENT_DETAILS.department) : userProfileData.department,
-          level: userProfileData.role === 'student' ? (userProfileData.level || FALLBACK_STUDENT_DETAILS.level) : userProfileData.level,
-          program: userProfileData.role === 'student' ? (userProfileData.program || FALLBACK_STUDENT_DETAILS.program) : userProfileData.program,
-          currentAcademicYear: userProfileData.role === 'student' ? (userProfileData.currentAcademicYear || FALLBACK_STUDENT_DETAILS.currentAcademicYear) : userProfileData.currentAcademicYear,
-          currentSemester: userProfileData.role === 'student' ? (userProfileData.currentSemester || FALLBACK_STUDENT_DETAILS.currentSemester) : userProfileData.currentSemester,
-          isNewStudent: userProfileData.role === 'student' ? (userProfileData.isNewStudent === undefined ? (userProfileData.level === VALID_LEVELS[0]) : userProfileData.isNewStudent) : userProfileData.isNewStudent,
-          isGraduating: userProfileData.role === 'student' ? (userProfileData.isGraduating === undefined ? (userProfileData.level === VALID_LEVELS[VALID_LEVELS.length -1]) : userProfileData.isGraduating) : userProfileData.isGraduating,
-          matricule: userProfileData.role === 'student' ? (userProfileData.matricule || FALLBACK_STUDENT_DETAILS.matricule) : userProfileData.matricule,
+          department: userProfileData.department,
+          level: userProfileData.level,
+          program: userProfileData.program,
+          currentAcademicYear: userProfileData.currentAcademicYear,
+          currentSemester: userProfileData.currentSemester,
+          isNewStudent: userProfileData.isNewStudent,
+          isGraduating: userProfileData.isGraduating,
+          matricule: userProfileData.matricule,
           gender: userProfileData.gender,
           dateOfBirth: userProfileData.dateOfBirth,
           placeOfBirth: userProfileData.placeOfBirth,
@@ -119,10 +118,59 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           createdAt: userProfileData.createdAt || serverTimestamp(),
           updatedAt: userProfileData.updatedAt || serverTimestamp(),
         };
+
+        // Specific fallback for Atem Rolland if core academic details are missing
+        if (userProfileData.role === 'student' && userProfileData.displayName === "Atem Rolland") {
+            completeProfile.department = userProfileData.department || FALLBACK_STUDENT_DETAILS.department;
+            completeProfile.level = userProfileData.level || FALLBACK_STUDENT_DETAILS.level;
+            completeProfile.program = userProfileData.program || FALLBACK_STUDENT_DETAILS.program;
+            completeProfile.currentAcademicYear = userProfileData.currentAcademicYear || FALLBACK_STUDENT_DETAILS.currentAcademicYear;
+            completeProfile.currentSemester = userProfileData.currentSemester || FALLBACK_STUDENT_DETAILS.currentSemester;
+            completeProfile.isNewStudent = userProfileData.isNewStudent === undefined ? FALLBACK_STUDENT_DETAILS.isNewStudent : userProfileData.isNewStudent;
+            completeProfile.isGraduating = userProfileData.isGraduating === undefined ? FALLBACK_STUDENT_DETAILS.isGraduating : userProfileData.isGraduating;
+            completeProfile.matricule = userProfileData.matricule || FALLBACK_STUDENT_DETAILS.matricule;
+        } else if (userProfileData.role === 'student') { // General student fallbacks if fields are empty but not Atem
+            completeProfile.department = userProfileData.department || DEPARTMENTS.CESM; // Example default
+            completeProfile.level = userProfileData.level || VALID_LEVELS[0]; // Example default
+            completeProfile.currentAcademicYear = userProfileData.currentAcademicYear || ACADEMIC_YEARS[0];
+            completeProfile.currentSemester = userProfileData.currentSemester || SEMESTERS[0];
+        }
+        console.log("[AuthContext fetchUserProfile] Constructed completeProfile:", JSON.stringify(completeProfile, null, 2));
         return completeProfile;
       } else {
         console.warn("AuthContext: User profile document NOT found in Firestore for UID:", firebaseUser.uid);
-        return null;
+        // If it's our specific demo user "Atem Rolland" and no profile exists, create one with fallbacks.
+        // This is a temporary measure for demo robustness. In a real app, users *must* have profiles.
+        if (firebaseUser.displayName === "Atem Rolland" || firebaseUser.email === "atem.rolland@example.com") {
+            console.log("AuthContext: Atem Rolland's Firestore profile not found. Creating one with fallback details.");
+            const atemProfile: UserProfile = {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                displayName: FALLBACK_STUDENT_DETAILS.displayName,
+                role: 'student',
+                department: FALLBACK_STUDENT_DETAILS.department,
+                level: FALLBACK_STUDENT_DETAILS.level,
+                program: FALLBACK_STUDENT_DETAILS.program,
+                currentAcademicYear: FALLBACK_STUDENT_DETAILS.currentAcademicYear,
+                currentSemester: FALLBACK_STUDENT_DETAILS.currentSemester,
+                isNewStudent: FALLBACK_STUDENT_DETAILS.isNewStudent,
+                isGraduating: FALLBACK_STUDENT_DETAILS.isGraduating,
+                matricule: FALLBACK_STUDENT_DETAILS.matricule,
+                status: 'active',
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                lastLogin: serverTimestamp(),
+            };
+            try {
+                await setDoc(doc(db, "users", firebaseUser.uid), atemProfile);
+                console.log("AuthContext: Successfully created fallback profile for Atem Rolland in Firestore.");
+                return atemProfile;
+            } catch (setDocError) {
+                console.error("AuthContext: Error creating fallback profile for Atem Rolland:", setDocError);
+                return null; // Failed to create fallback
+            }
+        }
+        return null; // User profile not found and not the specific demo case
       }
     } catch (error) {
       console.error("AuthContext: Error fetching user profile from Firestore:", error);
@@ -140,12 +188,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setProfile(fetchedProfileData);
           setRole(fetchedProfileData.role);
           setUser({ ...firebaseUser, profile: fetchedProfileData });
-          console.log("AuthContext: Profile and AppUser state updated from onAuthStateChanged for UID:", firebaseUser.uid);
+          console.log("AuthContext: Profile and AppUser state updated from onAuthStateChanged for UID:", firebaseUser.uid, "Profile:", JSON.stringify(fetchedProfileData, null, 2));
         } else {
-          console.error("AuthContext: CRITICAL - Firebase user exists but no Firestore profile found. UID:", firebaseUser.uid, "Logging out user.");
-          // This is a critical state. User is authenticated with Firebase but has no profile in our system.
-          // Forcing logout.
-          await firebaseSignOut(auth); // This will re-trigger onAuthStateChanged with firebaseUser = null
+          console.error("AuthContext: CRITICAL - Firebase user exists but no Firestore profile found or could be created. UID:", firebaseUser.uid, "Logging out user.");
+          await firebaseSignOut(auth); 
           setUser(null);
           setProfile(null);
           setRole(null);
@@ -172,33 +218,28 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       if (!userProfileData) {
         console.error("AuthContext: Login failed - User profile not found in Firestore after successful Firebase Auth. UID:", firebaseUser.uid);
-        // Sign out the user because they authenticated but have no profile, an inconsistent state.
-        await firebaseSignOut(auth); // This will trigger onAuthStateChanged to clear states.
+        await firebaseSignOut(auth); 
         throw new Error("Login successful, but your user profile could not be loaded. Please contact support or try registering again if this is your first time.");
       }
       
-      // If profile fetch is successful, update context state immediately
       setProfile(userProfileData);
       setRole(userProfileData.role);
       const appUser = { ...firebaseUser, profile: userProfileData };
       setUser(appUser);
 
-      // Update lastLogin
-      if (userProfileData.uid) { // Should always be true if userProfileData exists
+      if (userProfileData.uid) { 
         const userDocRef = doc(db, "users", userProfileData.uid);
         try {
           await updateDoc(userDocRef, { lastLogin: serverTimestamp() });
           console.log("AuthContext: Last login updated for user:", userProfileData.uid);
         } catch (updateError) {
           console.error("AuthContext: Error updating lastLogin:", updateError);
-          // Non-critical, so don't re-throw unless necessary for the login flow
         }
       }
       console.log("AuthContext: Login process completed for:", email);
       return appUser;
     } catch (error: any) {
       console.error("AuthContext: Login error caught in login function:", error.code, error.message);
-      // Re-throw the original Firebase auth error or the custom profile error
       throw error;
     }
   };
@@ -223,7 +264,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       status: 'active',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      lastLogin: serverTimestamp(), // Set lastLogin on registration too
+      lastLogin: serverTimestamp(), 
     };
 
     if (firebaseUser.photoURL) {
@@ -265,17 +306,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     await setDoc(doc(db, "users", firebaseUser.uid), userProfileDataForFirestore);
     console.log("AuthContext: Firestore profile saved for UID:", firebaseUser.uid);
 
-    // Fetch the just-created profile to ensure all server-generated timestamps are resolved for local state
     const finalProfileForState = await fetchUserProfile(firebaseUser);
     if (!finalProfileForState) {
         console.error("AuthContext: CRITICAL - Failed to fetch profile immediately after registration for UID:", firebaseUser.uid);
-        // This is an unexpected state, sign out user to prevent issues.
         await firebaseSignOut(auth);
         throw new Error("Registration succeeded but profile could not be loaded. Please contact support.");
     }
     
     setProfile(finalProfileForState);
-    setRole(finalProfileForState.role); // Ensure role is set from the fetched profile
+    setRole(finalProfileForState.role); 
     const appUser = { ...firebaseUser, profile: finalProfileForState };
     setUser(appUser);
     console.log("AuthContext: Registration process completed for:", data.email);
@@ -285,7 +324,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const logout = async () => {
     console.log("AuthContext: Logging out user.");
     await firebaseSignOut(auth);
-    // onAuthStateChanged will handle resetting user, profile, and role states.
     router.push('/login');
     console.log("AuthContext: User logged out, redirected to login.");
   };

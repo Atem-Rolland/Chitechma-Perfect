@@ -159,13 +159,15 @@ export default function CoursesPage() {
 
   const studentAcademicContext = useMemo(() => {
     if (isStudent && profile) { 
+      console.log("[CoursesPage] Recalculating studentAcademicContext. Profile:", JSON.stringify(profile, null, 2));
       return {
         department: profile.department || DEPARTMENTS.CESM, 
-        level: profile.level || VALID_LEVELS[2],       
+        level: profile.level || VALID_LEVELS[2], // Default to Level 400 for Atem        
         currentAcademicYear: profile.currentAcademicYear || defaultRegistrationMeta.academicYear,
         currentSemester: profile.currentSemester || defaultRegistrationMeta.semester,
       };
     }
+    console.log("[CoursesPage] studentAcademicContext: isStudent is false or profile is null.");
     return null;
   }, [isStudent, profile]);
   
@@ -193,28 +195,45 @@ export default function CoursesPage() {
   const [isDeadlineApproaching, setIsDeadlineApproaching] = useState(false);
   const [daysToDeadline, setDaysToDeadline] = useState<number | null>(null);
 
+   useEffect(() => {
+    console.log("[CoursesPage Effect LOG] Page Load / User/Auth Change. User UID:", user?.uid, "Auth Loading:", authLoading);
+    if (profile) {
+      console.log("[CoursesPage Effect LOG] Profile available:", JSON.stringify(profile, null, 2));
+    } else {
+      console.log("[CoursesPage Effect LOG] Profile NOT available yet.");
+    }
+    console.log("[CoursesPage Effect LOG] Current studentAcademicContext:", studentAcademicContext);
+    console.log("[CoursesPage Effect LOG] Current currentRegistrationMeta:", currentRegistrationMeta);
+
+  }, [user?.uid, authLoading, profile, studentAcademicContext]);
+
+
   useEffect(() => {
     async function loadData() {
       setIsLoading(true);
+      console.log("[loadData] Starting. User UID:", user?.uid, "Profile exists:", !!profile);
       const fetchedCourses = await fetchCourses();
       setAllCourses(fetchedCourses);
   
       if (user?.uid && profile && studentAcademicContext) {
+        console.log("[loadData] User, profile, and studentAcademicContext available. Fetching registrations for UID:", user.uid);
+        console.log("[loadData] studentAcademicContext:", JSON.stringify(studentAcademicContext, null, 2));
         try {
-          // Fetch all historical registrations for prerequisite checks
+          console.log("[loadData] Fetching ALL historical registrations from Supabase for UID:", user.uid);
           const { data: allUserDbRegs, error: fetchAllError } = await supabase
             .from('student_course_registrations')
             .select('course_id')
             .eq('student_uid', user.uid);
 
           if (fetchAllError) {
-            console.error("Error fetching all historical registrations:", fetchAllError);
-            toast({ title: "Error Loading History", description: "Could not load full registration history.", variant: "destructive" });
+            console.error("[loadData] Error fetching all historical registrations from Supabase:", fetchAllError);
+            toast({ title: "Error Loading History", description: `Could not load full registration history: ${fetchAllError.message}`, variant: "destructive" });
           } else if (allUserDbRegs) {
+            console.log("[loadData] Successfully fetched all historical registrations:", allUserDbRegs.map(r => r.course_id));
             setAllHistoricalRegistrations(allUserDbRegs.map(r => r.course_id));
           }
 
-          // Fetch registrations for the current academic context
+          console.log(`[loadData] Fetching CURRENT registrations from Supabase for UID: ${user.uid}, Year: ${studentAcademicContext.currentAcademicYear}, Sem: ${studentAcademicContext.currentSemester}`);
           const { data: currentPeriodRegs, error: fetchCurrentError } = await supabase
             .from('student_course_registrations')
             .select('course_id')
@@ -223,13 +242,14 @@ export default function CoursesPage() {
             .eq('semester', studentAcademicContext.currentSemester);
 
           if (fetchCurrentError) {
-            console.error("Error fetching current registrations:", fetchCurrentError);
-            toast({ title: "Error Loading Registrations", description: "Could not load current course registrations.", variant: "destructive" });
+            console.error("[loadData] Error fetching current registrations from Supabase:", fetchCurrentError);
+            toast({ title: "Error Loading Registrations", description: `Could not load current course registrations: ${fetchCurrentError.message}`, variant: "destructive" });
             setRegisteredCourseIds([]);
           } else if (currentPeriodRegs && currentPeriodRegs.length > 0) {
+            console.log("[loadData] Found existing current registrations in Supabase:", currentPeriodRegs.map(r => r.course_id));
             setRegisteredCourseIds(currentPeriodRegs.map(r => r.course_id));
           } else {
-            // No registrations for this period in DB, auto-register compulsory/general
+            console.log("[loadData] No current registrations found in Supabase. Attempting auto-registration.");
             const { department, level, currentAcademicYear, currentSemester } = studentAcademicContext;
             const departmentalCourses = fetchedCourses.filter(c =>
                 c.department === department && c.level === level &&
@@ -242,6 +262,7 @@ export default function CoursesPage() {
             );
             
             const autoRegisterCourseIds = [...new Set([...departmentalCourses.map(c => c.id), ...generalCoursesForLevel.map(c => c.id)])];
+            console.log("[loadData] Courses identified for auto-registration:", autoRegisterCourseIds);
 
             if (autoRegisterCourseIds.length > 0) {
               const recordsToInsert = autoRegisterCourseIds.map(courseId => {
@@ -253,39 +274,45 @@ export default function CoursesPage() {
                   department: courseDetails?.department, level: courseDetails?.level,
                   course_code: courseDetails?.code, course_credits: courseDetails?.credits,
                 };
-              }).filter(record => record.course_id && record.student_uid); // Ensure valid records
+              }).filter(record => record.course_id && record.student_uid); 
 
+              console.log("[loadData] Records to insert for auto-registration:", JSON.stringify(recordsToInsert, null, 2));
               if (recordsToInsert.length > 0) {
                 const { error: insertError } = await supabase.from('student_course_registrations').insert(recordsToInsert);
                 if (insertError) {
-                  console.error("Error auto-registering courses to Supabase:", insertError);
-                  toast({ title: "Auto-Registration Failed", description: "Could not save initial course registrations.", variant: "destructive" });
+                  console.error("[loadData] Error auto-registering courses to Supabase:", insertError);
+                  toast({ title: "Auto-Registration Failed", description: `Could not save initial course registrations: ${insertError.message}. Check RLS policies.`, variant: "destructive" });
                   setRegisteredCourseIds([]);
                 } else {
+                  console.log("[loadData] Auto-registration to Supabase successful.");
                   setRegisteredCourseIds(autoRegisterCourseIds);
-                  setAllHistoricalRegistrations(prev => [...new Set([...prev, ...autoRegisterCourseIds])]); // Update historical too
+                  setAllHistoricalRegistrations(prev => [...new Set([...prev, ...autoRegisterCourseIds])]); 
                   toast({ title: "Courses Auto-Registered", description: "Compulsory and general courses for your level have been pre-selected.", variant: "default" });
                 }
               } else {
+                 console.log("[loadData] No valid records to insert after filtering for auto-registration.");
                  setRegisteredCourseIds([]);
               }
             } else {
+              console.log("[loadData] No courses identified for auto-registration based on profile and current period.");
               setRegisteredCourseIds([]);
             }
           }
-        } catch (e) {
-          console.error("General error in loadData:", e);
-          toast({ title: "Load Error", description: "An unexpected error occurred loading registration data.", variant: "destructive" });
+        } catch (e: any) {
+          console.error("[loadData] General error in loadData's Supabase block:", e);
+          toast({ title: "Load Error", description: `An unexpected error occurred loading registration data: ${e.message}`, variant: "destructive" });
           setRegisteredCourseIds([]);
         } finally {
           setHasLoadedInitialServerRegistrations(true);
         }
       } else {
-        setRegisteredCourseIds([]); // Not logged in or no profile
+        console.log("[loadData] User, profile, or studentAcademicContext not available. Skipping Supabase registration fetch. User UID:", user?.uid, "Profile:", !!profile, "Context:", !!studentAcademicContext);
+        setRegisteredCourseIds([]); 
         setAllHistoricalRegistrations([]);
-        setHasLoadedInitialServerRegistrations(true); // No server interaction to wait for
+        setHasLoadedInitialServerRegistrations(true); 
       }
       setIsLoading(false);
+      console.log("[loadData] Finished.");
     }
 
     if (!authLoading) { 
@@ -295,12 +322,13 @@ export default function CoursesPage() {
   
    useEffect(() => {
     if (isStudent && studentAcademicContext) {
+      console.log("[CoursesPage Effect LOG] Updating filters based on studentAcademicContext:", JSON.stringify(studentAcademicContext, null, 2));
       setFilters(prevFilters => ({
         ...prevFilters,
-        department: prevFilters.department !== "all" && prevFilters.department !== studentAcademicContext.department ? prevFilters.department : studentAcademicContext.department,
-        level: prevFilters.level !== "all" && prevFilters.level !== studentAcademicContext.level.toString() ? prevFilters.level : studentAcademicContext.level.toString(),
-        academicYear: prevFilters.academicYear !== "all" && prevFilters.academicYear !== studentAcademicContext.currentAcademicYear ? prevFilters.academicYear : studentAcademicContext.currentAcademicYear,
-        semester: prevFilters.semester !== "all" && prevFilters.semester !== studentAcademicContext.currentSemester ? prevFilters.semester : studentAcademicContext.currentSemester,
+        department: studentAcademicContext.department,
+        level: studentAcademicContext.level.toString(),
+        academicYear: studentAcademicContext.currentAcademicYear,
+        semester: studentAcademicContext.currentSemester,
       }));
     }
   }, [isStudent, studentAcademicContext]);
@@ -389,7 +417,26 @@ export default function CoursesPage() {
   }, [registeredCoursesList, currentRegistrationMeta.academicYear, currentRegistrationMeta.semester]);
 
   const handleRegisterCourse = async (course: Course) => {
-    if (!user?.uid || !studentAcademicContext || isSavingRegistration) return;
+    console.log("[handleRegisterCourse] Attempting to register course:", JSON.stringify(course, null, 2));
+    console.log("[handleRegisterCourse] User UID for Supabase operation:", user?.uid);
+    console.log("[handleRegisterCourse] studentAcademicContext:", JSON.stringify(studentAcademicContext, null, 2));
+    console.log("[handleRegisterCourse] currentRegistrationMeta:", JSON.stringify(currentRegistrationMeta, null, 2));
+
+
+    if (!user?.uid) {
+      console.error("[handleRegisterCourse] User UID is missing!");
+      toast({ title: "Authentication Error", description: "User ID is missing. Cannot register course.", variant: "destructive" });
+      return;
+    }
+    if (!studentAcademicContext) {
+       console.error("[handleRegisterCourse] studentAcademicContext is null!");
+       toast({ title: "Profile Error", description: "Student academic details not loaded. Cannot register course.", variant: "destructive" });
+       return;
+    }
+    if (isSavingRegistration) {
+      console.warn("[handleRegisterCourse] Registration already in progress.");
+      return;
+    }
     setIsSavingRegistration(true);
 
     if (!currentRegistrationMeta.isOpen) {
@@ -408,7 +455,7 @@ export default function CoursesPage() {
         }
       } else {
         if (course.department !== studentAcademicContext.department || course.level !== studentAcademicContext.level) {
-            toast({ title: "Registration Not Allowed", description: `You can only register for courses within your department (${studentAcademicContext.department}) and at your current level (${studentAcademicContext.level}). This course is for ${course.department}, Level ${course.level}.`, variant: "destructive" });
+            toast({ title: "Registration Not Allowed", description: `You can only register for Compulsory/Elective courses within your department (${studentAcademicContext.department}) and at your current level (${studentAcademicContext.level}). This course is for ${course.department}, Level ${course.level}.`, variant: "destructive" });
             setIsSavingRegistration(false); return;
         }
       }
@@ -444,21 +491,31 @@ export default function CoursesPage() {
       setIsSavingRegistration(false); return;
     }
 
-    try {
-      const { error } = await supabase.from('student_course_registrations').insert([{ 
+    const registrationPayload = { 
         student_uid: user.uid, course_id: course.id, 
         academic_year: course.academicYear, semester: course.semester,
         department: course.department, level: course.level,
         course_code: course.code, course_credits: course.credits
-      }]);
+    };
+    console.log("[handleRegisterCourse] Attempting to insert into Supabase:", JSON.stringify(registrationPayload, null, 2));
+
+    try {
+      if (!user.uid) {
+         console.error("[handleRegisterCourse Supabase Call] CRITICAL: user.uid is null or undefined before Supabase insert.");
+         toast({ title: "Critical Error", description: "User session information is missing. Please re-login.", variant: "destructive" });
+         setIsSavingRegistration(false);
+         return;
+      }
+      const { error } = await supabase.from('student_course_registrations').insert([registrationPayload]);
       if (error) throw error;
 
+      console.log("[handleRegisterCourse] Successfully inserted into Supabase.");
       setRegisteredCourseIds(prev => [...prev, course.id]);
       setAllHistoricalRegistrations(prev => [...new Set([...prev, course.id])]);
       toast({ title: "Course Registered", description: `${course.code} - ${course.title} successfully registered.`, variant: "default" });
     } catch (error: any) {
-      console.error("Error registering course in Supabase:", error);
-      toast({ title: "Registration Failed", description: error.message || "Could not save registration.", variant: "destructive" });
+      console.error("[handleRegisterCourse] Error registering course in Supabase:", error);
+      toast({ title: "Registration Failed", description: error.message || "Could not save registration. Check RLS policies or console for details.", variant: "destructive" });
     } finally {
       setIsSavingRegistration(false);
     }
@@ -466,7 +523,24 @@ export default function CoursesPage() {
 
   const handleDropCourse = async (courseIdToDrop: string) => {
      const courseToDrop = allCourses.find(c => c.id === courseIdToDrop);
-     if (!courseToDrop || !user?.uid || !studentAcademicContext || isSavingRegistration) return;
+     console.log("[handleDropCourse] Attempting to drop course:", JSON.stringify(courseToDrop, null, 2));
+     console.log("[handleDropCourse] User UID for Supabase operation:", user?.uid);
+
+
+     if (!courseToDrop || !user?.uid) {
+        console.error("[handleDropCourse] Course to drop or User UID is missing.");
+        toast({title: "Error", description: "Cannot drop course, information missing.", variant: "destructive"});
+        return;
+     }
+     if (!studentAcademicContext) {
+       console.error("[handleDropCourse] studentAcademicContext is null!");
+       toast({ title: "Profile Error", description: "Student academic details not loaded. Cannot drop course.", variant: "destructive" });
+       return;
+     }
+     if (isSavingRegistration) {
+       console.warn("[handleDropCourse] Another registration/drop action in progress.");
+       return;
+     }
      setIsSavingRegistration(true);
 
      if (!currentRegistrationMeta.isOpen) {
@@ -478,24 +552,32 @@ export default function CoursesPage() {
         setIsSavingRegistration(false); return;
     }
     
+    const dropPayload = { 
+        student_uid: user.uid, 
+        course_id: courseToDrop.id,
+        academic_year: courseToDrop.academicYear,
+        semester: courseToDrop.semester 
+    };
+    console.log("[handleDropCourse] Attempting to delete from Supabase:", JSON.stringify(dropPayload, null, 2));
+
     try {
+      if (!user.uid) {
+         console.error("[handleDropCourse Supabase Call] CRITICAL: user.uid is null or undefined before Supabase delete.");
+         toast({ title: "Critical Error", description: "User session information is missing. Please re-login.", variant: "destructive" });
+         setIsSavingRegistration(false);
+         return;
+      }
       const { error } = await supabase.from('student_course_registrations')
         .delete()
-        .match({ 
-            student_uid: user.uid, 
-            course_id: courseToDrop.id,
-            academic_year: courseToDrop.academicYear,
-            semester: courseToDrop.semester 
-        });
+        .match(dropPayload);
       if (error) throw error;
-
+      
+      console.log("[handleDropCourse] Successfully deleted from Supabase.");
       setRegisteredCourseIds(prev => prev.filter(id => id !== courseIdToDrop));
-      // Note: We don't remove from allHistoricalRegistrations as it's a record of all *ever* registered.
-      // If a course is dropped, it's still part of their history for prerequisite purposes.
       toast({ title: "Course Dropped", description: `${courseToDrop.code} - ${courseToDrop.title} has been dropped.`, variant: "default" });
     } catch (error: any) {
-      console.error("Error dropping course from Supabase:", error);
-      toast({ title: "Drop Failed", description: error.message || "Could not drop course.", variant: "destructive" });
+      console.error("[handleDropCourse] Error dropping course from Supabase:", error);
+      toast({ title: "Drop Failed", description: error.message || "Could not drop course. Check RLS policies or console for details.", variant: "destructive" });
     } finally {
       setIsSavingRegistration(false);
     }
@@ -599,26 +681,53 @@ export default function CoursesPage() {
                   {filteredCourses.map(course => {
                     const isRegistered = registeredCourseIds.includes(course.id);
                     let canRegisterThisCourse = !isRegistered && currentRegistrationMeta.isOpen && !isSavingRegistration;
-                    canRegisterThisCourse = canRegisterThisCourse && course.academicYear === currentRegistrationMeta.academicYear && course.semester === currentRegistrationMeta.semester;
-                    canRegisterThisCourse = canRegisterThisCourse && (totalRegisteredCredits + course.credits <= MAX_CREDITS);
-                    if (isStudent && studentAcademicContext) {
-                        let academicEligibility = (course.type === "General") ? course.level === studentAcademicContext.level : (course.department === studentAcademicContext.department && course.level === studentAcademicContext.level);
-                        canRegisterThisCourse = canRegisterThisCourse && academicEligibility;
-                        if (canRegisterThisCourse) {
-                            const unmetPrereqs = course.prerequisites?.filter(prereqCode => !allHistoricalRegistrations.some(regId => {
-                                const regPrereq = allCourses.find(c => c.id === regId && c.code === prereqCode);
-                                if (!regPrereq) return false;
-                                const targetYrParts = course.academicYear.split('/'); const prereqYrParts = regPrereq.academicYear.split('/');
-                                const targetStartYr = parseInt(targetYrParts[0]); const prereqStartYr = parseInt(prereqYrParts[0]);
-                                const semOrder = {"First Semester": 1, "Second Semester": 2, "Resit Semester": 3};
-                                const targetSemOrder = semOrder[course.semester as keyof typeof semOrder] || 0;
-                                const prereqSemOrder = semOrder[regPrereq.semester as keyof typeof semOrder] || 0;
-                                return (prereqStartYr < targetStartYr) || (prereqStartYr === targetStartYr && prereqSemOrder < targetSemOrder);
-                            }));
-                            if (unmetPrereqs && unmetPrereqs.length > 0) canRegisterThisCourse = false;
+                    
+                    if (canRegisterThisCourse) { // Only check further if base conditions met
+                        canRegisterThisCourse = course.academicYear === currentRegistrationMeta.academicYear && course.semester === currentRegistrationMeta.semester;
+                        canRegisterThisCourse = canRegisterThisCourse && (totalRegisteredCredits + course.credits <= MAX_CREDITS);
+                        if (isStudent && studentAcademicContext) {
+                            let academicEligibility = (course.type === "General") ? course.level === studentAcademicContext.level : (course.department === studentAcademicContext.department && course.level === studentAcademicContext.level);
+                            canRegisterThisCourse = canRegisterThisCourse && academicEligibility;
+                            if (canRegisterThisCourse) {
+                                const unmetPrereqs = course.prerequisites?.filter(prereqCode => !allHistoricalRegistrations.some(regId => {
+                                    const regPrereq = allCourses.find(c => c.id === regId && c.code === prereqCode);
+                                    if (!regPrereq) return false;
+                                    const targetYrParts = course.academicYear.split('/'); const prereqYrParts = regPrereq.academicYear.split('/');
+                                    const targetStartYr = parseInt(targetYrParts[0]); const prereqStartYr = parseInt(prereqYrParts[0]);
+                                    const semOrder = {"First Semester": 1, "Second Semester": 2, "Resit Semester": 3};
+                                    const targetSemOrder = semOrder[course.semester as keyof typeof semOrder] || 0;
+                                    const prereqSemOrder = semOrder[regPrereq.semester as keyof typeof semOrder] || 0;
+                                    return (prereqStartYr < targetStartYr) || (prereqStartYr === targetStartYr && prereqSemOrder < targetSemOrder);
+                                }));
+                                if (unmetPrereqs && unmetPrereqs.length > 0) canRegisterThisCourse = false;
+                            }
+                        } else if (isStudent && !studentAcademicContext) { // If student but context not ready, disable
+                            canRegisterThisCourse = false;
                         }
                     }
+
                     const canDropThisCourse = isRegistered && currentRegistrationMeta.isOpen && !isSavingRegistration && course.academicYear === currentRegistrationMeta.academicYear && course.semester === currentRegistrationMeta.semester;
+                    
+                    // Debug log for a specific course
+                    if (course.code === "CSE401" || course.code === "MGT403" || course.code === "LAW101") {
+                        console.log(`[UI Debug ${course.code}] isRegistered=${isRegistered}, currentRegMeta.isOpen=${currentRegistrationMeta.isOpen}, isSaving=${isSavingRegistration}`);
+                        console.log(`[UI Debug ${course.code}] Period Match: courseYear=${course.academicYear} vs metaYear=${currentRegistrationMeta.academicYear}, courseSem=${course.semester} vs metaSem=${currentRegistrationMeta.semester}`);
+                        console.log(`[UI Debug ${course.code}] Credit Check: totalCredits=${totalRegisteredCredits}, courseCredits=${course.credits}, MAX_CREDITS=${MAX_CREDITS}`);
+                        if (isStudent && studentAcademicContext) {
+                            const academicEligibility = (course.type === "General")
+                                ? course.level === studentAcademicContext.level
+                                : (course.department === studentAcademicContext.department && course.level === studentAcademicContext.level);
+                            console.log(`[UI Debug ${course.code}] Student Context: studentDept=${studentAcademicContext.department}, studentLevel=${studentAcademicContext.level}`);
+                            console.log(`[UI Debug ${course.code}] Course Details: courseDept=${course.department}, courseLevel=${course.level}, courseType=${course.type}`);
+                            console.log(`[UI Debug ${course.code}] Calculated Academic Eligibility: ${academicEligibility}`);
+                        } else if (isStudent && !studentAcademicContext) {
+                           console.log(`[UI Debug ${course.code}] studentAcademicContext is MISSING for eligibility check.`);
+                        }
+                        console.log(`[UI Debug ${course.code}] Prerequisites: ${JSON.stringify(course.prerequisites || [])}`);
+                        console.log(`[UI Debug ${course.code}] Historical Registrations for Prereq Check: ${JSON.stringify(allHistoricalRegistrations)}`);
+                        console.log(`[UI Debug ${course.code}] Final canRegisterThisCourse: ${canRegisterThisCourse}`);
+                    }
+
                     return (
                       <TableRow key={course.id}>
                         <TableCell className="font-medium">{course.code}</TableCell><TableCell>{course.title}</TableCell>
@@ -628,7 +737,7 @@ export default function CoursesPage() {
                         <TableCell>{isRegistered ? <Badge variant="success" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">Registered</Badge> : <Badge variant="outline">Available</Badge>}</TableCell>
                         <TableCell className="text-right space-x-1">
                            <Dialog><DialogTrigger asChild><Button variant="ghost" size="icon" onClick={() => setSelectedCourseForDetail(course)}><Eye className="h-4 w-4"/><span className="sr-only">View Details</span></Button></DialogTrigger></Dialog>
-                          {isRegistered ? (<Button variant="destructive" size="sm" onClick={() => handleDropCourse(course.id)} disabled={!canDropThisCourse || isSavingRegistration}><MinusCircle className="mr-1 h-4 w-4"/> Drop</Button>) : (<Button variant="default" size="sm" onClick={() => handleRegisterCourse(course)} disabled={!canRegisterThisCourse || isSavingRegistration}><PlusCircle className="mr-1 h-4 w-4"/> Register</Button>)}
+                          {isRegistered ? (<Button variant="destructive" size="sm" onClick={() => handleDropCourse(course.id)} disabled={!canDropThisCourse || isSavingRegistration}><MinusCircle className="mr-1 h-4 w-4"/> Drop</Button>) : (<Button variant="default" size="sm" onClick={() => handleRegisterCourse(course)} disabled={!canRegisterThisCourse || isSavingRegistration || authLoading || !hasLoadedInitialServerRegistrations}><PlusCircle className="mr-1 h-4 w-4"/> Register</Button>)}
                         </TableCell>
                       </TableRow>
                     );})}
@@ -684,4 +793,3 @@ export default function CoursesPage() {
   );
 }
 
-    
