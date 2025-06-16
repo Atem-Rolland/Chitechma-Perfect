@@ -1,5 +1,16 @@
 
 import type { User as FirebaseUser } from 'firebase/auth';
+import {
+  FileText,
+  FilePresentation,
+  Youtube,
+  Link as LinkIconLucide, // Aliased to avoid conflict with NextLink if used in same file
+  FolderArchive,          // Correct icon name from lucide-react
+  Image as ImageIcon,     // Aliased for clarity or to avoid conflict
+  File as DefaultFileIcon // Aliased
+} from 'lucide-react';
+import type React from 'react';
+
 
 export type Role = "student" | "lecturer" | "admin" | "finance" | null;
 
@@ -330,16 +341,14 @@ export const materialTypeAcceptsLink = (type: MaterialType | undefined): boolean
 };
 
 export const getMaterialTypeIcon = (type: MaterialType): React.ElementType => {
-  const LucideIcons = require("lucide-react");
   switch (type) {
-    case "pdf": return LucideIcons.FileText;
-    case "docx": return LucideIcons.FileText; 
-    case "pptx": return LucideIcons.FilePresentation;
-    case "video_link": return LucideIcons.Youtube;
-    case "web_link": return LucideIcons.Link;
-    case "zip": return LucideIcons.Archive;
-    case "image": return LucideIcons.Image; 
-    default: return LucideIcons.File;
+    case "pdf": return FileText;
+    case "docx": return FileText;
+    case "pptx": return FilePresentation;
+    case "video_link": return Youtube;
+    case "web_link": return LinkIconLucide;
+    case "zip": return FolderArchive;
+    case "image": return ImageIcon;
+    default: return DefaultFileIcon;
   }
 };
-
