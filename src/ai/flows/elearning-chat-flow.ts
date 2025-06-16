@@ -8,7 +8,7 @@
  * - ElearningChatOutput - The return type for the elearningChat function.
  */
 
-import { z } from 'genkit'; // genkit/zod can be replaced with standard zod if genkit is fully removed
+import { z } from 'zod'; // Changed from 'genkit'
 
 // Define a Zod schema for individual chat messages to be used in history
 const ChatMessageSchema = z.object({
