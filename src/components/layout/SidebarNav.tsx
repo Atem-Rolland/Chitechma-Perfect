@@ -31,7 +31,7 @@ import {
   BarChart3, 
   DownloadCloud, 
   FileWarning, 
-  FolderArchive, 
+  FolderArchive, // Added FolderArchive import
   ClipboardCheck, 
   Video, 
   MessageSquare, 
@@ -81,7 +81,7 @@ const iconMap: Record<string, React.ElementType> = {
   BarChart3,
   DownloadCloud,
   FileWarning,
-  FolderArchive,
+  FolderArchive, // Now correctly referenced
   ClipboardCheck,
   Video,
   MessageSquare,
@@ -379,3 +379,4 @@ export function SidebarNav() {
 }
 
     
+
