@@ -4,23 +4,23 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import type { NavItem } from '@/config/site'; 
-import type { Role } from '@/types'; 
+import type { NavItem } from '@/config/site';
+import type { Role } from '@/types';
 import { cn } from '@/lib/utils';
-import { 
-  SidebarMenu, 
-  SidebarMenuItem, 
+import {
+  SidebarMenu,
+  SidebarMenuItem,
   SidebarMenuButton,
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem
 } from '@/components/ui/sidebar';
-import { 
-  LayoutDashboard, 
-  BookOpen, 
-  Users, 
-  CreditCard, 
-  GraduationCap, 
+import {
+  LayoutDashboard,
+  BookOpen,
+  Users,
+  CreditCard,
+  GraduationCap,
   UserCheck,
   FileText,
   DollarSign,
@@ -28,36 +28,36 @@ import {
   ShieldCheck,
   ChevronDown,
   ChevronRight,
-  BarChart3, 
-  DownloadCloud, 
-  FileWarning, 
-  FolderArchive, // Added FolderArchive import
-  ClipboardCheck, 
-  Video, 
-  MessageSquare, 
-  BookCheck as ResultsIcon, 
-  History, 
-  Presentation, 
-  Edit, 
-  Bell, 
-  CalendarCheck, 
-  BookCopy as ManageCoursesIcon, 
+  BarChart3,
+  DownloadCloud,
+  FileWarning,
+  FolderArchive, // Ensured FolderArchive is imported
+  ClipboardCheck,
+  Video,
+  MessageSquare,
+  BookCheck as ResultsIcon,
+  History,
+  Presentation,
+  Edit,
+  Bell,
+  CalendarCheck,
+  BookCopy as ManageCoursesIcon,
   FileSignature,
   Bot,
   CalendarDays,
   BarChartHorizontalBig,
-  UserCog, 
-  Library, 
-  ListChecks, 
-  AlertCircle as AlertCircleIcon, 
-  UploadCloud as UploadCloudIcon, 
-  Lock as LockIcon, 
-  Landmark as LandmarkIcon, 
-  Receipt as ReceiptIcon, 
-  MailWarning as MailWarningIcon, 
-  Megaphone as MegaphoneIcon, 
-  PieChart as PieChartIcon, 
-  SlidersHorizontal as SlidersHorizontalIcon, 
+  UserCog,
+  Library,
+  ListChecks,
+  AlertCircle as AlertCircleIcon,
+  UploadCloud as UploadCloudIcon,
+  Lock as LockIcon,
+  Landmark as LandmarkIcon,
+  Receipt as ReceiptIcon,
+  MailWarning as MailWarningIcon,
+  Megaphone as MegaphoneIcon,
+  PieChart as PieChartIcon,
+  SlidersHorizontal as SlidersHorizontalIcon,
   DatabaseZap as DatabaseZapIcon,
   Eye,
   UserPlus,
@@ -77,11 +77,11 @@ const iconMap: Record<string, React.ElementType> = {
   DollarSign,
   Settings,
   ShieldCheck,
-  ResultsIcon, 
+  ResultsIcon,
   BarChart3,
   DownloadCloud,
   FileWarning,
-  FolderArchive, // Now correctly referenced
+  FolderArchive, // Mapped here as well
   ClipboardCheck,
   Video,
   MessageSquare,
@@ -90,23 +90,23 @@ const iconMap: Record<string, React.ElementType> = {
   Edit,
   Bell,
   CalendarCheck,
-  ManageCoursesIcon, 
+  ManageCoursesIcon,
   FileSignature,
   Bot,
   CalendarDays,
   BarChartHorizontalBig,
-  UserCog, 
-  Library, 
-  ListChecks, 
-  AlertCircleIcon, 
-  UploadCloudIcon, 
-  LockIcon, 
-  LandmarkIcon, 
-  ReceiptIcon, 
-  MailWarningIcon, 
-  MegaphoneIcon, 
-  PieChartIcon, 
-  SlidersHorizontalIcon, 
+  UserCog,
+  Library,
+  ListChecks,
+  AlertCircleIcon,
+  UploadCloudIcon,
+  LockIcon,
+  LandmarkIcon,
+  ReceiptIcon,
+  MailWarningIcon,
+  MegaphoneIcon,
+  PieChartIcon,
+  SlidersHorizontalIcon,
   DatabaseZapIcon,
   Eye,
   UserPlus,
@@ -118,10 +118,10 @@ const defaultSidebarNav: Record<Role | 'guest' | 'null', NavItem[]> = {
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { title: 'My Courses', href: '/courses', icon: BookOpen },
     { title: 'My Timetable', href: '/dashboard/student/timetable', icon: CalendarDays },
-    { 
-      title: 'Results', 
-      href: '#', 
-      icon: GraduationCap, 
+    {
+      title: 'Results',
+      href: '#',
+      icon: GraduationCap,
       subItems: [
         { title: 'View Grades', href: '/dashboard/student/grades', icon: ResultsIcon },
         { title: 'GPA Analytics', href: '/dashboard/student/grades/gpa-analytics', icon: BarChart3 },
@@ -129,9 +129,9 @@ const defaultSidebarNav: Record<Role | 'guest' | 'null', NavItem[]> = {
         { title: 'Grade Appeals', href: '/dashboard/student/grades/appeals', icon: FileWarning },
       ]
     },
-    { 
-      title: 'Tuition & Payments', 
-      href: '#', 
+    {
+      title: 'Tuition & Payments',
+      href: '#',
       icon: CreditCard,
       subItems: [
         { title: 'Overview & Pay', href: '/dashboard/student/payments', icon: CreditCard },
@@ -140,10 +140,10 @@ const defaultSidebarNav: Record<Role | 'guest' | 'null', NavItem[]> = {
     },
     {
       title: 'E-Learning',
-      href: '#', 
-      icon: FolderArchive, 
+      href: '#',
+      icon: FolderArchive, // Direct component reference
       subItems: [
-        { title: 'Course Materials', href: '/dashboard/student/e-learning/materials', icon: FolderArchive },
+        { title: 'Course Materials', href: '/dashboard/student/e-learning/materials', icon: FolderArchive }, // Direct component reference
         { title: 'Assignments', href: '/dashboard/student/e-learning/assignments', icon: ClipboardCheck },
         { title: 'Video Lectures', href: '/dashboard/student/e-learning/lectures', icon: Video },
         { title: 'Live Classes', href: '/dashboard/student/e-learning/live-classes', icon: Presentation },
@@ -157,9 +157,9 @@ const defaultSidebarNav: Record<Role | 'guest' | 'null', NavItem[]> = {
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { title: 'Notifications', href: '/dashboard/notifications', icon: Bell },
     { title: 'My Courses', href: '/dashboard/lecturer/courses', icon: ManageCoursesIcon },
-    { 
-      title: 'Grading & Evaluation', 
-      href: '#', 
+    {
+      title: 'Grading & Evaluation',
+      href: '#',
       icon: Edit,
       subItems: [
         { title: 'Assignments', href: '/dashboard/lecturer/assignments', icon: ClipboardCheck },
@@ -175,20 +175,20 @@ const defaultSidebarNav: Record<Role | 'guest' | 'null', NavItem[]> = {
   admin: [
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { title: 'Notifications', href: '/dashboard/notifications', icon: Bell },
-    { 
-      title: 'User Management', 
-      href: '#', 
+    {
+      title: 'User Management',
+      href: '#',
       icon: UserCog,
       subItems: [
         { title: 'View All Users', href: '/dashboard/admin/users/view-all', icon: Eye},
         { title: 'Create User', href: '/dashboard/admin/users/create', icon: UserPlus},
         { title: 'Roles & Permissions', href: '/dashboard/admin/users/roles', icon: ShieldCheck},
         { title: 'Pending Approvals', href: '/dashboard/admin/approvals/accounts', icon: UserCheck },
-      ] 
+      ]
     },
-    { 
-      title: 'Academic Setup', 
-      href: '#', 
+    {
+      title: 'Academic Setup',
+      href: '#',
       icon: Settings,
       subItems: [
         { title: 'Departments', href: '/dashboard/admin/departments', icon: Library },
@@ -199,9 +199,9 @@ const defaultSidebarNav: Record<Role | 'guest' | 'null', NavItem[]> = {
 
       ]
     },
-     { 
-      title: 'Registration & Results', 
-      href: '#', 
+     {
+      title: 'Registration & Results',
+      href: '#',
       icon: Edit3,
       subItems: [
         { title: 'Registration Windows', href: '/dashboard/admin/registration/periods', icon: CalendarCheck },
@@ -210,9 +210,9 @@ const defaultSidebarNav: Record<Role | 'guest' | 'null', NavItem[]> = {
         { title: 'Lock/Unlock Results', href: '/dashboard/admin/results/lock', icon: LockIcon },
       ]
     },
-    { 
-      title: 'Financial Oversight', 
-      href: '#', 
+    {
+      title: 'Financial Oversight',
+      href: '#',
       icon: DollarSign,
       subItems: [
         { title: 'View Payments', href: '/dashboard/admin/finance/payments', icon: Eye },
@@ -220,25 +220,25 @@ const defaultSidebarNav: Record<Role | 'guest' | 'null', NavItem[]> = {
         { title: 'Student Records', href: '/dashboard/admin/finance/student-records', icon: FileText },
         { title: 'Fee Reminders', href: '/dashboard/admin/finance/reminders', icon: MailWarningIcon },
         { title: 'Payment Gateway Sim', href: '/dashboard/admin/finance/gateway-test', icon: CreditCard },
-      ] 
+      ]
     },
-     { 
-      title: 'Communication', 
-      href: '#', 
+     {
+      title: 'Communication',
+      href: '#',
       icon: MegaphoneIcon,
       subItems: [
          { title: 'Announcements', href: '/dashboard/admin/announcements/new', icon: Edit3 },
          { title: 'Manage Chatbot', href: '/dashboard/admin/chatbot/manage', icon: Bot },
       ]
     },
-    { 
-      title: 'System & Reports', 
-      href: '#', 
+    {
+      title: 'System & Reports',
+      href: '#',
       icon: BarChartHorizontalBig,
       subItems: [
         { title: 'Generate Reports', href: '/dashboard/admin/reports', icon: PieChartIcon },
         { title: 'Audit Logs', href: '/dashboard/admin/logs/audit', icon: History },
-      ] 
+      ]
     },
   ],
   finance: [
@@ -251,8 +251,8 @@ const defaultSidebarNav: Record<Role | 'guest' | 'null', NavItem[]> = {
     { title: 'Issue Reminders', href: '/dashboard/finance/reminders', icon: MailWarningIcon},
 
   ],
-  guest: [], 
-  null: [], 
+  guest: [],
+  null: [],
 };
 
 interface SidebarNavItemProps {
@@ -261,8 +261,12 @@ interface SidebarNavItemProps {
 }
 
 const SidebarNavItem: React.FC<SidebarNavItemProps> = ({ item, pathname }) => {
-  const Icon = item.icon ? iconMap[item.icon.displayName || item.icon.name] || item.icon : null;
-  
+  // If item.icon is already a component (like FolderArchive directly), use it.
+  // Otherwise, try to look it up in iconMap using its name (if item.icon was a string key, which it isn't here).
+  const Icon = item.icon
+    ? (typeof item.icon === 'string' ? iconMap[item.icon] : item.icon) || null
+    : null;
+
   let isActive = pathname === item.href || (item.href !== '/dashboard' && item.href !== '#' && pathname.startsWith(item.href));
   if (item.subItems && !isActive) {
     isActive = item.subItems.some(sub => pathname === sub.href || (sub.href !== '/dashboard' && sub.href !== '#' && pathname.startsWith(sub.href)));
@@ -273,7 +277,7 @@ const SidebarNavItem: React.FC<SidebarNavItemProps> = ({ item, pathname }) => {
   React.useEffect(() => {
     if (item.subItems && item.subItems.some(sub => pathname === sub.href || (sub.href !== '/dashboard' && sub.href !== '#' && pathname.startsWith(sub.href)))) {
       setIsSubmenuOpen(true);
-    } else if (item.subItems && !isActive) { 
+    } else if (item.subItems && !isActive) {
         // setIsSubmenuOpen(false); // This line might be too aggressive, let's test behavior
     }
   }, [pathname, item.subItems, isActive]);
@@ -323,13 +327,15 @@ const SidebarNavItem: React.FC<SidebarNavItemProps> = ({ item, pathname }) => {
           >
             <SidebarMenuSub>
               {item.subItems.map(subItem => {
-                const SubIcon = subItem.icon ? iconMap[subItem.icon.displayName || subItem.icon.name] || subItem.icon : null;
+                const SubIcon = subItem.icon
+                  ? (typeof subItem.icon === 'string' ? iconMap[subItem.icon] : subItem.icon) || null
+                  : null;
                 return (
                   <SidebarMenuSubItem key={subItem.href}>
                     <Link href={subItem.href} passHref legacyBehavior>
-                      <SidebarMenuSubButton 
+                      <SidebarMenuSubButton
                         isActive={pathname === subItem.href || (subItem.href !== '/dashboard' && subItem.href !== '#' && pathname.startsWith(subItem.href))}
-                        className="pl-6" 
+                        className="pl-6"
                       >
                         {SubIcon && <SubIcon className="h-4 w-4 mr-2" />}
                         {subItem.title}
@@ -362,11 +368,11 @@ const SidebarNavItem: React.FC<SidebarNavItemProps> = ({ item, pathname }) => {
 export function SidebarNav() {
   const { role } = useAuth();
   const pathname = usePathname();
-  
-  const navItems = role ? defaultSidebarNav[role] : defaultSidebarNav['null']; 
 
-  if (!navItems || !navItems.length) { 
-    return null; 
+  const navItems = role ? defaultSidebarNav[role] : defaultSidebarNav['null'];
+
+  if (!navItems || !navItems.length) {
+    return null;
   }
 
   return (
@@ -377,6 +383,3 @@ export function SidebarNav() {
     </SidebarMenu>
   );
 }
-
-    
-
