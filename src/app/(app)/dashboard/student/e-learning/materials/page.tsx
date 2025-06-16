@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FolderArchive, FileText, Video as VideoIcon, Download, AlertTriangle, ExternalLink } from "lucide-react";
+import { FolderArchive, FileText, Video as VideoIconLucide, Download, AlertTriangle, ExternalLink, File as DefaultFileIcon } from "lucide-react"; // Updated imports
 import { motion } from "framer-motion";
 import { useState, useMemo } from "react";
 import Image from "next/image";
@@ -68,10 +68,10 @@ function getFileIcon(type: CourseMaterial["type"]) {
   switch (type) {
     case "pdf": return <FileText className="h-5 w-5 text-red-500" />;
     case "docx": return <FileText className="h-5 w-5 text-blue-500" />;
-    case "video": return <VideoIcon className="h-5 w-5 text-purple-500" />;
-    case "zip": return <FolderArchive className="h-5 w-5 text-orange-500" />;
-    case "link": return <ExternalLink className="h-5 w-5 text-green-500" />;
-    default: return <FileText className="h-5 w-5 text-muted-foreground" />;
+    case "video": return <VideoIconLucide className="h-5 w-5 text-purple-500" />; // Use aliased import
+    case "zip": return <FolderArchive className="h-5 w-5 text-orange-500" />; // Use direct import
+    case "link": return <ExternalLink className="h-5 w-5 text-green-500" />; // Use direct import
+    default: return <DefaultFileIcon className="h-5 w-5 text-muted-foreground" />; // Use direct import
   }
 }
 
@@ -91,16 +91,6 @@ export default function CourseMaterialsPage() {
         title: "Download Started (Simulated)",
         description: `Downloading ${material.name}... (This is a placeholder action. Actual files would be served from Supabase Storage or similar).`,
       });
-      // In a real app with Supabase:
-      // const { data, error } = await supabase.storage.from('materials-bucket').download(material.url); // Assuming material.url is the path in bucket
-      // if (error) throw error;
-      // const blob = new Blob([data]);
-      // const link = document.createElement('a');
-      // link.href = URL.createObjectURL(blob);
-      // link.download = material.name;
-      // document.body.appendChild(link);
-      // link.click();
-      // document.body.removeChild(link);
     }
   };
 
@@ -194,7 +184,3 @@ export default function CourseMaterialsPage() {
     </motion.div>
   );
 }
-
-    
-
-    
