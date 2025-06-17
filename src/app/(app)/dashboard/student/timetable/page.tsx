@@ -4,30 +4,25 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CalendarDays, Clock, MapPin, UserCircle, BookOpen, Info, Download, PresentationIcon } from "lucide-react";
+import { CalendarDays, Clock, MapPin, UserCircle, BookOpen, Info, Download, PresentationIcon, Printer } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
-import type { Course, TimetableEntry } from "@/types";
-import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS, ALL_UNIVERSITY_COURSES } from "@/config/data"; 
+import type { Course, TimetableEntry, UserProfile } from "@/types";
+import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS, ALL_UNIVERSITY_COURSES } from "@/config/data";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { PrintPreviewDialog } from "@/components/layout/PrintPreviewDialog"; // Import the new dialog
 
 function parseScheduleToTimetableEntries(course: Course): TimetableEntry[] {
   const entries: TimetableEntry[] = [];
   if (!course.schedule) return entries;
 
-  // Improved parsing: DayOfWeek StartTime-EndTime, Venue (optional)
-  // Example: "Mon 10:00-12:00 Lab Hall 1, Wed 10:00-11:00 Lab Hall 1"
-  // Example: "Tue 14:00-16:00, Fri 8:00-9:00, AMPHI200"
-  // Example: "Wed 14:00-17:00 AMPHI200" (Venue applies to all if at the end)
-  
   const scheduleParts = course.schedule.split(',').map(s => s.trim());
   let commonVenue = "TBD";
 
-  // Check if the last part is likely a venue applying to all previous time slots
   const lastPart = scheduleParts[scheduleParts.length - 1];
   if (lastPart && !lastPart.match(/\b(Mon|Tue|Wed|Thu|Fri|Sat)\b/i) && !lastPart.match(/\d{1,2}:\d{2}-\d{1,2}:\d{2}/)) {
     commonVenue = scheduleParts.pop() || "TBD";
@@ -41,7 +36,6 @@ function parseScheduleToTimetableEntries(course: Course): TimetableEntry[] {
       const dayMap = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday' } as const;
       const dayOfWeek = dayMap[dayMatch[1] as keyof typeof dayMap];
       
-      // Extract venue specific to this part, if any, otherwise use commonVenue
       let specificVenue = commonVenue;
       const venuePartMatch = part.substring(timeMatch[0].length + dayMatch[0].length).trim();
       if (venuePartMatch) {
@@ -64,8 +58,6 @@ function parseScheduleToTimetableEntries(course: Course): TimetableEntry[] {
         });
       }
     } else if (part.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/) && entries.length > 0) {
-        // Handle cases like "Mon 8:00-9:00, 10:00-11:00 CR10"
-        // This implies the same day and potentially same venue for the subsequent time slot
         const previousEntry = entries[entries.length - 1];
         const subsequentTimeMatch = part.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
         const venuePartMatch = part.substring(subsequentTimeMatch ? subsequentTimeMatch[0].length : 0).trim();
@@ -76,10 +68,9 @@ function parseScheduleToTimetableEntries(course: Course): TimetableEntry[] {
                 id: `${course.id}-slot${index + 1}`,
                 startTime: subsequentTimeMatch[1],
                 endTime: subsequentTimeMatch[2],
-                venue: venuePartMatch || previousEntry.venue // Use new venue if specified, else previous
+                venue: venuePartMatch || previousEntry.venue
             });
         }
-
     }
   });
   return entries;
@@ -92,12 +83,90 @@ const getLocalStorageKeyForAllRegistrations = (uid?: string) => {
 
 const DAYS_OF_WEEK: TimetableEntry['dayOfWeek'][] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+interface ScheduleDocumentProps {
+  studentProfile: UserProfile | null;
+  timetableEntries: TimetableEntry[];
+  academicPeriod: string;
+}
+
+function ScheduleDocument({ studentProfile, timetableEntries, academicPeriod }: ScheduleDocumentProps) {
+  const groupedTimetable = useMemo(() => {
+    const groups: Record<string, TimetableEntry[]> = {};
+    DAYS_OF_WEEK.forEach(day => groups[day] = []); 
+    timetableEntries.forEach(entry => {
+      if (!groups[entry.dayOfWeek]) groups[entry.dayOfWeek] = [];
+      groups[entry.dayOfWeek].push(entry);
+    });
+    return groups;
+  }, [timetableEntries]);
+
+  return (
+    <div className="schedule-document p-4 md:p-6 font-serif text-sm">
+      <header className="text-center mb-8">
+        <h1 className="text-2xl font-bold uppercase">Chitechma University</h1>
+        <p className="text-sm">P.O. Box XXX, City, Region</p>
+        <h2 className="text-xl font-semibold mt-4 underline uppercase">Class Timetable</h2>
+      </header>
+
+      <section className="mb-6 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+        <p><strong>Student Name:</strong> {studentProfile?.displayName || "N/A"}</p>
+        <p><strong>Matricule No:</strong> {studentProfile?.matricule || "N/A"}</p>
+        <p><strong>Department:</strong> {studentProfile?.department || "N/A"}</p>
+        <p><strong>Level:</strong> {studentProfile?.level || "N/A"}</p>
+        <p><strong>Academic Period:</strong> {academicPeriod}</p>
+        <p><strong>Date Issued:</strong> {new Date().toLocaleDateString()}</p>
+      </section>
+
+      {timetableEntries.length === 0 ? (
+        <p className="text-center text-muted-foreground">No classes scheduled for this period.</p>
+      ) : (
+        DAYS_OF_WEEK.map(day => {
+          const dayEntries = groupedTimetable[day];
+          if (!dayEntries || dayEntries.length === 0) return null;
+          return (
+            <div key={day} className="mb-6 avoid-break">
+              <h3 className="text-base font-semibold mb-2 border-b pb-1">{day}</h3>
+              <table className="w-full border-collapse border border-gray-400 text-xs">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border border-gray-300 p-1">Time</th>
+                    <th className="border border-gray-300 p-1">Course Code</th>
+                    <th className="border border-gray-300 p-1">Course Title</th>
+                    <th className="border border-gray-300 p-1">Venue</th>
+                    <th className="border border-gray-300 p-1">Lecturer</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dayEntries.map(entry => (
+                    <tr key={entry.id}>
+                      <td className="border border-gray-300 p-1 text-center">{entry.startTime} - {entry.endTime}</td>
+                      <td className="border border-gray-300 p-1">{entry.courseCode}</td>
+                      <td className="border border-gray-300 p-1">{entry.courseTitle}</td>
+                      <td className="border border-gray-300 p-1">{entry.venue}</td>
+                      <td className="border border-gray-300 p-1">{entry.lecturerName || "N/A"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        })
+      )}
+      <footer className="mt-12 pt-6 border-t border-gray-400 text-center text-xs">
+        <p><em>This timetable is subject to change. Please verify with departmental notice boards.</em></p>
+      </footer>
+    </div>
+  );
+}
+
 export default function StudentTimetablePage() {
   const { user, profile, loading: authLoading } = useAuth();
   const [timetableEntries, setTimetableEntries] = useState<TimetableEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPeriodDisplay, setCurrentPeriodDisplay] = useState<string>("");
   const { toast } = useToast();
+  const [isSchedulePreviewOpen, setIsSchedulePreviewOpen] = useState(false);
+  const [scheduleDocumentProps, setScheduleDocumentProps] = useState<ScheduleDocumentProps | null>(null);
 
   useEffect(() => {
     async function loadTimetable() {
@@ -171,12 +240,16 @@ export default function StudentTimetablePage() {
   }, [timetableEntries]);
 
   const handleDownloadSchedule = () => {
-    const coursesForSchedule = timetableEntries.map(entry => `${entry.courseCode}: ${entry.dayOfWeek} ${entry.startTime}-${entry.endTime} at ${entry.venue}`).join('\n');
-    toast({
-      title: "Download Schedule (Simulated)",
-      description: `PDF generation for your timetable (${currentPeriodDisplay}) is under development. Courses on schedule: ${timetableEntries.length > 0 ? timetableEntries.map(e => e.courseCode).join(', ') : 'None'}.`,
-      duration: 7000,
+    if (timetableEntries.length === 0) {
+        toast({ title: "No Schedule", description: "There are no classes in your timetable to preview or download." });
+        return;
+    }
+    setScheduleDocumentProps({
+        studentProfile: profile,
+        timetableEntries: timetableEntries,
+        academicPeriod: currentPeriodDisplay,
     });
+    setIsSchedulePreviewOpen(true);
   };
 
   if (isLoading || authLoading) {
@@ -220,7 +293,7 @@ export default function StudentTimetablePage() {
                 </CardDescription>
             </div>
             <Button onClick={handleDownloadSchedule} className="mt-4 sm:mt-0 w-full sm:w-auto" disabled={timetableEntries.length === 0}>
-                <Download className="mr-2 h-4 w-4" /> Download Schedule (PDF)
+                <Printer className="mr-2 h-4 w-4" /> Preview & Print/Save Schedule
             </Button>
         </CardHeader>
         <CardContent>
@@ -261,10 +334,6 @@ export default function StudentTimetablePage() {
                             <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-accent" /> {entry.venue}</p>
                             {entry.lecturerName && <p className="flex items-center gap-2"><UserCircle className="h-4 w-4 text-accent" /> {entry.lecturerName}</p>}
                           </CardContent>
-                           {/* Optional Footer for links or actions per entry */}
-                           {/* <CardFooter className="pt-3">
-                                <Button variant="link" size="sm" className="p-0 h-auto">View Details</Button>
-                           </CardFooter> */}
                         </Card>
                       ))}
                     </div>
@@ -275,6 +344,16 @@ export default function StudentTimetablePage() {
           )}
         </CardContent>
       </Card>
+
+       {isSchedulePreviewOpen && scheduleDocumentProps && (
+        <PrintPreviewDialog
+          open={isSchedulePreviewOpen}
+          onOpenChange={setIsSchedulePreviewOpen}
+          title={`Class Timetable - ${scheduleDocumentProps.academicPeriod}`}
+        >
+          <ScheduleDocument {...scheduleDocumentProps} />
+        </PrintPreviewDialog>
+      )}
     </motion.div>
   );
 }
