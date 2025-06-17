@@ -23,7 +23,7 @@ import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS, ALL_UNIVERSITY_CO
 
 const CourseDetailDialog = dynamic(() => import('@/components/courses/CourseDetailDialog'), {
   suspense: true,
-  loading: () => <p className="p-4 text-center">Loading details...</p>
+  loading: () => <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"><p className="text-white bg-background p-4 rounded-md">Loading details...</p></div>
 });
 
 const MIN_CREDITS = 1;
@@ -39,7 +39,7 @@ export default function CoursesPage() {
   const { toast } = useToast();
   const isStudent = role === 'student';
 
-  const [pageDataLoading, setPageDataLoading] = useState(true); // Consolidated loading state
+  const [pageDataLoading, setPageDataLoading] = useState(true); 
 
   const [searchTerm, setSearchTerm] = useState("");
   const [allHistoricalRegistrations, setAllHistoricalRegistrations] = useState<string[]>([]);
@@ -89,13 +89,18 @@ export default function CoursesPage() {
   const [isDeadlineApproaching, setIsDeadlineApproaching] = useState(false);
   const [daysToDeadline, setDaysToDeadline] = useState<number | null>(null);
 
-  // Consolidated useEffect for initial data setup
   useEffect(() => {
-    if (authLoading || !studentAcademicContext || !user?.uid || !ALL_UNIVERSITY_COURSES.length) {
-      setPageDataLoading(true); // Keep loading if auth or context isn't ready
+    if (authLoading || !user?.uid || !ALL_UNIVERSITY_COURSES.length) {
+      setPageDataLoading(true); 
       return;
     }
-    setPageDataLoading(true); // Explicitly set loading true while processing this effect
+    
+    if (role === 'student' && !studentAcademicContext) {
+        setPageDataLoading(true); 
+        return;
+    }
+
+    setPageDataLoading(true); 
 
     let historicalRegsFromStorage: string[] = [];
     const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
@@ -114,44 +119,51 @@ export default function CoursesPage() {
       }
     }
 
-    const { department, level, currentAcademicYear, currentSemester } = studentAcademicContext;
-    const currentPeriodRegisteredIdsFromHistorical = historicalRegsFromStorage.filter(courseId => {
-      const course = ALL_UNIVERSITY_COURSES.find(c => c.id === courseId);
-      return course && course.academicYear === currentAcademicYear && course.semester === currentSemester;
-    });
-
-    let finalCurrentPeriodIds = [...currentPeriodRegisteredIdsFromHistorical];
+    let finalCurrentPeriodIds: string[] = [];
     let finalHistoricalRegs = [...historicalRegsFromStorage];
 
-    if (currentPeriodRegisteredIdsFromHistorical.length === 0 && storageKey && role === 'student') {
-      const departmentalCourses = ALL_UNIVERSITY_COURSES.filter(c =>
-        c.department === department && c.level === level &&
-        c.academicYear === currentAcademicYear && c.semester === currentSemester &&
-        (c.type === "Compulsory")
-      );
-      const generalCoursesForLevel = ALL_UNIVERSITY_COURSES.filter(c =>
-        c.type === "General" && c.level === level &&
-        c.academicYear === currentAcademicYear && c.semester === currentSemester
-      );
-      const autoRegisteredIds = [...new Set([...departmentalCourses.map(c => c.id), ...generalCoursesForLevel.map(c => c.id)])];
+    if (role === 'student' && studentAcademicContext) {
+        const { department, level, currentAcademicYear, currentSemester } = studentAcademicContext;
+        const currentPeriodRegisteredIdsFromHistorical = historicalRegsFromStorage.filter(courseId => {
+          const course = ALL_UNIVERSITY_COURSES.find(c => c.id === courseId);
+          return course && course.academicYear === currentAcademicYear && course.semester === currentSemester;
+        });
+        finalCurrentPeriodIds = [...currentPeriodRegisteredIdsFromHistorical];
 
-      if (autoRegisteredIds.length > 0) {
-        finalHistoricalRegs = Array.from(new Set([...finalHistoricalRegs, ...autoRegisteredIds]));
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(storageKey, JSON.stringify(finalHistoricalRegs));
+        if (currentPeriodRegisteredIdsFromHistorical.length === 0 && storageKey) {
+          const departmentalCourses = ALL_UNIVERSITY_COURSES.filter(c =>
+            c.department === department && c.level === level &&
+            c.academicYear === currentAcademicYear && c.semester === currentSemester &&
+            (c.type === "Compulsory")
+          );
+          const generalCoursesForLevel = ALL_UNIVERSITY_COURSES.filter(c =>
+            c.type === "General" && c.level === level &&
+            c.academicYear === currentAcademicYear && c.semester === currentSemester
+          );
+          const autoRegisteredIds = [...new Set([...departmentalCourses.map(c => c.id), ...generalCoursesForLevel.map(c => c.id)])];
+
+          if (autoRegisteredIds.length > 0) {
+            finalHistoricalRegs = Array.from(new Set([...finalHistoricalRegs, ...autoRegisteredIds]));
+            if (typeof window !== 'undefined') {
+              localStorage.setItem(storageKey, JSON.stringify(finalHistoricalRegs));
+            }
+            finalCurrentPeriodIds = autoRegisteredIds;
+            toast({ title: "Courses Auto-Registered", description: "Compulsory and general courses for your current level and semester have been pre-selected and saved.", variant: "default" });
+          }
         }
-        finalCurrentPeriodIds = autoRegisteredIds;
-        toast({ title: "Courses Auto-Registered", description: "Compulsory and general courses for your current level and semester have been pre-selected and saved.", variant: "default" });
-      }
+    } else { // For non-students or if student context is not yet fully ready for this logic block
+         finalCurrentPeriodIds = historicalRegsFromStorage.filter(courseId => {
+          const course = ALL_UNIVERSITY_COURSES.find(c => c.id === courseId);
+          return course && course.academicYear === filters.academicYear && course.semester === filters.semester;
+        });
     }
 
     setAllHistoricalRegistrations(finalHistoricalRegs);
     setRegisteredCourseIdsForCurrentPeriod(finalCurrentPeriodIds);
-    setPageDataLoading(false); // All initial setup done
+    setPageDataLoading(false); 
 
-  }, [user?.uid, authLoading, studentAcademicContext, role, toast]); // Removed allCourses from deps as it's constant
+  }, [user?.uid, authLoading, studentAcademicContext, role, toast, filters.academicYear, filters.semester]); 
 
-  // Update filters when student context changes (separate from initial load)
   useEffect(() => {
     if (isStudent && studentAcademicContext) {
       setFilters(prevFilters => ({
@@ -255,7 +267,8 @@ export default function CoursesPage() {
     if (filters.academicYear === "all" || filters.semester === "all") { toast({ title: "Select Period", description: "Please select a specific Academic Year and Semester to download Form B.", variant: "info" }); return; }
     const coursesForFormB = registeredCoursesListForDisplay.filter(c => c.academicYear === filters.academicYear && c.semester === filters.semester);
     if (coursesForFormB.length === 0) { toast({ title: "No Courses", description: `No courses registered in localStorage for ${filters.semester}, ${filters.academicYear}.`, variant: "info" }); return; }
-    toast({ title: "Form B Download (Simulated)", description: `Generating PDF for Form B (${filters.semester}, ${filters.academicYear}) using ${coursesForFormB.length} course(s) from localStorage. Courses: ${coursesForFormB.map(c=>c.code).join(', ')}. This is a simulated download.`, duration: 7000 });
+    const totalCreditsForFormB = coursesForFormB.reduce((sum, course) => sum + course.credits, 0);
+    toast({ title: "Form B Download (Simulated)", description: `Generating PDF for Form B (${filters.semester}, ${filters.academicYear}) using ${coursesForFormB.length} course(s) and ${totalCreditsForFormB} credits from localStorage. Courses: ${coursesForFormB.map(c=>c.code).join(', ')}. This is a simulated download.`, duration: 7000 });
   }, [filters.academicYear, filters.semester, registeredCoursesListForDisplay, toast]);
 
   const handleSetSelectedCourseForDetail = useCallback((course: Course | null) => {
@@ -423,7 +436,7 @@ export default function CoursesPage() {
       </div>
 
       {selectedCourseForDetail && (
-        <Suspense fallback={<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><p className="text-white">Loading details...</p></div>}>
+        <Suspense fallback={<div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"><p className="text-white bg-background p-4 rounded-md">Loading details...</p></div>}>
             <CourseDetailDialog course={selectedCourseForDetail} allCourses={ALL_UNIVERSITY_COURSES} open={!!selectedCourseForDetail} onOpenChange={(isOpen) => !isOpen && handleSetSelectedCourseForDetail(null)} />
         </Suspense>
       )}
