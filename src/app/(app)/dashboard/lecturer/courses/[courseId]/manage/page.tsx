@@ -1,28 +1,22 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react"; // Added Suspense
+import dynamic from 'next/dynamic'; // Added dynamic
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import type { Course, CourseMaterial, MaterialType, Assignment, AssignmentResource } from "@/types";
 import { MATERIAL_TYPES, materialTypeAcceptsFile, materialTypeAcceptsLink, getMaterialTypeIcon } from "@/types";
-import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS, ALL_UNIVERSITY_COURSES } from "@/config/data"; // Use ALL_UNIVERSITY_COURSES
+import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS, ALL_UNIVERSITY_COURSES } from "@/config/data"; 
 import { db, auth } from "@/lib/firebase";
 import { supabase } from "@/lib/supabase";
 import { collection, addDoc, query, where, orderBy, getDocs, serverTimestamp, doc, deleteDoc, Timestamp, updateDoc } from "firebase/firestore";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog"; // Removed DialogContent, etc. as they are now in dynamic components
 import { Skeleton } from "@/components/ui/skeleton";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { 
     ArrowLeft, UploadCloud, PlusCircle, Trash2, Download, ExternalLink as OpenLinkIcon, Info, FileText, FilePresentation, 
     Youtube, Link as LinkIconLucide, Archive, Image as ImageIconLucide, CalendarIcon, Edit, Eye, ListChecks, Loader2, File 
@@ -30,8 +24,18 @@ import {
 import { motion } from "framer-motion";
 import Image from "next/image"; 
 import { format, parseISO } from "date-fns"; 
-import { cn } from "@/lib/utils";
 import Link from "next/link";
+
+const UploadMaterialDialogContent = dynamic(() => import('@/components/materials/UploadMaterialDialogContent'), {
+  suspense: true,
+  loading: () => <div className="p-6 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /><p className="mt-2 text-sm text-muted-foreground">Loading material form...</p></div>,
+});
+
+const ManageAssignmentDialogContent = dynamic(() => import('@/components/assignments/ManageAssignmentDialogContent'), {
+  suspense: true,
+  loading: () => <div className="p-6 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /><p className="mt-2 text-sm text-muted-foreground">Loading assignment form...</p></div>,
+});
+
 
 function formatFileSize(bytes: number | undefined, decimals = 2): string {
     if (!bytes || bytes === 0) return '0 Bytes';
@@ -88,7 +92,7 @@ export default function ManageCoursePage() {
             setIsLoadingMaterials(true);
             setIsLoadingAssignments(true);
 
-            const foundCourse = ALL_UNIVERSITY_COURSES.find(c => c.id === courseId); // Use centralized list
+            const foundCourse = ALL_UNIVERSITY_COURSES.find(c => c.id === courseId); 
             setCourse(foundCourse || null);
             setIsLoadingCourseDetails(false);
 
@@ -97,7 +101,7 @@ export default function ManageCoursePage() {
                     const materialsQuery = query(
                         collection(db, "courseMaterials"), 
                         where("courseId", "==", courseId),
-                        where("lecturerId", "==", user.uid), // Ensure lecturer can only see their materials for the course
+                        where("lecturerId", "==", user.uid), 
                         orderBy("uploadedAt", "desc")
                     );
                     const materialsSnapshot = await getDocs(materialsQuery);
@@ -122,7 +126,7 @@ export default function ManageCoursePage() {
                     const assignmentsQuery = query(
                         collection(db, "assignments"),
                         where("courseId", "==", courseId),
-                        where("lecturerId", "==", user.uid), // Ensure lecturer can only see their assignments
+                        where("lecturerId", "==", user.uid), 
                         orderBy("createdAt", "desc")
                     );
                     const assignmentsSnapshot = await getDocs(assignmentsQuery);
@@ -212,7 +216,6 @@ export default function ManageCoursePage() {
                 description: newMaterialDescription.trim() || undefined,
             };
             const docRef = await addDoc(collection(db, "courseMaterials"), materialToSave);
-            // Optimistically update UI before re-fetch or use snapshot listener
             const newMaterialEntry = { ...materialToSave, id: docRef.id, uploadedAt: new Date().toISOString() } as CourseMaterial;
             setMaterials(prev => [newMaterialEntry, ...prev].sort((a,b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()));
             
@@ -250,7 +253,7 @@ export default function ManageCoursePage() {
     const handleAssignmentResourceFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
-            if (file.size > 20 * 1024 * 1024) { // 20MB limit for assignment resources
+            if (file.size > 20 * 1024 * 1024) { 
                 toast({ variant: "destructive", title: "File too large", description: "Maximum file size for assignment resources is 20MB." });
                 setNewAssignmentResourceFile(null);
                 event.target.value = "";
@@ -333,7 +336,7 @@ export default function ManageCoursePage() {
                     assignmentResources: resource ? [resource] : [],
                     createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
                     status: "Open", totalSubmissions: 0, gradedSubmissions: 0,
-                    courseCode: course.code, courseName: course.title, // Denormalize
+                    courseCode: course.code, courseName: course.title, 
                 };
                 const docRef = await addDoc(collection(db, "assignments"), assignmentToSave);
                 setAssignments(prev => [{ ...assignmentToSave, id: docRef.id, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), dueDate: newAssignmentDueDate.toISOString() } as Assignment, ...prev].sort((a,b) => {
@@ -427,35 +430,62 @@ export default function ManageCoursePage() {
                         <DialogTrigger asChild>
                             <Button className="w-full sm:w-auto mt-3 sm:mt-0"><PlusCircle className="mr-2 h-5 w-5" /> Upload New Material</Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-lg">
-                            <DialogHeader><DialogTitle className="text-xl">Upload New Course Material</DialogTitle><DialogDescription>Fill in the details below.</DialogDescription></DialogHeader>
-                            <div className="space-y-4 py-3">
-                                <div><Label htmlFor="material-name">Material Name / Title <span className="text-destructive">*</span></Label><Input id="material-name" value={newMaterialName} onChange={(e) => setNewMaterialName(e.target.value)} placeholder="e.g., Week 1 Lecture Notes" /></div>
-                                <div><Label htmlFor="material-type">Material Type <span className="text-destructive">*</span></Label><Select value={newMaterialType} onValueChange={(value: MaterialType) => setNewMaterialType(value)}><SelectTrigger id="material-type"><SelectValue placeholder="Select material type..." /></SelectTrigger><SelectContent>{MATERIAL_TYPES.map(type => (<SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>))}</SelectContent></Select></div>
-                                {newMaterialType && materialTypeAcceptsFile(newMaterialType) && (<div><Label htmlFor="material-file">Upload File <span className="text-destructive">*</span></Label><Input id="material-file" type="file" onChange={handleMaterialFileChange} className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"/>{newMaterialFile && <p className="text-xs text-muted-foreground mt-1">Selected: {newMaterialFile.name} ({formatFileSize(newMaterialFile.size)})</p>}</div>)}
-                                {newMaterialType && materialTypeAcceptsLink(newMaterialType) && (<div><Label htmlFor="material-link">Link URL <span className="text-destructive">*</span></Label><Input id="material-link" type="url" value={newMaterialLink} onChange={(e) => setNewMaterialLink(e.target.value)} placeholder="e.g., https://example.com/resource" /></div>)}
-                                 <div><Label htmlFor="material-description">Description (Optional)</Label><Textarea id="material-description" value={newMaterialDescription} onChange={(e) => setNewMaterialDescription(e.target.value)} placeholder="Briefly describe the material..." rows={3}/></div>
-                            </div>
-                            <DialogFooter><DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose><Button type="button" onClick={handleUploadMaterial} disabled={isUploadingMaterial}>{isUploadingMaterial ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />} Upload</Button></DialogFooter>
-                        </DialogContent>
+                        <Suspense fallback={<div className="p-6 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /><p className="mt-2 text-sm text-muted-foreground">Loading form...</p></div>}>
+                          <UploadMaterialDialogContent
+                            newMaterialName={newMaterialName}
+                            setNewMaterialName={setNewMaterialName}
+                            newMaterialType={newMaterialType}
+                            setNewMaterialType={setNewMaterialType}
+                            newMaterialFile={newMaterialFile}
+                            handleMaterialFileChange={handleMaterialFileChange}
+                            newMaterialLink={newMaterialLink}
+                            setNewMaterialLink={setNewMaterialLink}
+                            newMaterialDescription={newMaterialDescription}
+                            setNewMaterialDescription={setNewMaterialDescription}
+                            isUploadingMaterial={isUploadingMaterial}
+                            handleUploadMaterial={handleUploadMaterial}
+                            onClose={() => setIsUploadDialogOpen(false)}
+                          />
+                        </Suspense>
                     </Dialog>
                 </CardHeader>
                 <CardContent>
                     {isLoadingMaterials ? (<div className="text-center py-10"><UploadCloud className="mx-auto h-12 w-12 text-muted-foreground mb-3 animate-pulse" /><p>Loading materials...</p></div>)
                     : materials.length === 0 ? (<div className="text-center py-10 border-2 border-dashed border-muted rounded-lg"><IconForType className="mx-auto h-12 w-12 text-muted-foreground mb-3" /><h3 className="text-lg font-semibold text-muted-foreground">No Materials Uploaded Yet</h3><p className="text-sm text-muted-foreground mt-1">Click "Upload New Material" to add resources.</p></div>)
-                    : (<div className="border rounded-md overflow-x-auto"><Table><TableHeader><TableRow><TableHead className="w-[50px] text-center">Type</TableHead><TableHead className="min-w-[200px]">Name & Description</TableHead><TableHead className="hidden md:table-cell text-center min-w-[100px]">Size</TableHead><TableHead className="hidden md:table-cell text-center min-w-[120px]">Uploaded</TableHead><TableHead className="text-right min-w-[150px]">Actions</TableHead></TableRow></TableHeader><TableBody>{materials.map(material => { const MaterialIcon = getMaterialTypeIcon(material.type); const uploadedDate = material.uploadedAt instanceof Timestamp ? material.uploadedAt.toDate() : (typeof material.uploadedAt === 'string' ? parseISO(material.uploadedAt) : new Date()); return (<TableRow key={material.id}><TableCell className="text-center"><MaterialIcon className="h-5 w-5 mx-auto text-muted-foreground" /></TableCell><TableCell className="font-medium">{material.name}{material.description && <p className="text-xs text-muted-foreground mt-0.5">{material.description}</p>}</TableCell><TableCell className="hidden md:table-cell text-center">{material.size ? formatFileSize(material.size) : (materialTypeAcceptsLink(material.type) ? "Link" : "N/A")}</TableCell><TableCell className="hidden md:table-cell text-center">{uploadedDate instanceof Date ? format(uploadedDate, "MMM dd, yyyy") : "Processing..."}</TableCell><TableCell className="text-right space-x-1">{materialTypeAcceptsLink(material.type) || (material.url && material.url.startsWith("http")) ? (<Button variant="outline" size="sm" onClick={() => window.open(material.url, '_blank', 'noopener,noreferrer')}><OpenLinkIcon className="mr-1 h-4 w-4"/>Open</Button>) : (<Button variant="outline" size="sm" onClick={() => window.open(material.url, '_blank', 'noopener,noreferrer')}><Download className="mr-1 h-4 w-4"/>Download</Button>)}<Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleDeleteMaterial(material)}><Trash2 className="h-4 w-4"/><span className="sr-only">Delete</span></Button></TableCell></TableRow>)})}</TableBody></Table></div>)}
+                    : (<div className="border rounded-md overflow-x-auto"><table className="w-full text-sm"><thead className="border-b"><tr className="text-left"><th className="w-[50px] text-center p-3">Type</th><th className="min-w-[200px] p-3">Name & Description</th><th className="hidden md:table-cell text-center min-w-[100px] p-3">Size</th><th className="hidden md:table-cell text-center min-w-[120px] p-3">Uploaded</th><th className="text-right min-w-[150px] p-3">Actions</th></tr></thead><tbody>{materials.map(material => { const MaterialIcon = getMaterialTypeIcon(material.type); const uploadedDate = material.uploadedAt instanceof Timestamp ? material.uploadedAt.toDate() : (typeof material.uploadedAt === 'string' ? parseISO(material.uploadedAt) : new Date()); return (<tr key={material.id} className="border-b last:border-b-0 hover:bg-muted/50"><td className="text-center p-3"><MaterialIcon className="h-5 w-5 mx-auto text-muted-foreground" /></td><td className="font-medium p-3">{material.name}{material.description && <p className="text-xs text-muted-foreground mt-0.5">{material.description}</p>}</td><td className="hidden md:table-cell text-center p-3">{material.size ? formatFileSize(material.size) : (materialTypeAcceptsLink(material.type) ? "Link" : "N/A")}</td><td className="hidden md:table-cell text-center p-3">{uploadedDate instanceof Date ? format(uploadedDate, "MMM dd, yyyy") : "Processing..."}</td><td className="text-right space-x-1 p-3">{materialTypeAcceptsLink(material.type) || (material.url && material.url.startsWith("http")) ? (<Button variant="outline" size="sm" onClick={() => window.open(material.url, '_blank', 'noopener,noreferrer')}><OpenLinkIcon className="mr-1 h-4 w-4"/>Open</Button>) : (<Button variant="outline" size="sm" onClick={() => window.open(material.url, '_blank', 'noopener,noreferrer')}><Download className="mr-1 h-4 w-4"/>Download</Button>)}<Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleDeleteMaterial(material)}><Trash2 className="h-4 w-4"/><span className="sr-only">Delete</span></Button></td></tr>)})}</tbody></table></div>)}
                 </CardContent>
             </Card>
 
             <Card className="shadow-lg">
                 <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                     <div><CardTitle className="text-xl md:text-2xl">Assignments</CardTitle><CardDescription>Create and manage assignments for this course.</CardDescription></div>
-                     <Dialog open={isAssignmentDialogOpen} onOpenChange={(isOpen) => { setIsAssignmentDialogOpen(isOpen); if (!isOpen) resetAssignmentForm(); }}><DialogTrigger asChild><Button onClick={() => { resetAssignmentForm(); setIsAssignmentDialogOpen(true); }}  className="w-full sm:w-auto mt-3 sm:mt-0"><PlusCircle className="mr-2 h-5 w-5"/>Create New Assignment</Button></DialogTrigger><DialogContent className="sm:max-w-lg"><DialogHeader><DialogTitle className="text-xl">{currentAssignmentToEdit ? `Edit: ${currentAssignmentToEdit.title}` : "Create New Assignment"}</DialogTitle><DialogDescription>{currentAssignmentToEdit ? "Update details below." : "Define details below."}</DialogDescription></DialogHeader><div className="space-y-4 py-3 max-h-[70vh] overflow-y-auto pr-2"><div><Label htmlFor="assignment-title">Title <span className="text-destructive">*</span></Label><Input id="assignment-title" value={newAssignmentTitle} onChange={(e) => setNewAssignmentTitle(e.target.value)} placeholder="e.g., Essay on Algorithms" /></div><div><Label htmlFor="assignment-instructions">Instructions/Description</Label><Textarea id="assignment-instructions" value={newAssignmentInstructions} onChange={(e) => setNewAssignmentInstructions(e.target.value)} placeholder="Detailed instructions..." rows={5}/></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><Label htmlFor="assignment-due-date">Due Date <span className="text-destructive">*</span></Label><Popover><PopoverTrigger asChild><Button variant={"outline"} className={cn("w-full justify-start text-left font-normal",!newAssignmentDueDate && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{newAssignmentDueDate ? format(newAssignmentDueDate, "PPP") : <span>Pick a date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={newAssignmentDueDate} onSelect={setNewAssignmentDueDate} initialFocus disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))} /></PopoverContent></Popover></div><div><Label htmlFor="assignment-max-score">Max Score</Label><Input id="assignment-max-score" type="number" value={newAssignmentMaxScore} onChange={(e) => setNewAssignmentMaxScore(e.target.value)} placeholder="e.g., 100" /></div></div><div><Label htmlFor="assignment-file-types">Allowed File Types (Optional)</Label><Input id="assignment-file-types" value={newAssignmentFileTypes} onChange={(e) => setNewAssignmentFileTypes(e.target.value)} placeholder="e.g., .pdf,.docx,.zip" /><p className="text-xs text-muted-foreground mt-1">Comma-separated list.</p></div>{!currentAssignmentToEdit && (<div><Label htmlFor="assignment-resource-file">Upload Resource File (Optional)</Label><Input id="assignment-resource-file" type="file" onChange={handleAssignmentResourceFileChange} className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"/><p className="text-xs text-muted-foreground mt-1">{newAssignmentResourceFile ? `Selected: ${newAssignmentResourceFile.name} (${formatFileSize(newAssignmentResourceFile.size)})` : "Max 20MB."}</p></div>)}</div><DialogFooter><Button type="button" variant="outline" onClick={() => { setIsAssignmentDialogOpen(false); resetAssignmentForm();}}>Cancel</Button><Button type="button" onClick={handleSaveAssignment} disabled={isSavingAssignment}>{isSavingAssignment ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (currentAssignmentToEdit ? <Edit className="mr-2 h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />)}{currentAssignmentToEdit ? "Save Changes" : "Create Assignment"}</Button></DialogFooter></DialogContent></Dialog>
+                     <Dialog open={isAssignmentDialogOpen} onOpenChange={(isOpen) => { setIsAssignmentDialogOpen(isOpen); if (!isOpen) resetAssignmentForm(); }}><DialogTrigger asChild><Button onClick={() => { resetAssignmentForm(); setIsAssignmentDialogOpen(true); }}  className="w-full sm:w-auto mt-3 sm:mt-0"><PlusCircle className="mr-2 h-5 w-5"/>Create New Assignment</Button></DialogTrigger>
+                        <Suspense fallback={<div className="p-6 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /><p className="mt-2 text-sm text-muted-foreground">Loading form...</p></div>}>
+                          <ManageAssignmentDialogContent
+                            currentAssignmentToEdit={currentAssignmentToEdit}
+                            newAssignmentTitle={newAssignmentTitle}
+                            setNewAssignmentTitle={setNewAssignmentTitle}
+                            newAssignmentInstructions={newAssignmentInstructions}
+                            setNewAssignmentInstructions={setNewAssignmentInstructions}
+                            newAssignmentDueDate={newAssignmentDueDate}
+                            setNewAssignmentDueDate={setNewAssignmentDueDate}
+                            newAssignmentMaxScore={newAssignmentMaxScore}
+                            setNewAssignmentMaxScore={setNewAssignmentMaxScore}
+                            newAssignmentFileTypes={newAssignmentFileTypes}
+                            setNewAssignmentFileTypes={setNewAssignmentFileTypes}
+                            newAssignmentResourceFile={newAssignmentResourceFile}
+                            handleAssignmentResourceFileChange={handleAssignmentResourceFileChange}
+                            isSavingAssignment={isSavingAssignment}
+                            handleSaveAssignment={handleSaveAssignment}
+                            onClose={() => setIsAssignmentDialogOpen(false)}
+                          />
+                        </Suspense>
+                     </Dialog>
                 </CardHeader>
                 <CardContent>
                      {isLoadingAssignments ? (<div className="text-center py-10"><ListChecks className="mx-auto h-12 w-12 text-muted-foreground mb-3 animate-pulse" /><p>Loading assignments...</p></div>)
                      : assignments.length === 0 ? (<div className="text-center py-10 border-2 border-dashed border-muted rounded-lg"><ListChecks className="mx-auto h-12 w-12 text-muted-foreground mb-3" /><h3 className="text-lg font-semibold text-muted-foreground">No Assignments Created Yet</h3><p className="text-sm text-muted-foreground mt-1">Click "Create New Assignment" to add one.</p></div>)
-                     : (<div className="border rounded-md overflow-x-auto"><Table><TableHeader><TableRow><TableHead className="min-w-[150px]">Title</TableHead><TableHead className="text-center min-w-[150px]">Due Date</TableHead><TableHead className="text-center hidden sm:table-cell min-w-[120px]">Submissions</TableHead><TableHead className="text-right min-w-[200px]">Actions</TableHead></TableRow></TableHeader><TableBody>{assignments.map(assignment => { const dueDate = assignment.dueDate instanceof Timestamp ? assignment.dueDate.toDate() : (typeof assignment.dueDate === 'string' ? parseISO(assignment.dueDate) : new Date()); const isCurrentlyDeleting = isDeletingAssignmentId === assignment.id; return (<TableRow key={assignment.id}><TableCell className="font-medium">{assignment.title}</TableCell><TableCell className="text-center">{format(dueDate, "MMM dd, yyyy p")}</TableCell><TableCell className="text-center hidden sm:table-cell">{assignment.gradedSubmissions || 0} / {assignment.totalSubmissions || 0} Graded</TableCell><TableCell className="text-right space-x-1"><Button variant="outline" size="sm" asChild><Link href={`/dashboard/lecturer/courses/${courseId}/assignments/${assignment.id}/submissions`}><Eye className="mr-1 h-4 w-4"/>View</Link></Button><Button variant="outline" size="sm" onClick={() => handleOpenEditAssignmentDialog(assignment)} disabled={isSavingAssignment || !!isDeletingAssignmentId}><Edit className="mr-1 h-4 w-4"/>Edit</Button><Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleDeleteAssignment(assignment)} disabled={isSavingAssignment || !!isDeletingAssignmentId}>{isCurrentlyDeleting ? <Loader2 className="h-4 w-4 animate-spin"/> : <Trash2 className="h-4 w-4"/>}<span className="sr-only">Delete</span></Button></TableCell></TableRow>);})}</TableBody></Table></div>)}
+                     : (<div className="border rounded-md overflow-x-auto"><table className="w-full text-sm"><thead className="border-b"><tr className="text-left"><th className="min-w-[150px] p-3">Title</th><th className="text-center min-w-[150px] p-3">Due Date</th><th className="text-center hidden sm:table-cell min-w-[120px] p-3">Submissions</th><th className="text-right min-w-[200px] p-3">Actions</th></tr></thead><tbody>{assignments.map(assignment => { const dueDate = assignment.dueDate instanceof Timestamp ? assignment.dueDate.toDate() : (typeof assignment.dueDate === 'string' ? parseISO(assignment.dueDate) : new Date()); const isCurrentlyDeleting = isDeletingAssignmentId === assignment.id; return (<tr key={assignment.id} className="border-b last:border-b-0 hover:bg-muted/50"><td className="font-medium p-3">{assignment.title}</td><td className="text-center p-3">{format(dueDate, "MMM dd, yyyy p")}</td><td className="text-center hidden sm:table-cell p-3">{assignment.gradedSubmissions || 0} / {assignment.totalSubmissions || 0} Graded</td><td className="text-right space-x-1 p-3"><Button variant="outline" size="sm" asChild><Link href={`/dashboard/lecturer/courses/${courseId}/assignments/${assignment.id}/submissions`}><Eye className="mr-1 h-4 w-4"/>View</Link></Button><Button variant="outline" size="sm" onClick={() => handleOpenEditAssignmentDialog(assignment)} disabled={isSavingAssignment || !!isDeletingAssignmentId}><Edit className="mr-1 h-4 w-4"/>Edit</Button><Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleDeleteAssignment(assignment)} disabled={isSavingAssignment || !!isDeletingAssignmentId}>{isCurrentlyDeleting ? <Loader2 className="h-4 w-4 animate-spin"/> : <Trash2 className="h-4 w-4"/>}<span className="sr-only">Delete</span></Button></td></tr>);})}</tbody></table></div>)}
                 </CardContent>
             </Card>
             
@@ -466,3 +496,6 @@ export default function ManageCoursePage() {
         </motion.div>
     );
 }
+
+
+    
