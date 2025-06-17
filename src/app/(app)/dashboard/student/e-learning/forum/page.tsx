@@ -3,22 +3,36 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, PlusCircle, Eye, Reply, UserCircle, CornerDownRight, Send, Search } from "lucide-react";
+import { MessageSquare, PlusCircle, Eye, Reply, UserCircle, CornerDownRight, Send, Search, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
+import dynamic from 'next/dynamic';
 import type { ForumThread, ForumPost, ForumUser, MockCourseForum } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { format, parseISO, formatDistanceToNowStrict } from 'date-fns';
 import { Skeleton } from "@/components/ui/skeleton";
+
+const ViewThreadDialogContent = dynamic(() => import('@/components/forum/ViewThreadDialogContent'), {
+  suspense: true,
+  loading: () => <div className="p-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /><p className="mt-2">Loading thread...</p></div>,
+});
+const NewThreadDialogContent = dynamic(() => import('@/components/forum/NewThreadDialogContent'), {
+  suspense: true,
+  loading: () => <div className="p-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /><p className="mt-2">Loading form...</p></div>,
+});
+const ReplyDialogContent = dynamic(() => import('@/components/forum/ReplyDialogContent'), {
+  suspense: true,
+  loading: () => <div className="p-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /><p className="mt-2">Loading form...</p></div>,
+});
+
 
 const MOCK_FORUM_USERS: Record<string, ForumUser> = {
   "user1": { id: "user1", name: "Alice Wonderland", avatarUrl: "https://placehold.co/40x40.png?text=AW" },
@@ -113,11 +127,10 @@ export default function DiscussionForumPage() {
 
   useEffect(() => {
     setIsLoading(true);
-    // Simulate API call
     setTimeout(() => {
       setAllThreads(MOCK_FORUM_THREADS);
       if (MOCK_ENROLLED_COURSES_FORUM.length > 0) {
-        setNewThreadCourseId(MOCK_ENROLLED_COURSES_FORUM[0].id); // Default to first course for new thread
+        setNewThreadCourseId(MOCK_ENROLLED_COURSES_FORUM[0].id);
       }
       setIsLoading(false);
     }, 1000);
@@ -137,7 +150,6 @@ export default function DiscussionForumPage() {
   const handleOpenViewThreadDialog = (thread: ForumThread) => {
     setCurrentThreadToView(thread);
     setIsViewThreadDialogOpen(true);
-    // Simulate view count increment
     setAllThreads(prev => prev.map(t => t.id === thread.id ? {...t, viewCount: (t.viewCount || 0) + 1} : t));
   };
 
@@ -150,6 +162,8 @@ export default function DiscussionForumPage() {
         toast({ title: "Cannot Create Thread", description: "No courses available to create a thread in.", variant: "destructive" });
         return;
     }
+    setNewThreadTitle("");
+    setNewThreadContent("");
     setIsNewThreadDialogOpen(true);
   };
   
@@ -158,32 +172,36 @@ export default function DiscussionForumPage() {
       toast({ title: "Error", description: "Title, content, and course are required.", variant: "destructive" });
       return;
     }
-    // Simulate posting
-    const newThread: ForumThread = {
-      id: `thread${Date.now()}_${newThreadCourseId}`,
-      courseId: newThreadCourseId,
-      courseName: MOCK_ENROLLED_COURSES_FORUM.find(c => c.id === newThreadCourseId)?.name,
-      title: newThreadTitle,
-      author: MOCK_FORUM_USERS["user1"], // Assume current user is Alice for mock
-      createdAt: new Date().toISOString(),
-      lastActivityAt: new Date().toISOString(),
-      lastActivityBy: MOCK_FORUM_USERS["user1"],
-      replyCount: 0, viewCount: 0,
-      originalPost: {
-        id: `post${Date.now()}_new`, author: MOCK_FORUM_USERS["user1"],
-        content: newThreadContent, createdAt: new Date().toISOString(),
-      },
-      replies: [],
-    };
-    setAllThreads(prev => [newThread, ...prev]);
-    toast({ title: "Thread Posted!", description: `Your thread "${newThreadTitle}" has been created.` });
-    setIsNewThreadDialogOpen(false);
-    setNewThreadTitle("");
-    setNewThreadContent("");
+    setIsLoading(true);
+    setTimeout(() => {
+      const newThread: ForumThread = {
+        id: `thread${Date.now()}_${newThreadCourseId}`,
+        courseId: newThreadCourseId,
+        courseName: MOCK_ENROLLED_COURSES_FORUM.find(c => c.id === newThreadCourseId)?.name,
+        title: newThreadTitle,
+        author: MOCK_FORUM_USERS["user1"], 
+        createdAt: new Date().toISOString(),
+        lastActivityAt: new Date().toISOString(),
+        lastActivityBy: MOCK_FORUM_USERS["user1"],
+        replyCount: 0, viewCount: 0,
+        originalPost: {
+          id: `post${Date.now()}_new`, author: MOCK_FORUM_USERS["user1"],
+          content: newThreadContent, createdAt: new Date().toISOString(),
+        },
+        replies: [],
+      };
+      setAllThreads(prev => [newThread, ...prev]);
+      toast({ title: "Thread Posted!", description: `Your thread "${newThreadTitle}" has been created.` });
+      setIsNewThreadDialogOpen(false);
+      setNewThreadTitle("");
+      setNewThreadContent("");
+      setIsLoading(false);
+    }, 1000);
   };
 
   const handleOpenReplyDialog = (threadId: string) => {
     setReplyingToThreadId(threadId);
+    setReplyContent("");
     setIsReplyDialogOpen(true);
   };
 
@@ -192,46 +210,44 @@ export default function DiscussionForumPage() {
        toast({ title: "Error", description: "Reply content cannot be empty.", variant: "destructive" });
       return;
     }
-    const newReply: ForumPost = {
-      id: `reply${Date.now()}`,
-      author: MOCK_FORUM_USERS["user1"], // Assume current user is Alice
-      content: replyContent,
-      createdAt: new Date().toISOString(),
-    };
-    setAllThreads(prevThreads => prevThreads.map(thread => {
-      if (thread.id === replyingToThreadId) {
-        return {
-          ...thread,
-          replies: [...thread.replies, newReply],
-          replyCount: thread.replyCount + 1,
-          lastActivityAt: new Date().toISOString(),
-          lastActivityBy: MOCK_FORUM_USERS["user1"],
-        };
-      }
-      return thread;
-    }));
-    toast({ title: "Reply Posted!", description: "Your reply has been added to the thread." });
-    setIsReplyDialogOpen(false);
-    setReplyContent("");
-    setReplyingToThreadId(null);
-    // If view dialog was open for this thread, refresh its content (or close and reopen)
-    if (currentThreadToView && currentThreadToView.id === replyingToThreadId) {
-        const updatedThread = allThreads.find(t => t.id === replyingToThreadId);
-        if(updatedThread) {
-            // This is a bit of a hack for deep updates in the dialog.
-            // In a real app with server state, this would refetch or be handled by optimistic updates.
-            setCurrentThreadToView(prev => prev ? ({
-                ...prev,
-                replies: [...prev.replies, newReply],
-                replyCount: prev.replyCount + 1,
-                lastActivityAt: new Date().toISOString(),
-                lastActivityBy: MOCK_FORUM_USERS["user1"],
-            }) : null);
+    setIsLoading(true);
+    setTimeout(() => {
+      const newReply: ForumPost = {
+        id: `reply${Date.now()}`,
+        author: MOCK_FORUM_USERS["user1"], 
+        content: replyContent,
+        createdAt: new Date().toISOString(),
+      };
+      const updatedThreads = allThreads.map(thread => {
+        if (thread.id === replyingToThreadId) {
+          return {
+            ...thread,
+            replies: [...thread.replies, newReply],
+            replyCount: thread.replyCount + 1,
+            lastActivityAt: new Date().toISOString(),
+            lastActivityBy: MOCK_FORUM_USERS["user1"],
+          };
         }
-    }
+        return thread;
+      });
+      setAllThreads(updatedThreads);
+      toast({ title: "Reply Posted!", description: "Your reply has been added to the thread." });
+      setIsReplyDialogOpen(false);
+      setReplyContent("");
+      setReplyingToThreadId(null);
+      
+      // If view dialog was open for this thread, refresh its content
+      if (currentThreadToView && currentThreadToView.id === replyingToThreadId) {
+        const updatedThreadForDialog = updatedThreads.find(t => t.id === replyingToThreadId);
+        if(updatedThreadForDialog) {
+            setCurrentThreadToView(updatedThreadForDialog);
+        }
+      }
+      setIsLoading(false);
+    }, 1000);
   };
 
-  const renderPost = (post: ForumPost, isOriginalPost = false) => (
+  const renderPostElement = (post: ForumPost, isOriginalPost = false) => (
     <motion.div 
         key={post.id} 
         className={`p-4 ${isOriginalPost ? 'border-b' : 'ml-4 lg:ml-8 border-l-2 pl-4 py-3 my-2 border-muted'}`}
@@ -376,92 +392,58 @@ export default function DiscussionForumPage() {
       </Card>
 
       {/* View Thread Dialog */}
-      {currentThreadToView && (
+      {isViewThreadDialogOpen && currentThreadToView && (
         <Dialog open={isViewThreadDialogOpen} onOpenChange={setIsViewThreadDialogOpen}>
           <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
-            <DialogHeader className="pb-3 border-b">
-              <DialogTitle className="font-headline text-xl">{currentThreadToView.title}</DialogTitle>
-              <DialogDescription>
-                Started by {currentThreadToView.author.name} in {currentThreadToView.courseName || currentThreadToView.courseId} - {formatDistanceToNowStrict(parseISO(currentThreadToView.createdAt), { addSuffix: true })}
-              </DialogDescription>
-            </DialogHeader>
-            <ScrollArea className="flex-grow py-1 pr-3 -mr-2">
-              <div className="space-y-1">
-                {renderPost(currentThreadToView.originalPost, true)}
-                {currentThreadToView.replies.map(reply => renderPost(reply))}
-              </div>
-            </ScrollArea>
-            <DialogFooter className="pt-4 border-t">
-              <Button type="button" variant="outline" onClick={() => setIsViewThreadDialogOpen(false)}>Close</Button>
-              <Button type="button" onClick={() => handleOpenReplyDialog(currentThreadToView.id)}>
-                <Reply className="mr-2 h-4 w-4"/> Reply to Thread
-              </Button>
-            </DialogFooter>
+            <Suspense fallback={<div className="p-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /><p className="mt-2">Loading thread...</p></div>}>
+              <ViewThreadDialogContent
+                thread={currentThreadToView}
+                onClose={() => setIsViewThreadDialogOpen(false)}
+                onReply={handleOpenReplyDialog}
+                renderPost={renderPostElement}
+              />
+            </Suspense>
           </DialogContent>
         </Dialog>
       )}
 
       {/* New Thread Dialog */}
-      <Dialog open={isNewThreadDialogOpen} onOpenChange={setIsNewThreadDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Start a New Discussion Thread</DialogTitle>
-            <DialogDescription>Share your thoughts or ask a question.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-3">
-            <div>
-              <Label htmlFor="new-thread-course">Course</Label>
-              <Select value={newThreadCourseId} onValueChange={setNewThreadCourseId}>
-                <SelectTrigger id="new-thread-course">
-                  <SelectValue placeholder="Select course for thread" />
-                </SelectTrigger>
-                <SelectContent>
-                  {MOCK_ENROLLED_COURSES_FORUM.map(course => (
-                    <SelectItem key={course.id} value={course.id}>{course.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="new-thread-title">Thread Title</Label>
-              <Input id="new-thread-title" value={newThreadTitle} onChange={(e) => setNewThreadTitle(e.target.value)} placeholder="Enter a clear and concise title" />
-            </div>
-            <div>
-              <Label htmlFor="new-thread-content">Your Post</Label>
-              <Textarea id="new-thread-content" value={newThreadContent} onChange={(e) => setNewThreadContent(e.target.value)} placeholder="Compose your message..." rows={8} />
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-            <Button type="button" onClick={handlePostNewThread} disabled={isLoading}>
-             {isLoading ? <Send className="mr-2 h-4 w-4 animate-pulse"/> : <Send className="mr-2 h-4 w-4"/>} Post Thread
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+       <Dialog open={isNewThreadDialogOpen} onOpenChange={setIsNewThreadDialogOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <Suspense fallback={<div className="p-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /><p className="mt-2">Loading form...</p></div>}>
+              <NewThreadDialogContent
+                courses={MOCK_ENROLLED_COURSES_FORUM}
+                newThreadCourseId={newThreadCourseId}
+                setNewThreadCourseId={setNewThreadCourseId}
+                newThreadTitle={newThreadTitle}
+                setNewThreadTitle={setNewThreadTitle}
+                newThreadContent={newThreadContent}
+                setNewThreadContent={setNewThreadContent}
+                onPostNewThread={handlePostNewThread}
+                isLoading={isLoading}
+                onClose={() => setIsNewThreadDialogOpen(false)}
+              />
+            </Suspense>
+          </DialogContent>
+        </Dialog>
 
        {/* Reply Dialog */}
       <Dialog open={isReplyDialogOpen} onOpenChange={setIsReplyDialogOpen}>
         <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Post a Reply</DialogTitle>
-            <DialogDescription>Responding to: {currentThreadToView?.title || "this thread"}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-3">
-            <div>
-              <Label htmlFor="reply-content">Your Reply</Label>
-              <Textarea id="reply-content" value={replyContent} onChange={(e) => setReplyContent(e.target.value)} placeholder="Type your reply here..." rows={6} />
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-            <Button type="button" onClick={handlePostReply} disabled={isLoading}>
-              {isLoading ? <Send className="mr-2 h-4 w-4 animate-pulse"/> : <Send className="mr-2 h-4 w-4"/>} Post Reply
-            </Button>
-          </DialogFooter>
+          <Suspense fallback={<div className="p-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /><p className="mt-2">Loading form...</p></div>}>
+            <ReplyDialogContent
+              threadTitle={currentThreadToView?.title}
+              replyContent={replyContent}
+              setReplyContent={setReplyContent}
+              onPostReply={handlePostReply}
+              isLoading={isLoading}
+              onClose={() => setIsReplyDialogOpen(false)}
+            />
+          </Suspense>
         </DialogContent>
       </Dialog>
 
     </motion.div>
   );
 }
+
