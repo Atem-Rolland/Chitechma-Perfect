@@ -5,18 +5,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DownloadCloud, BookCheck, BarChart3, Info } from "lucide-react";
+import { DownloadCloud, BookCheck, BarChart3, Info, Printer } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import type { Grade, CaDetails, Course } from "@/types";
+import type { Grade, CaDetails, Course, UserProfile } from "@/types";
 import { DEPARTMENTS, ACADEMIC_YEARS, SEMESTERS, getGradeDetailsFromScore, ALL_UNIVERSITY_COURSES } from "@/config/data";
-
+import { PrintPreviewDialog } from "@/components/layout/PrintPreviewDialog"; // Import the new dialog
 
 async function fetchMockGradesForTranscript(studentId: string, allCourses: Course[]): Promise<Grade[]> {
-  // Removed artificial setTimeout
   const studentProfile = { department: DEPARTMENTS.CESM, level: 400 }; 
   const grades: Grade[] = [];
   let gradeIdCounter = 1;
@@ -72,11 +71,121 @@ interface GroupedGrades {
   };
 }
 
+interface TranscriptDocumentProps {
+  studentProfile: UserProfile | null;
+  groupedGrades: GroupedGrades;
+  overallGpaStats: ReturnType<typeof calculateGpaStats>;
+}
+
+function TranscriptDocument({ studentProfile, groupedGrades, overallGpaStats }: TranscriptDocumentProps) {
+  // This component renders the actual content for the transcript preview
+  return (
+    <div className="transcript-preview p-4 md:p-6 font-serif text-sm">
+      <header className="text-center mb-8">
+        <h1 className="text-2xl font-bold">CHITECHMA UNIVERSITY</h1>
+        <p>P.O. Box XXX, City, Region</p>
+        <h2 className="text-xl font-semibold mt-4 underline">ACADEMIC TRANSCRIPT</h2>
+      </header>
+
+      <section className="mb-6 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+        <p><strong>Student Name:</strong> {studentProfile?.displayName || "N/A"}</p>
+        <p><strong>Matricule No:</strong> {studentProfile?.matricule || "N/A"}</p>
+        <p><strong>Program:</strong> {studentProfile?.program || "N/A"}</p>
+        <p><strong>Department:</strong> {studentProfile?.department || "N/A"}</p>
+        <p><strong>Date of Birth:</strong> {studentProfile?.dateOfBirth || "N/A"}</p>
+        <p><strong>Nationality:</strong> {studentProfile?.nationality || "N/A"}</p>
+        <p><strong>Date Issued:</strong> {new Date().toLocaleDateString()}</p>
+      </section>
+
+      {Object.keys(groupedGrades).map(year => (
+        <div key={year} className="mb-6 avoid-break">
+          <h3 className="section-title text-center text-base font-semibold mb-2">ACADEMIC YEAR: {year}</h3>
+          {Object.keys(groupedGrades[year]).map(semester => {
+            const semesterGrades = groupedGrades[year][semester];
+            const semesterGpaStats = calculateGpaStats(semesterGrades);
+            return (
+              <div key={semester} className="mb-4 avoid-break">
+                <h4 className="semester-title text-sm font-semibold mb-1">{semester}</h4>
+                <table className="w-full border-collapse border border-gray-400 text-xs">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="border border-gray-300 p-1">Course Code</th>
+                      <th className="border border-gray-300 p-1">Course Title</th>
+                      <th className="border border-gray-300 p-1 text-center">Credits</th>
+                      <th className="border border-gray-300 p-1 text-center">Score</th>
+                      <th className="border border-gray-300 p-1 text-center">Grade</th>
+                      <th className="border border-gray-300 p-1 text-center">QP</th>
+                      <th className="border border-gray-300 p-1">Remark</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {semesterGrades.map(grade => (
+                      <tr key={grade.id}>
+                        <td className="border border-gray-300 p-1">{grade.courseCode}</td>
+                        <td className="border border-gray-300 p-1">{grade.courseName}</td>
+                        <td className="border border-gray-300 p-1 text-center">{grade.credits}</td>
+                        <td className="border border-gray-300 p-1 text-center">{grade.score ?? 'NG'}</td>
+                        <td className="border border-gray-300 p-1 text-center">{grade.gradeLetter ?? 'NG'}</td>
+                        <td className="border border-gray-300 p-1 text-center">{grade.gradePoint !== null ? (grade.gradePoint * grade.credits).toFixed(1) : '-'}</td>
+                        <td className="border border-gray-300 p-1">{grade.remark}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="mt-1 p-1 bg-gray-50 text-xs flex justify-end gap-x-3">
+                  <span>Credits Attempted: {semesterGpaStats.totalCreditsAttempted}</span>
+                  <span>Credits Earned: {semesterGpaStats.totalCreditsEarned}</span>
+                  <span>Quality Points: {semesterGpaStats.totalQualityPoints.toFixed(1)}</span>
+                  <span>SGPA: <strong>{semesterGpaStats.gpa.toFixed(2)}</strong></span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ))}
+
+      <section className="gpa-summary mt-8 pt-4 border-t border-gray-400 text-xs">
+        <h3 className="text-sm font-semibold mb-2 text-center">OVERALL ACADEMIC SUMMARY</h3>
+        <div className="grid grid-cols-2 gap-x-4">
+            <p><strong>Total Credits Attempted:</strong> {overallGpaStats.totalCreditsAttempted}</p>
+            <p><strong>Total Credits Earned:</strong> {overallGpaStats.totalCreditsEarned}</p>
+            <p><strong>Total Quality Points:</strong> {overallGpaStats.totalQualityPoints.toFixed(1)}</p>
+            <p><strong>Cumulative GPA (CGPA):</strong> <strong className="text-base">{overallGpaStats.gpa.toFixed(2)}</strong></p>
+        </div>
+      </section>
+      
+      <footer className="mt-12 pt-6 border-t border-gray-400 text-center text-xs">
+        <p className="mb-6">KEY: QP = Quality Points, NG = Not Graded</p>
+        <p>_________________________</p>
+        <p>Registrar's Signature & Stamp</p>
+        <p className="mt-4"><em>This transcript is not official unless signed and stamped by the University Registrar.</em></p>
+      </footer>
+    </div>
+  );
+}
+
+// Memoized calculation function
+const calculateGpaStats = (gradesList: Grade[]): { gpa: number; totalCreditsAttempted: number; totalCreditsEarned: number; totalQualityPoints: number } => {
+  if (!gradesList || gradesList.length === 0) return { gpa: 0, totalCreditsAttempted: 0, totalCreditsEarned: 0, totalQualityPoints: 0 };
+  
+  const validGrades = gradesList.filter(grade => grade.isPublished && grade.gradePoint !== null);
+  if (validGrades.length === 0) return { gpa: 0, totalCreditsAttempted: 0, totalCreditsEarned: 0, totalQualityPoints: 0 };
+
+  const totalQualityPoints = validGrades.reduce((sum, grade) => sum + (grade.gradePoint! * grade.credits), 0);
+  const totalCreditsAttempted = validGrades.reduce((sum, grade) => sum + grade.credits, 0); 
+  const totalCreditsEarned = validGrades.reduce((sum, grade) => sum + (grade.isPass ? grade.credits : 0), 0);
+  
+  const gpa = totalCreditsAttempted > 0 ? parseFloat((totalQualityPoints / totalCreditsAttempted).toFixed(2)) : 0;
+  return { gpa, totalCreditsAttempted, totalCreditsEarned, totalQualityPoints };
+};
+
+
 export default function TranscriptPage() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const [allGrades, setAllGrades] = useState<Grade[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   useEffect(() => {
     async function loadGrades() {
@@ -85,7 +194,7 @@ export default function TranscriptPage() {
         return;
       }
       setIsLoading(true);
-      const courses = ALL_UNIVERSITY_COURSES; // Use centralized data
+      const courses = ALL_UNIVERSITY_COURSES;
       const fetchedGrades = await fetchMockGradesForTranscript(user.uid, courses);
       setAllGrades(fetchedGrades);
       setIsLoading(false);
@@ -116,29 +225,19 @@ export default function TranscriptPage() {
     });
     return groups;
   }, [allGrades]);
-
-  const calculateGpaStats = (gradesList: Grade[]): { gpa: number; totalCreditsAttempted: number; totalCreditsEarned: number; totalQualityPoints: number } => {
-    if (!gradesList || gradesList.length === 0) return { gpa: 0, totalCreditsAttempted: 0, totalCreditsEarned: 0, totalQualityPoints: 0 };
-    
-    const validGrades = gradesList.filter(grade => grade.isPublished && grade.gradePoint !== null);
-    if (validGrades.length === 0) return { gpa: 0, totalCreditsAttempted: 0, totalCreditsEarned: 0, totalQualityPoints: 0 };
-
-    const totalQualityPoints = validGrades.reduce((sum, grade) => sum + (grade.gradePoint! * grade.credits), 0);
-    const totalCreditsAttempted = validGrades.reduce((sum, grade) => sum + grade.credits, 0); 
-    const totalCreditsEarned = validGrades.reduce((sum, grade) => sum + (grade.isPass ? grade.credits : 0), 0);
-    
-    const gpa = totalCreditsAttempted > 0 ? parseFloat((totalQualityPoints / totalCreditsAttempted).toFixed(2)) : 0;
-    return { gpa, totalCreditsAttempted, totalCreditsEarned, totalQualityPoints };
-  };
   
   const overallGpaStats = useMemo(() => calculateGpaStats(allGrades.filter(g => g.isPublished)), [allGrades]);
 
-  const handleDownloadTranscript = () => {
-    toast({
-      title: "Transcript Download (Simulated)",
-      description: "Your academic transcript PDF generation is in progress. This is a simulated action.",
-      duration: 5000,
-    });
+  const handleOpenPrintPreview = () => {
+    if (allGrades.filter(g => g.isPublished).length === 0) {
+      toast({
+        title: "No Data to Preview",
+        description: "There are no published grades to generate a transcript.",
+        variant: "default"
+      });
+      return;
+    }
+    setIsPreviewOpen(true);
   };
 
   if (isLoading) {
@@ -219,9 +318,9 @@ export default function TranscriptPage() {
                 This information appears on your official transcript.
             </CardDescription>
           </div>
-          <Button onClick={handleDownloadTranscript} className="mt-4 sm:mt-0">
-            <DownloadCloud className="mr-2 h-4 w-4" />
-            Download Transcript (PDF)
+          <Button onClick={handleOpenPrintPreview} className="mt-4 sm:mt-0">
+            <Printer className="mr-2 h-4 w-4" />
+            Preview & Print/Save Transcript
           </Button>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm border-t pt-6">
@@ -232,7 +331,6 @@ export default function TranscriptPage() {
             <p><strong>Level at Last Record:</strong> {profile?.level || "N/A"}</p>
         </CardContent>
       </Card>
-
 
       {Object.keys(groupedGrades).map(year => (
         <Card key={year}>
@@ -255,7 +353,7 @@ export default function TranscriptPage() {
                             <TableHead className="text-center">Credits</TableHead>
                             <TableHead className="text-center">Score</TableHead>
                             <TableHead className="text-center">Grade</TableHead>
-                            <TableHead className="text-center">Points</TableHead>
+                            <TableHead className="text-center">QP</TableHead>
                             <TableHead>Remark</TableHead>
                         </TableRow>
                         </TableHeader>
@@ -314,6 +412,20 @@ export default function TranscriptPage() {
             </p>
         </CardFooter>
       </Card>
+
+      {isPreviewOpen && (
+        <PrintPreviewDialog
+          open={isPreviewOpen}
+          onOpenChange={setIsPreviewOpen}
+          title="Academic Transcript Preview"
+        >
+          <TranscriptDocument 
+            studentProfile={profile} 
+            groupedGrades={groupedGrades} 
+            overallGpaStats={overallGpaStats} 
+          />
+        </PrintPreviewDialog>
+      )}
 
     </motion.div>
   );

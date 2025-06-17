@@ -91,3 +91,112 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  body {
+    -webkit-print-color-adjust: exact; /* For Chrome, Safari */
+    print-color-adjust: exact; /* Standard */
+    background-color: white !important; /* Ensure background is white for print */
+    color: black !important; /* Ensure text is black for print */
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Hide everything by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Make the printable area and its children visible */
+  #printable-area, #printable-area * {
+    visibility: visible;
+  }
+
+  /* Style the printable area to take up the whole page */
+  #printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: auto;
+    margin: 0 !important;
+    padding: 20px !important; /* Or your desired print padding */
+    border: none !important;
+    box-shadow: none !important;
+    background-color: white !important;
+    color: black !important;
+  }
+  
+  /* Hide elements marked with .no-print */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Ensure tables print well */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 10pt !important; /* Adjust as needed */
+  }
+  th, td {
+    border: 1px solid #ccc !important;
+    padding: 4px !important;
+    text-align: left !important;
+    color: black !important; /* Ensure table text is black */
+  }
+  thead {
+    display: table-header-group; /* Important for repeating headers on new pages */
+  }
+  
+  /* Specific styles for the transcript document wrapper for printing */
+  .printable-document-wrapper {
+    background-color: white !important;
+    color: black !important;
+    padding: 20mm !important; /* Standard A4 margins */
+    margin: 0 auto !important; /* Center content */
+    width: 210mm; /* A4 width */
+    min-height: 297mm; /* A4 height, adjust if content flows beyond */
+    box-shadow: none !important;
+    border: none !important;
+    font-family: 'Times New Roman', Times, serif !important; /* Common for official docs */
+    font-size: 12pt !important;
+  }
+  .printable-document-wrapper h1,
+  .printable-document-wrapper h2,
+  .printable-document-wrapper h3,
+  .printable-document-wrapper p,
+  .printable-document-wrapper strong {
+    color: black !important;
+  }
+  .printable-document-wrapper .section-title {
+    font-size: 16pt !important;
+    font-weight: bold !important;
+    margin-top: 20px !important;
+    margin-bottom: 10px !important;
+    border-bottom: 1px solid #666 !important;
+    padding-bottom: 5px !important;
+  }
+   .printable-document-wrapper .semester-title {
+    font-size: 14pt !important;
+    font-weight: bold !important;
+    margin-top: 15px !important;
+    margin-bottom: 8px !important;
+  }
+  .printable-document-wrapper .gpa-summary {
+    margin-top: 20px !important;
+    padding: 10px !important;
+    border: 1px solid #ccc !important;
+    border-radius: 4px !important;
+  }
+  .printable-document-wrapper .gpa-summary p {
+    margin-bottom: 5px !important;
+  }
+
+  /* Avoid page breaks inside table rows or important blocks */
+  tr, .avoid-break {
+    page-break-inside: avoid !important;
+  }
+  h2, h3 {
+     page-break-after: avoid !important;
+  }
+}
