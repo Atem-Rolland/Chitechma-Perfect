@@ -3,9 +3,9 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from "@/components/ui/dialog"; // Added DialogFooter
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Video as VideoIconLucide, PlayCircle, Clock, Search, Filter, Download, AlertTriangle, ExternalLink, Globe } from "lucide-react"; // Renamed to avoid conflict
+import { Video as VideoIconLucide, PlayCircle, Clock, Search, Filter, Download, AlertTriangle, ExternalLink, Globe } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
@@ -26,8 +26,8 @@ interface VideoLecture {
   duration: string; 
   uploadDate: string; 
   sourceType?: "Google Classroom" | "CUSMS Platform";
-  sourceDetails?: string; // e.g., "GC: Intro to CS - Section A" or a direct link
-  classroomLink?: string; // Specific link for "Open in Classroom" button
+  sourceDetails?: string; 
+  classroomLink?: string; 
 }
 
 const MOCK_ENROLLED_COURSES_LECTURES = [
@@ -61,7 +61,7 @@ const MOCK_VIDEO_LECTURES: VideoLecture[] = [
     title: "Intro to AI Ethics (from Google Classroom)",
     description: "An introductory lecture on AI Ethics, sourced from Google Classroom. Covers key concepts and case studies provided in the linked Classroom material.",
     thumbnailUrl: "https://placehold.co/600x400.png?text=GC+Lecture",
-    videoUrl: "https://placehold.co/1280x720.png?text=Video+from+Google+Classroom", // Placeholder for actual classroom video/resource
+    videoUrl: "https://placehold.co/1280x720.png?text=Video+from+Google+Classroom", 
     duration: "42:15", uploadDate: "2024-09-10",
     sourceType: "Google Classroom",
     sourceDetails: "AI Ethics - Fall 2024 (Section B)",
@@ -108,10 +108,9 @@ export default function VideoLecturesPage() {
 
   useEffect(() => {
     setIsLoading(true);
-    setTimeout(() => {
-      setLectures(MOCK_VIDEO_LECTURES);
-      setIsLoading(false);
-    }, 1000);
+    // Removed artificial setTimeout
+    setLectures(MOCK_VIDEO_LECTURES);
+    setIsLoading(false);
   }, []);
 
   const filteredLectures = useMemo(() => {
@@ -332,6 +331,4 @@ export default function VideoLecturesPage() {
     </motion.div>
   );
 }
-
     
-

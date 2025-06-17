@@ -15,24 +15,8 @@ import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
-import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS } from "@/config/data";
+import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS, ALL_UNIVERSITY_COURSES } from "@/config/data";
 
-// Expanded Mock Courses (simulating all available courses in the university system)
-async function fetchAllUniversityCourses(): Promise<Course[]> {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  const mockCourses: Course[] = [
-    { id: "CSE301_CESM_Y2324_S1", title: "Introduction to Algorithms", code: "CSE301", description: "Fundamental algorithms and data structures.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2023/2024" },
-    { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401", description: "Covers native and cross-platform development.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 10-12, Wed 10-11, Lab Hall 1", prerequisites: ["CSE301"], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "CSE409_CESM_Y2425_S1", title: "Software Development and OOP", code: "CSE409", description: "Object-oriented principles and design patterns.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Tue 14-16, Fri 8-9", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "MGT403_CESM_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Research methods and academic writing.", department: DEPARTMENTS.CESM, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "AMPHI200, Wed 14-17", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "CSE405_CESM_Y2425_S1", title: "Embedded Systems", code: "CSE405", description: "Design and programming of embedded systems.", department: DEPARTMENTS.CESM, lecturerId: "lect004", lecturerName: "Mr. Tanyi", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Thu 8-11", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "NES403_CESM_Y2425_S1", title: "Modeling in Information System", code: "NES403", description: "Techniques for system modeling.", department: DEPARTMENTS.CESM, lecturerId: "lect005", lecturerName: "Ms. Fotso", credits: 3, type: "Elective", level: 400, schedule: "Fri 11-13, CR10", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "LAW101_CESM_Y2223_S1", title: "Introduction to Law", code: "LAW101", description: "Basic legal principles.", department: DEPARTMENTS.CESM, lecturerId: "lect_law", lecturerName: "Barr. Tabi", credits: 1, type: "General", level: 200, schedule: "Mon 8-9, AMPHI100", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "SWE111_CESM_Y2223_S1", title: "Introduction to Software Eng", code: "SWE111", description: "Foundations of software engineering.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 200, schedule: "Mon 14-17, AMPHI300", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-    { id: "CPT116_CPT_Y2223_S1", title: "Soil and Fertilization", code: "CPT116", description: "Soil science and fertilization techniques.", department: DEPARTMENTS.CPT, lecturerId: "lect_cpt1", lecturerName: "Dr. Soil", credits: 3, type: "Compulsory", level: 200, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-  ];
-  return mockCourses;
-}
 
 interface AssignedCourse extends Course {
   enrolledStudents: number;
@@ -53,31 +37,28 @@ export default function LecturerCoursesPage() {
   useEffect(() => {
     async function loadData() {
       setIsLoading(true);
-      const universityCourses = await fetchAllUniversityCourses();
+      // Removed artificial delay: const universityCourses = await fetchAllUniversityCourses();
+      const universityCourses = ALL_UNIVERSITY_COURSES; // Use direct data
 
       let filteredForLecturer: Course[];
 
       if (profile?.uid) { 
-        // Profile is loaded, try to filter by actual lecturer's UID
         filteredForLecturer = universityCourses.filter(
           course => course.lecturerId === profile.uid
         );
         
-        // If no courses found by UID, try by display name (less reliable but good for mocks)
         if (filteredForLecturer.length === 0 && profile.displayName) {
             filteredForLecturer = universityCourses.filter(
                 course => course.lecturerName === profile.displayName
             );
         }
 
-        // Fallback for demo: If still no courses for the specific logged-in lecturer (and they are not lect001 themselves), show lect001's courses.
         if (filteredForLecturer.length === 0 && profile.uid !== "lect001") {
           filteredForLecturer = universityCourses.filter(
             course => course.lecturerId === "lect001"
           );
         }
       } else {
-        // Profile not yet loaded or no UID, default to "lect001" courses (Dr. Eno)
         filteredForLecturer = universityCourses.filter(
           course => course.lecturerId === "lect001"
         );
@@ -93,8 +74,6 @@ export default function LecturerCoursesPage() {
       setIsLoading(false);
     }
     
-    // Only run loadData if authentication is not loading.
-    // The profile object itself will trigger re-runs if it changes.
     if (!authLoading) {
       loadData();
     }
@@ -120,7 +99,7 @@ export default function LecturerCoursesPage() {
       );
   }, [assignedCourses, searchTerm, filters]);
 
-  if (authLoading && isLoading) { // Show skeleton if both auth and initial data load are pending
+  if (authLoading && isLoading) { 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[...Array(3)].map((_, i) => (
@@ -193,7 +172,7 @@ export default function LecturerCoursesPage() {
         </CardContent>
       </Card>
 
-      {isLoading ? ( // This isLoading is for the data fetching within this page
+      {isLoading ? ( 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(3)].map((_, i) => (
             <Card key={i}>
@@ -255,6 +234,4 @@ export default function LecturerCoursesPage() {
     </motion.div>
   );
 }
-
-
     

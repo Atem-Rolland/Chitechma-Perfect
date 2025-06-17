@@ -13,21 +13,10 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
-import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS } from "@/config/data"; // For MOCK_ALL_COURSES_SOURCE
-
-// Simplified MOCK_ALL_COURSES_SOURCE for this page context.
-// In a real app, this would come from a central data store or API.
-const MOCK_ALL_COURSES_SOURCE: Course[] = [
-    { id: "CSE301_CESM_Y2324_S1", title: "Introduction to Algorithms", code: "CSE301", description: "Fundamental algorithms and data structures.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 300, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2023/2024" },
-    { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401", description: "Covers native and cross-platform development.", department: DEPARTMENTS.CESM, lecturerId: "lect001", lecturerName: "Dr. Eno", credits: 3, type: "Compulsory", level: 400, schedule: "Mon 10-12, Wed 10-11, Lab Hall 1", prerequisites: ["CSE301"], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "CSE409_CESM_Y2425_S1", title: "Software Development and OOP", code: "CSE409", description: "Object-oriented principles and design patterns.", department: DEPARTMENTS.CESM, lecturerId: "lect002", lecturerName: "Prof. Besong", credits: 3, type: "Compulsory", level: 400, schedule: "AMPHI200, Tue 14-16, Fri 8-9", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "MGT403_CESM_Y2425_S1", title: "Research Methodology", code: "MGT403", description: "Research methods and academic writing.", department: DEPARTMENTS.CESM, lecturerId: "lect003", lecturerName: "Dr. Abang", credits: 3, type: "General", level: 400, schedule: "AMPHI200, Wed 14-17", prerequisites: [], semester: "First Semester", academicYear: "2024/2025" },
-    { id: "CPT116_CPT_Y2223_S1", title: "Soil and Fertilization", code: "CPT116", description: "Soil science and fertilization techniques.", department: DEPARTMENTS.CPT, lecturerId: "lect_cpt1", lecturerName: "Dr. Soil", credits: 3, type: "Compulsory", level: 200, schedule: "TBD", prerequisites: [], semester: "First Semester", academicYear: "2022/2023" },
-];
+import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS, ALL_UNIVERSITY_COURSES } from "@/config/data";
 
 interface StudentEnrolled extends Pick<UserProfile, 'uid' | 'displayName' | 'email' | 'level' | 'matricule'> {}
 
-// Function to generate mock student data for a course
 function generateMockStudentsForCourse(courseLevel: number, count: number = 15): StudentEnrolled[] {
   const students: StudentEnrolled[] = [];
   const firstNames = ["Atem", "Bih", "Chenwi", "Divine", "Emelda", "Fongoh", "Gael", "Hassan", "Ibrahim", "Joy"];
@@ -36,7 +25,7 @@ function generateMockStudentsForCourse(courseLevel: number, count: number = 15):
   for (let i = 0; i < count; i++) {
     const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
     const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-    const matriculeYear = new Date().getFullYear().toString().slice(-2); // e.g., 24
+    const matriculeYear = new Date().getFullYear().toString().slice(-2);
     const studentIdSuffix = String(Math.floor(1000 + Math.random() * 9000));
 
     students.push({
@@ -57,24 +46,22 @@ export default function ClassListPage() {
   const { toast } = useToast();
   const courseId = params.courseId as string;
 
-  const [course, setCourse] = useState<Course | null | undefined>(undefined); // undefined for loading, null for not found
+  const [course, setCourse] = useState<Course | null | undefined>(undefined); 
   const [students, setStudents] = useState<StudentEnrolled[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     setIsLoading(true);
-    // Simulate fetching course details
-    const foundCourse = MOCK_ALL_COURSES_SOURCE.find(c => c.id === courseId);
+    const foundCourse = ALL_UNIVERSITY_COURSES.find(c => c.id === courseId);
     
-    setTimeout(() => { // Simulate API delay
-      if (foundCourse) {
-        setCourse(foundCourse);
-        setStudents(generateMockStudentsForCourse(foundCourse.level, Math.floor(Math.random() * 15) + 10)); // 10-24 students
-      } else {
-        setCourse(null); // Course not found
-      }
-      setIsLoading(false);
-    }, 500);
+    // Removed artificial setTimeout for faster loading
+    if (foundCourse) {
+      setCourse(foundCourse);
+      setStudents(generateMockStudentsForCourse(foundCourse.level, Math.floor(Math.random() * 15) + 10));
+    } else {
+      setCourse(null);
+    }
+    setIsLoading(false);
   }, [courseId]);
 
   const handleExport = (format: "CSV" | "Excel") => {
@@ -91,6 +78,7 @@ export default function ClassListPage() {
       description: `This is a placeholder action. Actual register printing for ${course?.code} is under development.`,
       duration: 5000,
     });
+    // window.print(); // Basic browser print for the whole page
   };
 
   if (isLoading) {
@@ -129,7 +117,6 @@ export default function ClassListPage() {
     );
   }
   
-  // Ensure course is defined before trying to access its properties
   if (!course) return null;
 
 

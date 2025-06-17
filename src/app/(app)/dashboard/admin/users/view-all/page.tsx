@@ -21,7 +21,6 @@ import type { UserProfile, Role } from "@/types";
 import { DEPARTMENTS, VALID_LEVELS } from "@/config/data"; 
 import { Users, Search, Filter, PlusCircle, MoreHorizontal, Edit, ShieldAlert, Trash2, UserCheck, UserX, GraduationCap, Briefcase } from "lucide-react";
 
-// Mock data generation function
 function generateMockUsers(count: number = 50): UserProfile[] {
   const users: UserProfile[] = [];
   const roles: Role[] = ["student", "lecturer", "admin", "finance"];
@@ -76,7 +75,6 @@ function generateMockUsers(count: number = 50): UserProfile[] {
       ...userSpecifics,
     });
   }
-  // Ensure Atem Rolland is in the list for demo purposes
   if (!users.find(u => u.displayName === "Atem Rolland")) {
       users.push({
         uid: `student-atem-rolland`,
@@ -108,10 +106,9 @@ export default function ViewAllUsersPage() {
 
   useEffect(() => {
     setIsLoading(true);
-    setTimeout(() => {
-      setUsers(generateMockUsers(50));
-      setIsLoading(false);
-    }, 1000);
+    // Removed artificial setTimeout
+    setUsers(generateMockUsers(50));
+    setIsLoading(false);
   }, []);
 
   const handleFilterChange = (filterName: keyof typeof filters, value: string) => {

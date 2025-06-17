@@ -17,7 +17,7 @@ import Image from "next/image";
 const MOCK_PAYMENTS: Payment[] = [
   { 
     id: "TXN001", 
-    date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days ago
+    date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), 
     purpose: "First Installment - Tuition 2024/2025", 
     amount: 200000, 
     currency: "XAF", 
@@ -26,7 +26,7 @@ const MOCK_PAYMENTS: Payment[] = [
   },
   { 
     id: "TXN002", 
-    date: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(), // 25 days ago
+    date: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(), 
     purpose: "Medicals Fee", 
     amount: 5000, 
     currency: "XAF", 
@@ -35,7 +35,7 @@ const MOCK_PAYMENTS: Payment[] = [
   },
   { 
     id: "TXN003", 
-    date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days ago
+    date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), 
     purpose: "Second Installment - Tuition 2024/2025", 
     amount: 100000, 
     currency: "XAF", 
@@ -44,7 +44,7 @@ const MOCK_PAYMENTS: Payment[] = [
   },
    { 
     id: "TXN004", 
-    date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+    date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), 
     purpose: "Student Union Fee", 
     amount: 3000, 
     currency: "XAF", 
@@ -53,7 +53,7 @@ const MOCK_PAYMENTS: Payment[] = [
   },
   { 
     id: "TXN005", 
-    date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+    date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), 
     purpose: "Excursion Fee", 
     amount: 25000, 
     currency: "XAF", 
@@ -69,12 +69,10 @@ export default function PaymentHistoryPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Simulate API call
     setIsLoading(true);
-    setTimeout(() => {
-      setPayments(MOCK_PAYMENTS.sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime()));
-      setIsLoading(false);
-    }, 1000);
+    // Removed artificial setTimeout
+    setPayments(MOCK_PAYMENTS.sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime()));
+    setIsLoading(false);
   }, []);
 
   const handleDownloadReceipt = (paymentId: string) => {
@@ -87,8 +85,8 @@ export default function PaymentHistoryPage() {
   
   const getStatusBadgeVariant = (status: Payment['status']) => {
     switch (status) {
-      case "Completed": return "default"; // Using default for success-like appearance (green)
-      case "Pending": return "secondary"; // Using secondary for warning-like (yellow/amber)
+      case "Completed": return "default"; 
+      case "Pending": return "secondary"; 
       case "Failed": return "destructive";
       default: return "outline";
     }

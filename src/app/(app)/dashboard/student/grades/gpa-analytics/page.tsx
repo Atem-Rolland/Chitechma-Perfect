@@ -12,35 +12,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { DEPARTMENTS, ACADEMIC_YEARS, SEMESTERS, getGradeDetailsFromScore } from "@/config/data";
+import { DEPARTMENTS, ACADEMIC_YEARS, SEMESTERS, getGradeDetailsFromScore, ALL_UNIVERSITY_COURSES } from "@/config/data";
 
-
-// Fetch mock courses to get course details like name and credits
-async function fetchAllCoursesMockAnalytics(): Promise<Course[]> {
-    // In a real app, this would fetch from your actual course data source
-    // For now, using a simplified version of the mock data from courses/page.tsx
-    return [
-      { id: "LAW101_CESM_Y2223_S1", title: "Introduction to Law", code: "LAW101", department: DEPARTMENTS.CESM, credits: 1, level: 200, semester: "First Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "General"},
-      { id: "ENG102_CESM_Y2223_S1", title: "English Language", code: "ENG102", department: DEPARTMENTS.CESM, credits: 1, level: 200, semester: "First Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "General"},
-      { id: "SWE111_CESM_Y2223_S1", title: "Introduction to Software Eng", code: "SWE111", department: DEPARTMENTS.CESM, credits: 3, level: 200, semester: "First Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "Compulsory"},
-      { id: "SWE92_CESM_Y2223_S2", title: "Computer Programming I", code: "SWE92", department: DEPARTMENTS.CESM, credits: 3, level: 200, semester: "Second Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "Compulsory"},
-      { id: "SWE94_CESM_Y2223_S2", title: "Data Structures and Algorithms", code: "SWE94", department: DEPARTMENTS.CESM, credits: 3, level: 200, semester: "Second Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "Compulsory"},
-      { id: "CSE301_CESM_Y2324_S1", title: "Introduction to Algorithms", code: "CSE301", department: DEPARTMENTS.CESM, credits: 3, level: 300, semester: "First Semester", academicYear: "2023/2024", description: "", lecturerId: "" , type: "Compulsory"},
-      { id: "CSE303_CESM_Y2324_S1", title: "Web Technologies", code: "CSE303", department: DEPARTMENTS.CESM, credits: 3, level: 300, semester: "First Semester", academicYear: "2023/2024", description: "", lecturerId: "" , type: "Compulsory"},
-      { id: "CSE302_CESM_Y2324_S2", title: "Database Systems", code: "CSE302", department: DEPARTMENTS.CESM, credits: 3, level: 300, semester: "Second Semester", academicYear: "2023/2024", description: "", lecturerId: "" , type: "Compulsory"},
-      { id: "CSE308_CESM_Y2324_S2", title: "Operating Systems II", code: "CSE308", department: DEPARTMENTS.CESM, credits: 3, level: 300, semester: "Second Semester", academicYear: "2023/2024", description: "", lecturerId: "" , type: "Compulsory"},
-      { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "Compulsory"},
-      { id: "CSE409_CESM_Y2425_S1", title: "Software Development and OOP", code: "CSE409", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "Compulsory"},
-      { id: "MGT403_CESM_Y2425_S1", title: "Research Methodology", code: "MGT403", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "General"},
-      { id: "CSE405_CESM_Y2425_S1", title: "Embedded Systems", code: "CSE405", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "Compulsory"},
-      { id: "NES403_CESM_Y2425_S1", title: "Modeling in Information System", code: "NES403", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "Elective"},
-    ];
-  }
   
-// Mock data fetching function - adapted from ViewGradesPage
 async function fetchMockGradesForAnalytics(studentId: string, allCourses: Course[]): Promise<Grade[]> {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    // Removed artificial setTimeout
     const studentProfile = { department: DEPARTMENTS.CESM, level: 400 }; 
     const grades: Grade[] = [];
     let gradeIdCounter = 1;
@@ -65,7 +41,7 @@ async function fetchMockGradesForAnalytics(studentId: string, allCourses: Course
         const examScore = Math.floor(Math.random() * (period.level === 200 ? 30 : 40)) + (period.level === 200 ? 30 : 30);
         const finalScore = totalCaScore + examScore;
         const gradeDetails = getGradeDetailsFromScore(finalScore);
-        const isPublished = Math.random() > 0.1; // Higher chance of being published for analytics
+        const isPublished = Math.random() > 0.1; 
   
         grades.push({
           id: `G_Analytics_${String(gradeIdCounter++).padStart(3, '0')}`,
@@ -124,7 +100,7 @@ export default function GpaAnalyticsPage() {
         return;
       }
       setIsLoading(true);
-      const courses = await fetchAllCoursesMockAnalytics();
+      const courses = ALL_UNIVERSITY_COURSES; // Use centralized data
       const fetchedGrades = await fetchMockGradesForAnalytics(user.uid, courses);
       setAllGrades(fetchedGrades);
       setIsLoading(false);
@@ -178,7 +154,7 @@ export default function GpaAnalyticsPage() {
         const cgpa = cumulativeCreditsAttempted > 0 ? parseFloat((cumulativeQualityPoints / cumulativeCreditsAttempted).toFixed(2)) : 0;
 
         processedData.push({
-          semesterLabel: `${year.slice(2,4)}/${year.slice(7,9)}-${semester.substring(0,1)}${semesterOrderMap[semester as keyof typeof semesterOrderMap]}`, // e.g., 22/23-S1
+          semesterLabel: `${year.slice(2,4)}/${year.slice(7,9)}-${semester.substring(0,1)}${semesterOrderMap[semester as keyof typeof semesterOrderMap]}`, 
           academicYear: year,
           semester: semester,
           sgpa,
@@ -320,7 +296,7 @@ export default function GpaAnalyticsPage() {
           <CardDescription>Semester GPA (SGPA) and Cumulative GPA (CGPA) over time for published results.</CardDescription>
         </CardHeader>
         <CardContent>
-          {gpaData.length > 1 ? ( // Ensure there's enough data for a trend line
+          {gpaData.length > 1 ? ( 
             <ChartContainer config={chartConfig} className="aspect-video h-[400px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
@@ -329,7 +305,7 @@ export default function GpaAnalyticsPage() {
                     top: 5,
                     right: 20,
                     left: -10, 
-                    bottom: 50, // Increased bottom margin for angled labels
+                    bottom: 50, 
                   }}
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -338,9 +314,9 @@ export default function GpaAnalyticsPage() {
                     tickLine={false} 
                     axisLine={false} 
                     tickMargin={8}
-                    angle={-45} // Angle labels for better fit
+                    angle={-45} 
                     textAnchor="end"
-                    interval={0} // Show all labels
+                    interval={0} 
                     style={{ fontSize: '0.75rem' }}
                   />
                   <YAxis 

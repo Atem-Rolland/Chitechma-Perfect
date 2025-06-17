@@ -24,25 +24,25 @@ const MOCK_LIVE_CLASSES: LiveClass[] = [
   {
     id: "live1_cse301", courseId: "CSE301", courseCode: "CSE301", courseName: "Introduction to Algorithms",
     title: "Live Q&A: Recursion Deep Dive", lecturerName: "Dr. Ada Lovelace",
-    dateTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days from now
+    dateTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), 
     meetingLink: "https://meet.google.com/", durationMinutes: 60,
   },
   {
     id: "live2_cse401", courseId: "CSE401", courseCode: "CSE401", courseName: "Mobile Application Development",
     title: "Workshop: Building Your First Android App", lecturerName: "Prof. Charles Babbage",
-    dateTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
+    dateTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), 
     meetingLink: "https://meet.google.com/", durationMinutes: 90,
   },
   {
     id: "live3_mth201", courseId: "MTH201", courseCode: "MTH201", courseName: "Calculus I",
     title: "Problem Solving Session: Derivatives", lecturerName: "Dr. Alan Turing",
-    dateTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago (past)
+    dateTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), 
     meetingLink: "https://meet.google.com/", durationMinutes: 75,
   },
   {
     id: "live4_cse301", courseId: "CSE301", courseCode: "CSE301", courseName: "Introduction to Algorithms",
     title: "Guest Lecture: AI in Modern Algorithms", lecturerName: "Guest Speaker",
-    dateTime: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days from now
+    dateTime: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(), 
     meetingLink: "https://meet.google.com/", durationMinutes: 60,
   },
 ];
@@ -55,17 +55,15 @@ export default function LiveClassesPage() {
 
   useEffect(() => {
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setLiveClasses(MOCK_LIVE_CLASSES);
-      setIsLoading(false);
-    }, 1000);
+    // Removed artificial setTimeout
+    setLiveClasses(MOCK_LIVE_CLASSES);
+    setIsLoading(false);
   }, []);
 
   const filteredAndSortedLiveClasses = useMemo(() => {
     return liveClasses
       .filter(lc => selectedCourseId === "all" || lc.courseId === selectedCourseId)
-      .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()); // Sort by date
+      .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
   }, [liveClasses, selectedCourseId]);
 
   const upcomingClasses = useMemo(() => {
@@ -73,7 +71,7 @@ export default function LiveClassesPage() {
   }, [filteredAndSortedLiveClasses]);
 
   const pastClasses = useMemo(() => {
-    return filteredAndSortedLiveClasses.filter(lc => isPast(parseISO(lc.dateTime))).reverse(); // Show most recent past first
+    return filteredAndSortedLiveClasses.filter(lc => isPast(parseISO(lc.dateTime))).reverse();
   }, [filteredAndSortedLiveClasses]);
 
   const handleJoinClass = (meetingLink: string) => {

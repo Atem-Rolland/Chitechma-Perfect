@@ -127,13 +127,12 @@ export default function DiscussionForumPage() {
 
   useEffect(() => {
     setIsLoading(true);
-    setTimeout(() => {
-      setAllThreads(MOCK_FORUM_THREADS);
-      if (MOCK_ENROLLED_COURSES_FORUM.length > 0) {
-        setNewThreadCourseId(MOCK_ENROLLED_COURSES_FORUM[0].id);
-      }
-      setIsLoading(false);
-    }, 1000);
+    // Removed artificial setTimeout
+    setAllThreads(MOCK_FORUM_THREADS);
+    if (MOCK_ENROLLED_COURSES_FORUM.length > 0) {
+      setNewThreadCourseId(MOCK_ENROLLED_COURSES_FORUM[0].id);
+    }
+    setIsLoading(false);
   }, []);
 
   const filteredThreads = useMemo(() => {
@@ -173,6 +172,7 @@ export default function DiscussionForumPage() {
       return;
     }
     setIsLoading(true);
+    // Simulate API call - reduced delay
     setTimeout(() => {
       const newThread: ForumThread = {
         id: `thread${Date.now()}_${newThreadCourseId}`,
@@ -196,7 +196,7 @@ export default function DiscussionForumPage() {
       setNewThreadTitle("");
       setNewThreadContent("");
       setIsLoading(false);
-    }, 1000);
+    }, 200); // Reduced delay
   };
 
   const handleOpenReplyDialog = (threadId: string) => {
@@ -211,6 +211,7 @@ export default function DiscussionForumPage() {
       return;
     }
     setIsLoading(true);
+    // Simulate API call - reduced delay
     setTimeout(() => {
       const newReply: ForumPost = {
         id: `reply${Date.now()}`,
@@ -236,7 +237,6 @@ export default function DiscussionForumPage() {
       setReplyContent("");
       setReplyingToThreadId(null);
       
-      // If view dialog was open for this thread, refresh its content
       if (currentThreadToView && currentThreadToView.id === replyingToThreadId) {
         const updatedThreadForDialog = updatedThreads.find(t => t.id === replyingToThreadId);
         if(updatedThreadForDialog) {
@@ -244,7 +244,7 @@ export default function DiscussionForumPage() {
         }
       }
       setIsLoading(false);
-    }, 1000);
+    }, 200); // Reduced delay
   };
 
   const renderPostElement = (post: ForumPost, isOriginalPost = false) => (
@@ -257,7 +257,7 @@ export default function DiscussionForumPage() {
     >
       <div className="flex items-start gap-3">
         <Avatar className="h-10 w-10 border">
-          <AvatarImage src={post.author.avatarUrl} alt={post.author.name} data-ai-hint="user avatar" />
+          <AvatarImage src={post.author.avatarUrl} alt={post.author.name} data-ai-hint="user avatar"/>
           <AvatarFallback>{getInitials(post.author.name)}</AvatarFallback>
         </Avatar>
         <div className="flex-1">
@@ -391,7 +391,6 @@ export default function DiscussionForumPage() {
         </CardContent>
       </Card>
 
-      {/* View Thread Dialog */}
       {isViewThreadDialogOpen && currentThreadToView && (
         <Dialog open={isViewThreadDialogOpen} onOpenChange={setIsViewThreadDialogOpen}>
           <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
@@ -407,7 +406,6 @@ export default function DiscussionForumPage() {
         </Dialog>
       )}
 
-      {/* New Thread Dialog */}
        <Dialog open={isNewThreadDialogOpen} onOpenChange={setIsNewThreadDialogOpen}>
           <DialogContent className="sm:max-w-lg">
             <Suspense fallback={<div className="p-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /><p className="mt-2">Loading form...</p></div>}>
@@ -427,7 +425,6 @@ export default function DiscussionForumPage() {
           </DialogContent>
         </Dialog>
 
-       {/* Reply Dialog */}
       <Dialog open={isReplyDialogOpen} onOpenChange={setIsReplyDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <Suspense fallback={<div className="p-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /><p className="mt-2">Loading form...</p></div>}>

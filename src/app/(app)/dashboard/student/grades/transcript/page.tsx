@@ -12,33 +12,11 @@ import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import type { Grade, CaDetails, Course } from "@/types";
-import { DEPARTMENTS, ACADEMIC_YEARS, SEMESTERS, getGradeDetailsFromScore } from "@/config/data";
+import { DEPARTMENTS, ACADEMIC_YEARS, SEMESTERS, getGradeDetailsFromScore, ALL_UNIVERSITY_COURSES } from "@/config/data";
 
 
-// Fetch mock courses to get course details like name and credits
-async function fetchAllCoursesMockTranscript(): Promise<Course[]> {
-    return [
-      { id: "LAW101_CESM_Y2223_S1", title: "Introduction to Law", code: "LAW101", department: DEPARTMENTS.CESM, credits: 1, level: 200, semester: "First Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "General"},
-      { id: "ENG102_CESM_Y2223_S1", title: "English Language", code: "ENG102", department: DEPARTMENTS.CESM, credits: 1, level: 200, semester: "First Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "General"},
-      { id: "SWE111_CESM_Y2223_S1", title: "Introduction to Software Eng", code: "SWE111", department: DEPARTMENTS.CESM, credits: 3, level: 200, semester: "First Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "Compulsory"},
-      { id: "SWE92_CESM_Y2223_S2", title: "Computer Programming I", code: "SWE92", department: DEPARTMENTS.CESM, credits: 3, level: 200, semester: "Second Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "Compulsory"},
-      { id: "SWE94_CESM_Y2223_S2", title: "Data Structures and Algorithms", code: "SWE94", department: DEPARTMENTS.CESM, credits: 3, level: 200, semester: "Second Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "Compulsory"},
-      { id: "CSE301_CESM_Y2324_S1", title: "Introduction to Algorithms", code: "CSE301", department: DEPARTMENTS.CESM, credits: 3, level: 300, semester: "First Semester", academicYear: "2023/2024", description: "", lecturerId: "" , type: "Compulsory"},
-      { id: "CSE303_CESM_Y2324_S1", title: "Web Technologies", code: "CSE303", department: DEPARTMENTS.CESM, credits: 3, level: 300, semester: "First Semester", academicYear: "2023/2024", description: "", lecturerId: "" , type: "Compulsory"},
-      { id: "CSE302_CESM_Y2324_S2", title: "Database Systems", code: "CSE302", department: DEPARTMENTS.CESM, credits: 3, level: 300, semester: "Second Semester", academicYear: "2023/2024", description: "", lecturerId: "" , type: "Compulsory"},
-      { id: "CSE308_CESM_Y2324_S2", title: "Operating Systems II", code: "CSE308", department: DEPARTMENTS.CESM, credits: 3, level: 300, semester: "Second Semester", academicYear: "2023/2024", description: "", lecturerId: "" , type: "Compulsory"},
-      { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "Compulsory"},
-      { id: "CSE409_CESM_Y2425_S1", title: "Software Development and OOP", code: "CSE409", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "Compulsory"},
-      { id: "MGT403_CESM_Y2425_S1", title: "Research Methodology", code: "MGT403", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "General"},
-      { id: "CSE405_CESM_Y2425_S1", title: "Embedded Systems", code: "CSE405", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "Compulsory"},
-      { id: "NES403_CESM_Y2425_S1", title: "Modeling in Information System", code: "NES403", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "Elective"},
-    ];
-  }
-
-// Adapted mock data fetching function
 async function fetchMockGradesForTranscript(studentId: string, allCourses: Course[]): Promise<Grade[]> {
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
+  // Removed artificial setTimeout
   const studentProfile = { department: DEPARTMENTS.CESM, level: 400 }; 
   const grades: Grade[] = [];
   let gradeIdCounter = 1;
@@ -63,7 +41,6 @@ async function fetchMockGradesForTranscript(studentId: string, allCourses: Cours
       const examScore = Math.floor(Math.random() * (period.level === 200 ? 30: 40)) + (period.level === 200 ? 30: 30);
       const finalScore = totalCaScore + examScore;
       const gradeDetails = getGradeDetailsFromScore(finalScore);
-      // For transcript, assume all listed grades are published unless explicitly modeled otherwise
       const isPublished = true; 
 
       grades.push({
@@ -108,7 +85,7 @@ export default function TranscriptPage() {
         return;
       }
       setIsLoading(true);
-      const courses = await fetchAllCoursesMockTranscript();
+      const courses = ALL_UNIVERSITY_COURSES; // Use centralized data
       const fetchedGrades = await fetchMockGradesForTranscript(user.uid, courses);
       setAllGrades(fetchedGrades);
       setIsLoading(false);
@@ -147,7 +124,7 @@ export default function TranscriptPage() {
     if (validGrades.length === 0) return { gpa: 0, totalCreditsAttempted: 0, totalCreditsEarned: 0, totalQualityPoints: 0 };
 
     const totalQualityPoints = validGrades.reduce((sum, grade) => sum + (grade.gradePoint! * grade.credits), 0);
-    const totalCreditsAttempted = validGrades.reduce((sum, grade) => sum + grade.credits, 0); // Sum credits for all attempted published courses
+    const totalCreditsAttempted = validGrades.reduce((sum, grade) => sum + grade.credits, 0); 
     const totalCreditsEarned = validGrades.reduce((sum, grade) => sum + (grade.isPass ? grade.credits : 0), 0);
     
     const gpa = totalCreditsAttempted > 0 ? parseFloat((totalQualityPoints / totalCreditsAttempted).toFixed(2)) : 0;

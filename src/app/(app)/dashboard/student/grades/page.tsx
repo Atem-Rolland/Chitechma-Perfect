@@ -15,7 +15,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
-import { DEPARTMENTS, ACADEMIC_YEARS, SEMESTERS, getGradeDetailsFromScore } from "@/config/data";
+import { DEPARTMENTS, ACADEMIC_YEARS, SEMESTERS, getGradeDetailsFromScore, ALL_UNIVERSITY_COURSES } from "@/config/data";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -24,27 +24,9 @@ const GradeDetailDialogContent = dynamic(() => import('@/components/grades/Grade
   loading: () => <div className="p-6 text-center">Loading details...</div>,
 });
 
-async function fetchAllCoursesMock(): Promise<Course[]> {
-  return [
-    { id: "LAW101_CESM_Y2223_S1", title: "Introduction to Law", code: "LAW101", department: DEPARTMENTS.CESM, credits: 1, level: 200, semester: "First Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "General"},
-    { id: "ENG102_CESM_Y2223_S1", title: "English Language", code: "ENG102", department: DEPARTMENTS.CESM, credits: 1, level: 200, semester: "First Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "General"},
-    { id: "SWE111_CESM_Y2223_S1", title: "Introduction to Software Eng", code: "SWE111", department: DEPARTMENTS.CESM, credits: 3, level: 200, semester: "First Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "Compulsory"},
-    { id: "SWE92_CESM_Y2223_S2", title: "Computer Programming I", code: "SWE92", department: DEPARTMENTS.CESM, credits: 3, level: 200, semester: "Second Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "Compulsory"},
-    { id: "SWE94_CESM_Y2223_S2", title: "Data Structures and Algorithms", code: "SWE94", department: DEPARTMENTS.CESM, credits: 3, level: 200, semester: "Second Semester", academicYear: "2022/2023", description: "", lecturerId: "" , type: "Compulsory"},
-    { id: "CSE301_CESM_Y2324_S1", title: "Introduction to Algorithms", code: "CSE301", department: DEPARTMENTS.CESM, credits: 3, level: 300, semester: "First Semester", academicYear: "2023/2024", description: "", lecturerId: "" , type: "Compulsory"},
-    { id: "CSE303_CESM_Y2324_S1", title: "Web Technologies", code: "CSE303", department: DEPARTMENTS.CESM, credits: 3, level: 300, semester: "First Semester", academicYear: "2023/2024", description: "", lecturerId: "" , type: "Compulsory"},
-    { id: "CSE302_CESM_Y2324_S2", title: "Database Systems", code: "CSE302", department: DEPARTMENTS.CESM, credits: 3, level: 300, semester: "Second Semester", academicYear: "2023/2024", description: "", lecturerId: "" , type: "Compulsory"},
-    { id: "CSE308_CESM_Y2324_S2", title: "Operating Systems II", code: "CSE308", department: DEPARTMENTS.CESM, credits: 3, level: 300, semester: "Second Semester", academicYear: "2023/2024", description: "", lecturerId: "" , type: "Compulsory"},
-    { id: "CSE401_CESM_Y2425_S1", title: "Mobile Application Development", code: "CSE401", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "Compulsory"},
-    { id: "CSE409_CESM_Y2425_S1", title: "Software Development and OOP", code: "CSE409", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "Compulsory"},
-    { id: "MGT403_CESM_Y2425_S1", title: "Research Methodology", code: "MGT403", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "General"},
-    { id: "CSE405_CESM_Y2425_S1", title: "Embedded Systems", code: "CSE405", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "Compulsory"},
-    { id: "NES403_CESM_Y2425_S1", title: "Modeling in Information System", code: "NES403", department: DEPARTMENTS.CESM, credits: 3, level: 400, semester: "First Semester", academicYear: "2024/2025", description: "", lecturerId: "" , type: "Elective"},
-  ];
-}
 
 async function fetchMockGrades(studentId: string, allCourses: Course[]): Promise<Grade[]> {
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  // Removed artificial setTimeout
   const studentProfile = { department: DEPARTMENTS.CESM, level: 400 }; 
   const grades: Grade[] = [];
   let gradeIdCounter = 1;
@@ -99,7 +81,6 @@ async function fetchMockGrades(studentId: string, allCourses: Course[]): Promise
   return grades;
 }
 
-// Standardized localStorage key function
 const getLocalStorageKeyForAllRegistrations = (uid?: string) => {
   if (!uid) return null;
   return `allRegisteredCourses_${uid}`;
@@ -107,8 +88,8 @@ const getLocalStorageKeyForAllRegistrations = (uid?: string) => {
 
 export default function ViewGradesPage() {
   const { user } = useAuth();
-  const [allFetchedGrades, setAllFetchedGrades] = useState<Grade[]>([]); // Stores all grades from mock fetch
-  const [displayedGrades, setDisplayedGrades] = useState<Grade[]>([]); // Grades filtered by registration & period
+  const [allFetchedGrades, setAllFetchedGrades] = useState<Grade[]>([]); 
+  const [displayedGrades, setDisplayedGrades] = useState<Grade[]>([]); 
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState({
     academicYear: "2024/2025",
@@ -126,7 +107,7 @@ export default function ViewGradesPage() {
         return;
       }
       setIsLoading(true);
-      const courses = await fetchAllCoursesMock(); 
+      const courses = ALL_UNIVERSITY_COURSES; // Use centralized course data
       const fetchedGrades = await fetchMockGrades(user.uid, courses);
       setAllFetchedGrades(fetchedGrades);
 
@@ -206,12 +187,10 @@ export default function ViewGradesPage() {
 
   const semesterGpaStats = useMemo(() => {
     if (filters.academicYear === "all" || filters.semester === "all") return null;
-    // GPA for semester should use displayedGrades as it's already filtered by period and registration
     return calculateGpa(displayedGrades);
   }, [displayedGrades, filters]);
 
   const cumulativeGpaStats = useMemo(() => {
-    // CGPA should be based on ALL registered and published grades across all periods.
     const storageKey = getLocalStorageKeyForAllRegistrations(user?.uid);
     let studentRegisteredCourseIds: string[] = [];
     if (storageKey && typeof window !== 'undefined') {
