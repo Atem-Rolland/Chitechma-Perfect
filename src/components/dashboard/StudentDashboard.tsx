@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNowStrict, parseISO } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import NotificationItem from "./NotificationItem"; // Import the new component
 
 // Fee Constants (ensure these match what's in payments/page.tsx or central config)
 const BASE_TUITION = 350000;
@@ -34,7 +35,7 @@ const CURRENCY = "XAF";
 
 const getLocalStorageKeyForAllRegistrations = (uid?: string) => {
   if (!uid) return null;
-  return `allRegisteredCourses_${uid}`;
+  return 'allRegisteredCourses_' + uid;
 };
 
 const MOCK_NOTIFICATIONS: Notification[] = [
@@ -45,21 +46,6 @@ const MOCK_NOTIFICATIONS: Notification[] = [
   { id: "n5", title: "Forum Reply in 'Big O Discussion'", description: "Dr. Eno replied to your question in the CSE301 forum.", type: "forum_reply", timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), isRead: true, link: "/dashboard/student/e-learning/forum" },
   { id: "n6", title: "System Maintenance Scheduled", description: "The CUSMS portal will be down for maintenance on Sunday from 2 AM to 4 AM.", type: "info", timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), isRead: true },
 ];
-
-const getNotificationIcon = (type: NotificationType): React.ElementType => {
-  switch (type) {
-    case 'grade_release': return GraduationCap;
-    case 'new_material': return BookOpen;
-    case 'assignment_due': return FileWarning;
-    case 'payment_due': return CreditCard;
-    case 'forum_reply': return MessageSquare;
-    case 'info': return Info;
-    case 'warning': return AlertTriangle;
-    case 'success': return CheckCircleIcon;
-    case 'course_update': return BookOpen;
-    default: return Bell;
-  }
-};
 
 export function StudentDashboard() {
   const { user, profile, logout, loading: authLoading } = useAuth();
@@ -85,7 +71,7 @@ export function StudentDashboard() {
               const parsedIds = JSON.parse(storedIds);
               if (Array.isArray(parsedIds)) studentRegisteredIds = parsedIds;
             } catch (e) {
-              console.error("Failed to parse registered courses from localStorage for dashboard:", e);
+              // console.error("Failed to parse registered courses from localStorage for dashboard:", e);
             }
           }
         }
@@ -109,7 +95,7 @@ export function StudentDashboard() {
 
     async function loadNotifications() {
       setIsLoadingNotifications(true);
-      // Removed artificial delay: await new Promise(resolve => setTimeout(resolve, 700));
+      // Removed artificial delay
       setNotifications(MOCK_NOTIFICATIONS.sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime()));
       setIsLoadingNotifications(false);
     }
@@ -277,42 +263,11 @@ export function StudentDashboard() {
               ) : notifications.length > 0 ? (
                 <ScrollArea className="h-[280px] p-4">
                   <ul className="space-y-3">
-                    {notifications.slice(0, 5).map(notif => {
-                      const Icon = getNotificationIcon(notif.type);
-                      const isClickable = !!notif.link;
-                      const NotificationItemWrapper = isClickable ? Link : 'div';
-                      const wrapperProps = isClickable ? { href: notif.link! } : {};
-
-                      return (
-                        <li key={notif.id}>
-                          <NotificationItemWrapper {...wrapperProps}>
-                            <div
-                              className={cn(
-                                "flex items-start gap-3 p-3 rounded-lg border transition-colors",
-                                !notif.isRead && "bg-primary/5 border-primary/20 hover:bg-primary/10",
-                                notif.isRead && "bg-muted/50 hover:bg-muted/70",
-                                isClickable && "cursor-pointer"
-                              )}
-                              onClick={() => !isClickable && handleNotificationClick(notif.id)}
-                            >
-                              <Icon className={cn("h-5 w-5 mt-0.5 shrink-0",
-                                  !notif.isRead ? 'text-primary' : 'text-muted-foreground'
-                              )} />
-                              <div className="flex-grow">
-                                <div className="flex justify-between items-start">
-                                  <h4 className={cn("font-medium text-sm", !notif.isRead && "text-foreground")}>{notif.title}</h4>
-                                  {!notif.isRead && <span className="h-2 w-2 rounded-full bg-primary shrink-0 ml-2 mt-1.5" title="Unread"></span>}
-                                </div>
-                                <p className={cn("text-xs", !notif.isRead ? "text-foreground/80" : "text-muted-foreground")}>{notif.description}</p>
-                                <p className={cn("text-xs mt-1", !notif.isRead ? "text-foreground/60" : "text-muted-foreground/80")}>
-                                  {formatDistanceToNowStrict(parseISO(notif.timestamp), { addSuffix: true })}
-                                </p>
-                              </div>
-                            </div>
-                          </NotificationItemWrapper>
-                        </li>
-                      );
-                    })}
+                    {notifications.slice(0, 5).map(notif => (
+                      <li key={notif.id}>
+                        <NotificationItem notification={notif} onClick={handleNotificationClick} />
+                      </li>
+                    ))}
                   </ul>
                 </ScrollArea>
               ) : (
