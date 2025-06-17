@@ -1,13 +1,31 @@
+
 "use client";
 
 import { useAuth } from '@/hooks/useAuth';
-import { StudentDashboard } from '@/components/dashboard/StudentDashboard';
-import { LecturerDashboard } from '@/components/dashboard/LecturerDashboard';
-import { AdminDashboard } from '@/components/dashboard/AdminDashboard';
-import { FinanceDashboard } from '@/components/dashboard/FinanceDashboard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import dynamic from 'next/dynamic';
+import type { ComponentType } from 'react'; // To help TypeScript with dynamic import types
+
+// Dynamically import role-specific dashboards
+const StudentDashboard = dynamic(() => import('@/components/dashboard/StudentDashboard').then(mod => mod.StudentDashboard), {
+  loading: () => <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>,
+  ssr: false // Optional: can be true if dashboards are SSR-friendly
+});
+const LecturerDashboard = dynamic(() => import('@/components/dashboard/LecturerDashboard').then(mod => mod.LecturerDashboard), {
+  loading: () => <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>,
+  ssr: false
+});
+const AdminDashboard = dynamic(() => import('@/components/dashboard/AdminDashboard').then(mod => mod.AdminDashboard), {
+  loading: () => <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>,
+  ssr: false
+});
+const FinanceDashboard = dynamic(() => import('@/components/dashboard/FinanceDashboard').then(mod => mod.FinanceDashboard), {
+  loading: () => <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>,
+  ssr: false
+});
+
 
 export default function DashboardPage() {
   const { profile, loading, role } = useAuth();
