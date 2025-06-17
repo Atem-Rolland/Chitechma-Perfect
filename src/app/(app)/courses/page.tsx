@@ -12,7 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Course } from "@/types";
 import { BookOpen, Search, Filter, Tag, School, Info, CalendarDays, BookUser, PlusCircle, MinusCircle, Download, AlertCircle, XCircle, CheckCircle, Eye, Clock, AlertTriangle, GraduationCap } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect, useMemo, Suspense, useCallback } from "react"; // Added useCallback
+import { useState, useEffect, useMemo, Suspense, useCallback } from "react";
 import dynamic from 'next/dynamic';
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,12 +26,12 @@ const CourseDetailDialog = dynamic(() => import('@/components/courses/CourseDeta
   loading: () => <p className="p-4 text-center">Loading details...</p>
 });
 
-const MIN_CREDITS = 1; // Simplified for permissive registration
-const MAX_CREDITS = 100; // Simplified for permissive registration
+const MIN_CREDITS = 1;
+const MAX_CREDITS = 100;
 
 const getLocalStorageKeyForAllRegistrations = (uid?: string) => {
   if (!uid) return null;
-  return `allRegisteredCourses_${uid}`; // This key stores ALL historical registrations
+  return `allRegisteredCourses_${uid}`;
 };
 
 export default function CoursesPage() {
@@ -39,16 +39,12 @@ export default function CoursesPage() {
   const { toast } = useToast();
   const isStudent = role === 'student';
 
-  const [allCourses] = useState<Course[]>(ALL_UNIVERSITY_COURSES);
-  const [isLoading, setIsLoading] = useState(true); // For initial data load simulation
+  const [pageDataLoading, setPageDataLoading] = useState(true); // Consolidated loading state
+
   const [searchTerm, setSearchTerm] = useState("");
-
-  // Stores ALL course IDs ever registered by the student across all periods
   const [allHistoricalRegistrations, setAllHistoricalRegistrations] = useState<string[]>([]);
-  // Stores course IDs registered for the *current* academic period (derived from profile)
   const [registeredCourseIdsForCurrentPeriod, setRegisteredCourseIdsForCurrentPeriod] = useState<string[]>([]);
-
-  const [isSavingRegistration, setIsSavingRegistration] = useState(false); // To disable buttons during "save"
+  const [isSavingRegistration, setIsSavingRegistration] = useState(false);
 
   const studentAcademicContext = useMemo(() => {
     if (isStudent && profile) {
@@ -93,74 +89,69 @@ export default function CoursesPage() {
   const [isDeadlineApproaching, setIsDeadlineApproaching] = useState(false);
   const [daysToDeadline, setDaysToDeadline] = useState<number | null>(null);
 
-  // Load all historical registrations from localStorage ONCE on initial load
+  // Consolidated useEffect for initial data setup
   useEffect(() => {
-    setIsLoading(true);
-    if (user?.uid && typeof window !== 'undefined' && !authLoading) {
-      const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
-      if (storageKey) {
-        const storedIdsString = localStorage.getItem(storageKey);
-        if (storedIdsString) {
-          try {
-            const parsedIds = JSON.parse(storedIdsString);
-            if (Array.isArray(parsedIds)) {
-              setAllHistoricalRegistrations(parsedIds);
-            }
-          } catch (e) {
-            console.error("Failed to parse all registered courses from localStorage:", e);
-            localStorage.removeItem(storageKey); // Clear corrupted data
+    if (authLoading || !studentAcademicContext || !user?.uid || !ALL_UNIVERSITY_COURSES.length) {
+      setPageDataLoading(true); // Keep loading if auth or context isn't ready
+      return;
+    }
+    setPageDataLoading(true); // Explicitly set loading true while processing this effect
+
+    let historicalRegsFromStorage: string[] = [];
+    const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
+    if (storageKey && typeof window !== 'undefined') {
+      const storedIdsString = localStorage.getItem(storageKey);
+      if (storedIdsString) {
+        try {
+          const parsedIds = JSON.parse(storedIdsString);
+          if (Array.isArray(parsedIds)) {
+            historicalRegsFromStorage = parsedIds;
           }
+        } catch (e) {
+          console.error("Failed to parse all registered courses from localStorage:", e);
+          if (typeof window !== 'undefined') localStorage.removeItem(storageKey);
         }
       }
     }
-    setIsLoading(false); // Done with initial load attempt
-  }, [user?.uid, authLoading]);
-
-  // Effect to derive current period registrations and handle auto-registration
-  useEffect(() => {
-    if (isLoading || !studentAcademicContext || allCourses.length === 0 || authLoading) return;
 
     const { department, level, currentAcademicYear, currentSemester } = studentAcademicContext;
-    const storageKey = getLocalStorageKeyForAllRegistrations(user?.uid);
-
-    // Filter from allHistoricalRegistrations for the current academic period
-    const currentPeriodRegisteredIdsFromHistorical = allHistoricalRegistrations.filter(courseId => {
-      const course = allCourses.find(c => c.id === courseId);
+    const currentPeriodRegisteredIdsFromHistorical = historicalRegsFromStorage.filter(courseId => {
+      const course = ALL_UNIVERSITY_COURSES.find(c => c.id === courseId);
       return course && course.academicYear === currentAcademicYear && course.semester === currentSemester;
     });
 
     let finalCurrentPeriodIds = [...currentPeriodRegisteredIdsFromHistorical];
+    let finalHistoricalRegs = [...historicalRegsFromStorage];
 
-    // Auto-registration logic if no specific registrations for current period exist in historical
     if (currentPeriodRegisteredIdsFromHistorical.length === 0 && storageKey && role === 'student') {
-      const departmentalCourses = allCourses.filter(c =>
+      const departmentalCourses = ALL_UNIVERSITY_COURSES.filter(c =>
         c.department === department && c.level === level &&
         c.academicYear === currentAcademicYear && c.semester === currentSemester &&
         (c.type === "Compulsory")
       );
-      const generalCoursesForLevel = allCourses.filter(c =>
+      const generalCoursesForLevel = ALL_UNIVERSITY_COURSES.filter(c =>
         c.type === "General" && c.level === level &&
         c.academicYear === currentAcademicYear && c.semester === currentSemester
       );
-
       const autoRegisteredIds = [...new Set([...departmentalCourses.map(c => c.id), ...generalCoursesForLevel.map(c => c.id)])];
 
       if (autoRegisteredIds.length > 0) {
-        // Add these newly auto-registered courses to the historical master list
-        const newHistoricalTotal = Array.from(new Set([...allHistoricalRegistrations, ...autoRegisteredIds]));
-        setAllHistoricalRegistrations(newHistoricalTotal);
+        finalHistoricalRegs = Array.from(new Set([...finalHistoricalRegs, ...autoRegisteredIds]));
         if (typeof window !== 'undefined') {
-          localStorage.setItem(storageKey, JSON.stringify(newHistoricalTotal));
+          localStorage.setItem(storageKey, JSON.stringify(finalHistoricalRegs));
         }
         finalCurrentPeriodIds = autoRegisteredIds;
-        toast({ title: "Courses Auto-Registered", description: "Compulsory and general courses for your current level and semester have been pre-selected and saved to local storage.", variant: "default" });
+        toast({ title: "Courses Auto-Registered", description: "Compulsory and general courses for your current level and semester have been pre-selected and saved.", variant: "default" });
       }
     }
+
+    setAllHistoricalRegistrations(finalHistoricalRegs);
     setRegisteredCourseIdsForCurrentPeriod(finalCurrentPeriodIds);
+    setPageDataLoading(false); // All initial setup done
 
-  }, [studentAcademicContext, allCourses, isLoading, allHistoricalRegistrations, user?.uid, toast, role, authLoading]);
+  }, [user?.uid, authLoading, studentAcademicContext, role, toast]); // Removed allCourses from deps as it's constant
 
-  // Update filters when student context changes
+  // Update filters when student context changes (separate from initial load)
   useEffect(() => {
     if (isStudent && studentAcademicContext) {
       setFilters(prevFilters => ({
@@ -176,29 +167,21 @@ export default function CoursesPage() {
   const currentRegistrationMeta = useMemo(() => {
     const activeYear = filters.academicYear === "all" ? defaultRegistrationMeta.academicYear : filters.academicYear;
     const activeSemester = filters.semester === "all" ? defaultRegistrationMeta.semester : filters.semester;
-
-    if (activeYear === "2024/2025" && activeSemester === "First Semester") {
-      return { isOpen: true, deadline: "2024-09-15", academicYear: activeYear, semester: activeSemester };
-    }
-    if (activeYear === "2024/2025" && activeSemester === "Second Semester") {
-      return { isOpen: true, deadline: "2025-02-15", academicYear: activeYear, semester: activeSemester };
-    }
-    // Simplified: Assume all other periods are "closed" for this mock.
+    if (activeYear === "2024/2025" && activeSemester === "First Semester") return { isOpen: true, deadline: "2024-09-15", academicYear: activeYear, semester: activeSemester };
+    if (activeYear === "2024/2025" && activeSemester === "Second Semester") return { isOpen: true, deadline: "2025-02-15", academicYear: activeYear, semester: activeSemester };
     return { isOpen: false, deadline: "N/A", academicYear: activeYear, semester: activeSemester, message: (filters.academicYear === "all" || filters.semester === "all") ? "Select specific year/semester for registration status." : undefined };
   }, [filters.academicYear, filters.semester, defaultRegistrationMeta]);
 
   useEffect(() => {
     if (currentRegistrationMeta.isOpen && currentRegistrationMeta.deadline && currentRegistrationMeta.deadline !== "N/A") {
       const deadlineDate = new Date(currentRegistrationMeta.deadline);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const today = new Date(); today.setHours(0, 0, 0, 0);
       const diffTime = deadlineDate.getTime() - today.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       setDaysToDeadline(diffDays);
       setIsDeadlineApproaching(diffDays >= 0 && diffDays <= 7);
     } else {
-      setIsDeadlineApproaching(false);
-      setDaysToDeadline(null);
+      setIsDeadlineApproaching(false); setDaysToDeadline(null);
     }
   }, [currentRegistrationMeta.isOpen, currentRegistrationMeta.deadline]);
 
@@ -213,26 +196,22 @@ export default function CoursesPage() {
   };
 
   const filteredCourses = useMemo(() => {
-    return allCourses
+    return ALL_UNIVERSITY_COURSES
       .filter(course => filters.department === "all" || course.department === filters.department)
       .filter(course => filters.level === "all" || course.level.toString() === filters.level)
       .filter(course => filters.academicYear === "all" || course.academicYear === filters.academicYear)
       .filter(course => filters.semester === "all" || course.semester === filters.semester)
-      .filter(course =>
-        course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        course.code.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      .filter(course => course.title.toLowerCase().includes(searchTerm.toLowerCase()) || course.code.toLowerCase().includes(searchTerm.toLowerCase()))
       .filter(course => filters.courseType === "all" || course.type === filters.courseType);
-  }, [allCourses, searchTerm, filters]);
+  }, [searchTerm, filters]);
 
   const registeredCoursesListForDisplay = useMemo(() => {
-    // Display courses from allHistoricalRegistrations that match the current filters (year and semester)
-    return allCourses.filter(course =>
+    return ALL_UNIVERSITY_COURSES.filter(course =>
       allHistoricalRegistrations.includes(course.id) &&
       (filters.academicYear === "all" || course.academicYear === filters.academicYear) &&
       (filters.semester === "all" || course.semester === filters.semester)
     );
-  }, [allCourses, allHistoricalRegistrations, filters.academicYear, filters.semester]);
+  }, [allHistoricalRegistrations, filters.academicYear, filters.semester]);
 
   const totalRegisteredCreditsForFilteredPeriod = useMemo(() => {
     if (filters.academicYear === "all" || filters.semester === "all") return 0;
@@ -243,112 +222,54 @@ export default function CoursesPage() {
 
   const handleRegisterCourse = useCallback((course: Course) => {
     setIsSavingRegistration(true);
-    if (!user?.uid) {
-      toast({ title: "Error", description: "User not identified.", variant: "destructive" });
-      setIsSavingRegistration(false); return;
-    }
-    if (!currentRegistrationMeta.isOpen) {
-      toast({ title: "Registration Closed", description: `Course registration for ${currentRegistrationMeta.academicYear}, ${currentRegistrationMeta.semester} is currently closed.`, variant: "destructive" });
-      setIsSavingRegistration(false); return;
-    }
-    if (course.academicYear !== currentRegistrationMeta.academicYear || course.semester !== currentRegistrationMeta.semester) {
-      toast({ title: "Registration Mismatch", description: `You can only register for courses in the currently open registration period: ${currentRegistrationMeta.semester}, ${currentRegistrationMeta.academicYear}. This course is for ${course.semester}, ${course.academicYear}.`, variant: "destructive" });
-      setIsSavingRegistration(false); return;
-    }
-    if (allHistoricalRegistrations.includes(course.id)) {
-      toast({ title: "Already Registered", description: `You are already registered for ${course.code} - ${course.title}.`, variant: "default" });
-      setIsSavingRegistration(false); return;
-    }
+    if (!user?.uid) { toast({ title: "Error", description: "User not identified.", variant: "destructive" }); setIsSavingRegistration(false); return; }
+    if (!currentRegistrationMeta.isOpen) { toast({ title: "Registration Closed", description: `Course registration for ${currentRegistrationMeta.academicYear}, ${currentRegistrationMeta.semester} is currently closed.`, variant: "destructive" }); setIsSavingRegistration(false); return; }
+    if (course.academicYear !== currentRegistrationMeta.academicYear || course.semester !== currentRegistrationMeta.semester) { toast({ title: "Registration Mismatch", description: `You can only register for courses in the currently open registration period: ${currentRegistrationMeta.semester}, ${currentRegistrationMeta.academicYear}. This course is for ${course.semester}, ${course.academicYear}.`, variant: "destructive" }); setIsSavingRegistration(false); return; }
+    if (allHistoricalRegistrations.includes(course.id)) { toast({ title: "Already Registered", description: `You are already registered for ${course.code} - ${course.title}.`, variant: "default" }); setIsSavingRegistration(false); return; }
 
     const newHistoricalTotal = [...allHistoricalRegistrations, course.id];
     setAllHistoricalRegistrations(newHistoricalTotal);
-
-    // If the registered course belongs to the current academic period, update that specific list too
     if (studentAcademicContext && course.academicYear === studentAcademicContext.currentAcademicYear && course.semester === studentAcademicContext.currentSemester) {
       setRegisteredCourseIdsForCurrentPeriod(prev => [...prev, course.id]);
     }
-
-    if (typeof window !== 'undefined') {
-      const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
-      if (storageKey) localStorage.setItem(storageKey, JSON.stringify(newHistoricalTotal));
-    }
+    if (typeof window !== 'undefined') { const storageKey = getLocalStorageKeyForAllRegistrations(user.uid); if (storageKey) localStorage.setItem(storageKey, JSON.stringify(newHistoricalTotal)); }
     toast({ title: "Course Registered", description: `${course.code} - ${course.title} successfully registered (localStorage).`, variant: "default" });
     setIsSavingRegistration(false);
   }, [user?.uid, currentRegistrationMeta, allHistoricalRegistrations, toast, studentAcademicContext]);
 
   const handleDropCourse = useCallback((courseIdToDrop: string) => {
-    const courseToDrop = allCourses.find(c => c.id === courseIdToDrop);
-    if (!courseToDrop || !user?.uid) return;
-    setIsSavingRegistration(true);
-
-    if (!currentRegistrationMeta.isOpen) {
-      toast({ title: "Registration Closed", description: `Cannot drop courses as registration is closed.`, variant: "destructive" });
-      setIsSavingRegistration(false); return;
-    }
-    if (courseToDrop.academicYear !== currentRegistrationMeta.academicYear || courseToDrop.semester !== currentRegistrationMeta.semester) {
-      toast({ title: "Drop Mismatch", description: `Can only drop courses from the open registration period.`, variant: "destructive" });
-      setIsSavingRegistration(false); return;
-    }
+    const courseToDrop = ALL_UNIVERSITY_COURSES.find(c => c.id === courseIdToDrop);
+    if (!courseToDrop || !user?.uid) return; setIsSavingRegistration(true);
+    if (!currentRegistrationMeta.isOpen) { toast({ title: "Registration Closed", description: `Cannot drop courses as registration is closed.`, variant: "destructive" }); setIsSavingRegistration(false); return; }
+    if (courseToDrop.academicYear !== currentRegistrationMeta.academicYear || courseToDrop.semester !== currentRegistrationMeta.semester) { toast({ title: "Drop Mismatch", description: `Can only drop courses from the open registration period.`, variant: "destructive" }); setIsSavingRegistration(false); return; }
 
     const newHistoricalTotal = allHistoricalRegistrations.filter(id => id !== courseIdToDrop);
     setAllHistoricalRegistrations(newHistoricalTotal);
-    setRegisteredCourseIdsForCurrentPeriod(prev => prev.filter(id => id !== courseIdToDrop)); // Also update current period list
-
-    if (typeof window !== 'undefined') {
-      const storageKey = getLocalStorageKeyForAllRegistrations(user.uid);
-      if (storageKey) localStorage.setItem(storageKey, JSON.stringify(newHistoricalTotal));
-    }
+    setRegisteredCourseIdsForCurrentPeriod(prev => prev.filter(id => id !== courseIdToDrop));
+    if (typeof window !== 'undefined') { const storageKey = getLocalStorageKeyForAllRegistrations(user.uid); if (storageKey) localStorage.setItem(storageKey, JSON.stringify(newHistoricalTotal)); }
     toast({ title: "Course Dropped", description: `${courseToDrop.code} - ${courseToDrop.title} has been dropped (localStorage).`, variant: "default" });
     setIsSavingRegistration(false);
-  }, [allCourses, user?.uid, currentRegistrationMeta, allHistoricalRegistrations, toast]);
+  }, [user?.uid, currentRegistrationMeta, allHistoricalRegistrations, toast]);
   
   const handleDownloadFormB = useCallback(() => {
-    if (filters.academicYear === "all" || filters.semester === "all") {
-      toast({ title: "Select Period", description: "Please select a specific Academic Year and Semester to download Form B.", variant: "info" });
-      return;
-    }
-    const coursesForFormB = registeredCoursesListForDisplay.filter(
-      c => c.academicYear === filters.academicYear && c.semester === filters.semester
-    );
-    if (coursesForFormB.length === 0) {
-      toast({ title: "No Courses", description: `No courses registered in localStorage for ${filters.semester}, ${filters.academicYear}.`, variant: "info" });
-      return;
-    }
-    toast({ 
-        title: "Form B Download (Simulated)", 
-        description: `Generating PDF for Form B (${filters.semester}, ${filters.academicYear}) using ${coursesForFormB.length} course(s) from localStorage. Courses: ${coursesForFormB.map(c=>c.code).join(', ')}. This is a simulated download.`, 
-        duration: 7000
-    });
+    if (filters.academicYear === "all" || filters.semester === "all") { toast({ title: "Select Period", description: "Please select a specific Academic Year and Semester to download Form B.", variant: "info" }); return; }
+    const coursesForFormB = registeredCoursesListForDisplay.filter(c => c.academicYear === filters.academicYear && c.semester === filters.semester);
+    if (coursesForFormB.length === 0) { toast({ title: "No Courses", description: `No courses registered in localStorage for ${filters.semester}, ${filters.academicYear}.`, variant: "info" }); return; }
+    toast({ title: "Form B Download (Simulated)", description: `Generating PDF for Form B (${filters.semester}, ${filters.academicYear}) using ${coursesForFormB.length} course(s) from localStorage. Courses: ${coursesForFormB.map(c=>c.code).join(', ')}. This is a simulated download.`, duration: 7000 });
   }, [filters.academicYear, filters.semester, registeredCoursesListForDisplay, toast]);
 
   const handleSetSelectedCourseForDetail = useCallback((course: Course | null) => {
     setSelectedCourseForDetail(course);
   }, []);
 
-
   const getCreditStatus = () => {
     const periodYear = currentRegistrationMeta.isOpen ? currentRegistrationMeta.academicYear : filters.academicYear;
     const periodSemester = currentRegistrationMeta.isOpen ? currentRegistrationMeta.semester : filters.semester;
-
-    if (periodYear === "all" || periodSemester === "all") {
-      return { message: `Select specific Year & Semester for credit status.`, variant: "info" as const, credits: 0 };
-    }
-
-    const creditsForPeriod = allHistoricalRegistrations
-      .map(id => allCourses.find(c => c.id === id))
-      .filter(c => c && c.academicYear === periodYear && c.semester === periodSemester)
-      .reduce((sum, c) => sum + (c?.credits || 0), 0);
-
-    if (!currentRegistrationMeta.isOpen && (filters.academicYear !== "all" && filters.semester !== "all")) {
-      return { message: `Registration for ${filters.semester}, ${filters.academicYear} is closed. Credits: ${creditsForPeriod}.`, variant: "info" as const, credits: creditsForPeriod };
-    }
+    if (periodYear === "all" || periodSemester === "all") return { message: `Select specific Year & Semester for credit status.`, variant: "info" as const, credits: 0 };
+    const creditsForPeriod = allHistoricalRegistrations.map(id => ALL_UNIVERSITY_COURSES.find(c => c.id === id)).filter(c => c && c.academicYear === periodYear && c.semester === periodSemester).reduce((sum, c) => sum + (c?.credits || 0), 0);
+    if (!currentRegistrationMeta.isOpen && (filters.academicYear !== "all" && filters.semester !== "all")) return { message: `Registration for ${filters.semester}, ${filters.academicYear} is closed. Credits: ${creditsForPeriod}.`, variant: "info" as const, credits: creditsForPeriod };
     if (currentRegistrationMeta.isOpen) {
-      const creditsForOpenPeriod = allHistoricalRegistrations
-        .map(id => allCourses.find(c => c.id === id))
-        .filter(c => c && c.academicYear === currentRegistrationMeta.academicYear && c.semester === currentRegistrationMeta.semester)
-        .reduce((sum, c) => sum + (c?.credits || 0), 0);
-
-      // Permissive credit checks for this version
+      const creditsForOpenPeriod = allHistoricalRegistrations.map(id => ALL_UNIVERSITY_COURSES.find(c => c.id === id)).filter(c => c && c.academicYear === currentRegistrationMeta.academicYear && c.semester === currentRegistrationMeta.semester).reduce((sum, c) => sum + (c?.credits || 0), 0);
       if (creditsForOpenPeriod < MIN_CREDITS && creditsForOpenPeriod > 0) return { message: `Low credit load. Min ${MIN_CREDITS} (loosened check). Current: ${creditsForOpenPeriod}.`, variant: "warning" as const, credits: creditsForOpenPeriod };
       if (creditsForOpenPeriod > MAX_CREDITS) return { message: `Over max credit load. Max ${MAX_CREDITS} (loosened check). Current: ${creditsForOpenPeriod}.`, variant: "destructive" as const, credits: creditsForOpenPeriod };
       return { message: `Total credits for open period: ${creditsForOpenPeriod}. (Min/Max checks loosened)`, variant: "success" as const, credits: creditsForOpenPeriod };
@@ -357,6 +278,8 @@ export default function CoursesPage() {
   };
 
   const creditStatus = getCreditStatus();
+
+  const showSkeletons = authLoading || pageDataLoading;
 
   return (
     <motion.div
@@ -377,13 +300,10 @@ export default function CoursesPage() {
           <CardTitle className="flex items-center gap-2"><Info className="text-primary"/>Registration Status for {currentRegistrationMeta.academicYear}, {currentRegistrationMeta.semester}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {currentRegistrationMeta.message && (
-            <Alert variant="info"><Info className="h-5 w-5" /><AlertTitle>Dynamic Info</AlertTitle><AlertDescription>{currentRegistrationMeta.message}</AlertDescription></Alert>
-          )}
+          {currentRegistrationMeta.message && (<Alert variant="info"><Info className="h-5 w-5" /><AlertTitle>Dynamic Info</AlertTitle><AlertDescription>{currentRegistrationMeta.message}</AlertDescription></Alert>)}
           {currentRegistrationMeta.isOpen ? (
             <Alert variant="default" className="bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300">
-              <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400" />
-              <AlertTitle>Registration is OPEN</AlertTitle>
+              <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400" /><AlertTitle>Registration is OPEN</AlertTitle>
               <AlertDescription>Deadline: <strong>{currentRegistrationMeta.deadline === "N/A" ? "N/A" : new Date(currentRegistrationMeta.deadline).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' })}</strong> for {currentRegistrationMeta.academicYear}, {currentRegistrationMeta.semester}.</AlertDescription>
             </Alert>
           ) : (
@@ -402,16 +322,14 @@ export default function CoursesPage() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Filter className="text-primary"/>Filter Courses</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Filter className="text-primary"/>Filter Courses</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
           <Select value={filters.academicYear} onValueChange={(value) => handleFilterChange("academicYear", value)}><SelectTrigger><CalendarDays className="mr-2 h-4 w-4 text-muted-foreground inline-block" />Academic Year</SelectTrigger><SelectContent>{academicYearsForFilter.map(year => <SelectItem key={year} value={year}>{year === "all" ? "All Years" : year}</SelectItem>)}</SelectContent></Select>
           <Select value={filters.semester} onValueChange={(value) => handleFilterChange("semester", value)}><SelectTrigger><BookOpen className="mr-2 h-4 w-4 text-muted-foreground inline-block" />Semester</SelectTrigger><SelectContent>{semestersForFilter.map(sem => <SelectItem key={sem} value={sem}>{sem === "all" ? "All Semesters" : sem}</SelectItem>)}</SelectContent></Select>
           <Select value={filters.department} onValueChange={(value) => handleFilterChange("department", value)}><SelectTrigger><School className="mr-2 h-4 w-4 text-muted-foreground inline-block" />Department</SelectTrigger><SelectContent>{staticDepartments.map(dept => <SelectItem key={dept} value={dept}>{dept === "all" ? "All Departments" : dept}</SelectItem>)}</SelectContent></Select>
           <Select value={filters.level} onValueChange={(value) => handleFilterChange("level", value)}><SelectTrigger><BookUser className="mr-2 h-4 w-4 text-muted-foreground inline-block" />Level</SelectTrigger><SelectContent>{staticLevels.map(lvl => <SelectItem key={lvl} value={lvl}>{lvl === "all" ? "All Levels" : `${lvl} Level`}</SelectItem>)}</SelectContent></Select>
           <Select value={filters.courseType} onValueChange={(value) => handleFilterChange("courseType", value)}><SelectTrigger><Tag className="mr-2 h-4 w-4 text-muted-foreground inline-block" />Course Type</SelectTrigger><SelectContent>{courseTypes.map(type => <SelectItem key={type} value={type}>{type === "all" ? "All Types" : type}</SelectItem>)}</SelectContent></Select>
-           <div className="relative lg:col-span-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><Input placeholder="Search..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}/></div>
+          <div className="relative lg:col-span-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><Input placeholder="Search..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}/></div>
         </CardContent>
       </Card>
 
@@ -419,12 +337,11 @@ export default function CoursesPage() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Available Courses</CardTitle>
-             <CardDescription>{`Showing courses for ${filters.department === "all" ? "all departments" : filters.department}, Level ${filters.level === "all" ? "all levels" : filters.level}, ${filters.semester}, ${filters.academicYear}.`}
-             </CardDescription>
+            <CardDescription>{`Showing courses for ${filters.department === "all" ? "all departments" : filters.department}, Level ${filters.level === "all" ? "all levels" : filters.level}, ${filters.semester}, ${filters.academicYear}.`}</CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (<div className="space-y-4">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
-            ) : allCourses.length === 0 ? (
+            {showSkeletons ? (<div className="space-y-4">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
+            ) : ALL_UNIVERSITY_COURSES.length === 0 ? (
               <div className="text-center py-12"><Image src="https://placehold.co/300x200.png" alt="No courses available" width={200} height={133} className="mx-auto mb-4 rounded-lg" data-ai-hint="empty bookshelf education" /><h3 className="text-xl font-semibold">No Courses Available</h3><p className="text-muted-foreground mt-1">Contact administration.</p></div>
             ) : filteredCourses.length > 0 ? (
               <div className="overflow-x-auto">
@@ -432,28 +349,10 @@ export default function CoursesPage() {
                   <TableHeader><TableRow><TableHead>Code</TableHead><TableHead>Title</TableHead><TableHead className="text-center">Credits</TableHead><TableHead>Type</TableHead><TableHead>Level</TableHead><TableHead>Lecturer</TableHead><TableHead className="text-center">Status</TableHead><TableHead className="text-right">Action</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {filteredCourses.map(course => {
-                      const isRegisteredForThisPeriod = allHistoricalRegistrations.includes(course.id) &&
-                                                        course.academicYear === currentRegistrationMeta.academicYear &&
-                                                        course.semester === currentRegistrationMeta.semester;
-
-                      // Permissive registration button logic:
-                      const canRegisterThisCourse = currentRegistrationMeta.isOpen &&
-                                                    !isRegisteredForThisPeriod &&
-                                                    !isSavingRegistration &&
-                                                    course.academicYear === currentRegistrationMeta.academicYear &&
-                                                    course.semester === currentRegistrationMeta.semester;
-
-                      const canDropThisCourse = isRegisteredForThisPeriod &&
-                                                currentRegistrationMeta.isOpen &&
-                                                !isSavingRegistration &&
-                                                course.academicYear === currentRegistrationMeta.academicYear &&
-                                                course.semester === currentRegistrationMeta.semester;
-                      
-                      // Status based on if it's registered in historical AND matches current filters
-                      const isRegisteredInFilteredView = allHistoricalRegistrations.includes(course.id) &&
-                                                       course.academicYear === filters.academicYear &&
-                                                       course.semester === filters.semester;
-
+                      const isRegisteredForThisPeriod = allHistoricalRegistrations.includes(course.id) && course.academicYear === currentRegistrationMeta.academicYear && course.semester === currentRegistrationMeta.semester;
+                      const canRegisterThisCourse = currentRegistrationMeta.isOpen && !isRegisteredForThisPeriod && !isSavingRegistration && course.academicYear === currentRegistrationMeta.academicYear && course.semester === currentRegistrationMeta.semester;
+                      const canDropThisCourse = isRegisteredForThisPeriod && currentRegistrationMeta.isOpen && !isSavingRegistration && course.academicYear === currentRegistrationMeta.academicYear && course.semester === currentRegistrationMeta.semester;
+                      const isRegisteredInFilteredView = allHistoricalRegistrations.includes(course.id) && course.academicYear === filters.academicYear && course.semester === filters.semester;
                       return (
                         <TableRow key={course.id}>
                           <TableCell className="font-medium">{course.code}</TableCell><TableCell>{course.title}</TableCell>
@@ -479,7 +378,7 @@ export default function CoursesPage() {
           <Card>
             <CardHeader><CardTitle>My Registered Courses</CardTitle><CardDescription>Courses for {filters.semester === "all" ? "selected period" : filters.semester}, {filters.academicYear === "all" ? "selected period" : filters.academicYear} (from localStorage).</CardDescription></CardHeader>
             <CardContent>
-              {registeredCoursesListForDisplay.length > 0 ? (
+              {showSkeletons ? <Skeleton className="h-20 w-full" /> : registeredCoursesListForDisplay.length > 0 ? (
                 <ul className="space-y-2">
                   {registeredCoursesListForDisplay.map(course => (
                     <li key={course.id} className="flex justify-between items-center p-3 bg-muted rounded-md"><div><p className="font-medium">{course.code} - {course.title}</p><p className="text-xs text-muted-foreground">{course.credits} Credits ({course.semester}, {course.academicYear})</p></div>
@@ -502,7 +401,7 @@ export default function CoursesPage() {
            <Card>
             <CardHeader><CardTitle className="flex items-center gap-2"><Clock className="text-primary"/>My Schedule (Simulated)</CardTitle><CardDescription>Schedule for {filters.semester === "all" ? "selected period" : filters.semester}, {filters.academicYear === "all" ? "selected period" : filters.academicYear}.</CardDescription></CardHeader>
             <CardContent>
-                {isLoading ? ( <Skeleton className="h-20 w-full" /> ) : registeredCoursesListForDisplay.filter(c => (filters.academicYear === "all" || c.academicYear === filters.academicYear) && (filters.semester === "all" || c.semester === filters.semester)).length > 0 ? (
+                {showSkeletons ? ( <Skeleton className="h-20 w-full" /> ) : registeredCoursesListForDisplay.filter(c => (filters.academicYear === "all" || c.academicYear === filters.academicYear) && (filters.semester === "all" || c.semester === filters.semester)).length > 0 ? (
                 <ul className="space-y-3">
                   {registeredCoursesListForDisplay.filter(c => (filters.academicYear === "all" || c.academicYear === filters.academicYear) && (filters.semester === "all" || c.semester === filters.semester)).map(course => (
                     <li key={`${course.id}-schedule`} className="p-3 bg-muted rounded-md">
@@ -525,7 +424,7 @@ export default function CoursesPage() {
 
       {selectedCourseForDetail && (
         <Suspense fallback={<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><p className="text-white">Loading details...</p></div>}>
-            <CourseDetailDialog course={selectedCourseForDetail} allCourses={allCourses} open={!!selectedCourseForDetail} onOpenChange={(isOpen) => !isOpen && handleSetSelectedCourseForDetail(null)} />
+            <CourseDetailDialog course={selectedCourseForDetail} allCourses={ALL_UNIVERSITY_COURSES} open={!!selectedCourseForDetail} onOpenChange={(isOpen) => !isOpen && handleSetSelectedCourseForDetail(null)} />
         </Suspense>
       )}
     </motion.div>
