@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import React from 'react'; // Ensured React is imported for React.memo
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
@@ -94,6 +95,100 @@ function generateMockUsers(count: number = 50): UserProfile[] {
   return users;
 }
 
+interface UserRowProps {
+  user: UserProfile;
+  onAction: (action: string, userId: string, userName: string | null) => void;
+}
+
+const UserRow = React.memo(function UserRow({ user, onAction }: UserRowProps) {
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return "U";
+    const names = name.split(' ');
+    if (names.length > 1) return names[0][0] + names[names.length - 1][0];
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  const getStatusBadgeVariant = (status?: UserProfile['status']) => {
+    switch (status) {
+      case "active": return "default";
+      case "suspended": return "destructive";
+      case "pending_approval": return "secondary";
+      default: return "outline";
+    }
+  };
+
+  return (
+    <TableRow>
+      <TableCell className="px-2 sm:px-4">
+        <Avatar className="h-9 w-9">
+          <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "User"} data-ai-hint="user avatar" />
+          <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
+        </Avatar>
+      </TableCell>
+      <TableCell className="font-medium px-2 sm:px-4">{user.displayName}</TableCell>
+      <TableCell className="text-muted-foreground text-xs px-2 sm:px-4">{user.email}</TableCell>
+      <TableCell className="text-center px-2 sm:px-4">
+        <Badge variant={user.role === 'admin' ? "destructive" : user.role === 'lecturer' ? "secondary" : "outline"} className="capitalize text-xs">
+          {user.role}
+        </Badge>
+      </TableCell>
+      <TableCell className="text-xs text-muted-foreground whitespace-nowrap px-2 sm:px-4">
+        {user.role === 'student' && (
+          <>
+            <span className="block">Mat: {user.matricule || 'N/A'}</span>
+            <span className="block">Dept: {user.department || 'N/A'}</span>
+            <span className="block">Lvl: {user.level || 'N/A'}</span>
+            <span className="block truncate max-w-[150px] sm:max-w-xs" title={user.program || 'N/A'}>Prog: {user.program || 'N/A'}</span>
+          </>
+        )}
+        {user.role === 'lecturer' && <span className="block">Dept: {user.department || 'N/A'}</span>}
+      </TableCell>
+      <TableCell className="text-center px-2 sm:px-4">
+        <Badge variant={getStatusBadgeVariant(user.status)} className="capitalize text-xs">
+          {user.status?.replace('_', ' ')}
+        </Badge>
+      </TableCell>
+      <TableCell className="hidden md:table-cell text-xs text-muted-foreground px-2 sm:px-4">
+        {user.lastLogin ? format(parseISO(user.lastLogin as string), "MMM dd, yyyy p") : 'Never'}
+      </TableCell>
+      <TableCell className="text-right px-2 sm:px-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">User Actions</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onAction('Edit', user.uid, user.displayName)}>
+              <Edit className="mr-2 h-4 w-4" /> Edit User
+            </DropdownMenuItem>
+            {user.status === 'active' && (
+              <DropdownMenuItem onClick={() => onAction('Suspend', user.uid, user.displayName)} className="text-orange-600 focus:text-orange-600">
+                <UserX className="mr-2 h-4 w-4" /> Suspend Account
+              </DropdownMenuItem>
+            )}
+            {(user.status === 'suspended' || user.status === 'pending_approval') && (
+              <DropdownMenuItem onClick={() => onAction('Activate', user.uid, user.displayName)} className="text-green-600 focus:text-green-600">
+                <UserCheck className="mr-2 h-4 w-4" /> Activate Account
+              </DropdownMenuItem>
+            )}
+             <DropdownMenuItem onClick={() => onAction('Reset Password', user.uid, user.displayName)}>
+              <ShieldAlert className="mr-2 h-4 w-4" /> Reset Password
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => onAction('Delete', user.uid, user.displayName)} className="text-destructive focus:text-destructive">
+              <Trash2 className="mr-2 h-4 w-4" /> Delete User
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </TableCell>
+    </TableRow>
+  );
+});
+UserRow.displayName = 'UserRow';
+
+
 export default function ViewAllUsersPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -106,7 +201,6 @@ export default function ViewAllUsersPage() {
 
   useEffect(() => {
     setIsLoading(true);
-    // Removed artificial setTimeout
     setUsers(generateMockUsers(50));
     setIsLoading(false);
   }, []);
@@ -127,28 +221,13 @@ export default function ViewAllUsersPage() {
       );
   }, [users, searchTerm, filters]);
 
-  const getStatusBadgeVariant = (status?: UserProfile['status']) => {
-    switch (status) {
-      case "active": return "default";
-      case "suspended": return "destructive";
-      case "pending_approval": return "secondary";
-      default: return "outline";
-    }
-  };
-  
-  const getInitials = (name: string | null | undefined) => {
-    if (!name) return "U";
-    const names = name.split(' ');
-    if (names.length > 1) return names[0][0] + names[names.length - 1][0];
-    return name.substring(0, 2).toUpperCase();
-  };
-
-  const handleAction = (action: string, userId: string, userName: string | null) => {
+  const handleAction = useCallback((action: string, userId: string, userName: string | null) => {
     toast({
       title: `Action: ${action}`,
       description: `Simulated '${action}' for user ${userName || userId}. (Functionality to be implemented)`,
     });
-  };
+  }, [toast]);
+
 
   return (
     <motion.div
@@ -246,72 +325,11 @@ export default function ViewAllUsersPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.map((user) => (
-                    <TableRow key={user.uid}>
-                      <TableCell className="px-2 sm:px-4">
-                        <Avatar className="h-9 w-9">
-                          <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "User"} data-ai-hint="user avatar" />
-                          <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
-                        </Avatar>
-                      </TableCell>
-                      <TableCell className="font-medium px-2 sm:px-4">{user.displayName}</TableCell>
-                      <TableCell className="text-muted-foreground text-xs px-2 sm:px-4">{user.email}</TableCell>
-                      <TableCell className="text-center px-2 sm:px-4">
-                        <Badge variant={user.role === 'admin' ? "destructive" : user.role === 'lecturer' ? "secondary" : "outline" } className="capitalize text-xs">
-                          {user.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap px-2 sm:px-4">
-                        {user.role === 'student' && (
-                          <>
-                            <span className="block">Mat: {user.matricule || 'N/A'}</span>
-                            <span className="block">Dept: {user.department || 'N/A'}</span>
-                            <span className="block">Lvl: {user.level || 'N/A'}</span>
-                            <span className="block truncate max-w-[150px] sm:max-w-xs" title={user.program || 'N/A'}>Prog: {user.program || 'N/A'}</span>
-                          </>
-                        )}
-                        {user.role === 'lecturer' && <span className="block">Dept: {user.department || 'N/A'}</span>}
-                      </TableCell>
-                      <TableCell className="text-center px-2 sm:px-4">
-                        <Badge variant={getStatusBadgeVariant(user.status)} className="capitalize text-xs">
-                          {user.status?.replace('_', ' ')}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell text-xs text-muted-foreground px-2 sm:px-4">
-                        {user.lastLogin ? format(parseISO(user.lastLogin as string), "MMM dd, yyyy p") : 'Never'}
-                      </TableCell>
-                      <TableCell className="text-right px-2 sm:px-4">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">User Actions</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleAction('Edit', user.uid, user.displayName)}>
-                              <Edit className="mr-2 h-4 w-4" /> Edit User
-                            </DropdownMenuItem>
-                            {user.status === 'active' && (
-                              <DropdownMenuItem onClick={() => handleAction('Suspend', user.uid, user.displayName)} className="text-orange-600 focus:text-orange-600">
-                                <UserX className="mr-2 h-4 w-4" /> Suspend Account
-                              </DropdownMenuItem>
-                            )}
-                            {(user.status === 'suspended' || user.status === 'pending_approval') && (
-                              <DropdownMenuItem onClick={() => handleAction('Activate', user.uid, user.displayName)} className="text-green-600 focus:text-green-600">
-                                <UserCheck className="mr-2 h-4 w-4" /> Activate Account
-                              </DropdownMenuItem>
-                            )}
-                             <DropdownMenuItem onClick={() => handleAction('Reset Password', user.uid, user.displayName)}>
-                              <ShieldAlert className="mr-2 h-4 w-4" /> Reset Password
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleAction('Delete', user.uid, user.displayName)} className="text-destructive focus:text-destructive">
-                              <Trash2 className="mr-2 h-4 w-4" /> Delete User
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
+                    <UserRow
+                      key={user.uid}
+                      user={user}
+                      onAction={handleAction}
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -327,3 +345,4 @@ export default function ViewAllUsersPage() {
     </motion.div>
   );
 }
+

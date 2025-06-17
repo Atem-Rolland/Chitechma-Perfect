@@ -1,6 +1,7 @@
 
 "use client";
 
+import React from 'react'; // Ensured React is imported for React.memo
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,7 @@ import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS, ALL_UNIVERSITY_COURSES } from "@/config/data";
-import { PrintPreviewDialog } from "@/components/layout/PrintPreviewDialog"; // Import the new dialog
+import { PrintPreviewDialog } from "@/components/layout/PrintPreviewDialog";
 
 const CourseDetailDialog = dynamic(() => import('@/components/courses/CourseDetailDialog'), {
   suspense: true,
@@ -114,6 +115,76 @@ function FormBDocument({ studentProfile, courses, academicYear, semester, totalC
     </div>
   );
 }
+
+interface CourseRowProps {
+  course: Course;
+  isRegisteredInFilteredView: boolean;
+  isRegisteredForThisPeriod: boolean;
+  canRegisterThisCourse: boolean;
+  canDropThisCourse: boolean;
+  isSavingRegistration: boolean;
+  authLoading: boolean;
+  onViewDetails: (course: Course) => void;
+  onDropCourse: (courseId: string) => void;
+  onRegisterCourse: (course: Course) => void;
+}
+
+const CourseRow = React.memo(function CourseRow({
+  course,
+  isRegisteredInFilteredView,
+  isRegisteredForThisPeriod,
+  canRegisterThisCourse,
+  canDropThisCourse,
+  isSavingRegistration,
+  authLoading,
+  onViewDetails,
+  onDropCourse,
+  onRegisterCourse,
+}: CourseRowProps) {
+  return (
+    <TableRow>
+      <TableCell className="font-medium">{course.code}</TableCell>
+      <TableCell>{course.title}</TableCell>
+      <TableCell className="text-center">{course.credits}</TableCell>
+      <TableCell>
+        <Badge variant={course.type === 'Compulsory' ? 'default' : course.type === 'Elective' ? 'secondary' : 'outline'}>
+          {course.type}
+        </Badge>
+      </TableCell>
+      <TableCell className="text-center">{course.level}</TableCell>
+      <TableCell>{course.lecturerName}</TableCell>
+      <TableCell className="text-center">
+        {isRegisteredInFilteredView ? (
+          <Badge variant="default" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
+            Registered
+          </Badge>
+        ) : (
+          <Badge variant="outline">Available</Badge>
+        )}
+      </TableCell>
+      <TableCell className="text-right space-x-1">
+        <ShadDialog>
+          <DialogTrigger asChild>
+            <Button variant="ghost" size="icon" onClick={() => onViewDetails(course)}>
+              <Eye className="h-4 w-4" />
+              <span className="sr-only">View Details</span>
+            </Button>
+          </DialogTrigger>
+        </ShadDialog>
+        {isRegisteredForThisPeriod ? (
+          <Button variant="destructive" size="sm" onClick={() => onDropCourse(course.id)} disabled={!canDropThisCourse || isSavingRegistration}>
+            <MinusCircle className="mr-1 h-4 w-4" /> Drop
+          </Button>
+        ) : (
+          <Button variant="default" size="sm" onClick={() => onRegisterCourse(course)} disabled={!canRegisterThisCourse || isSavingRegistration || authLoading}>
+            <PlusCircle className="mr-1 h-4 w-4" /> Register
+          </Button>
+        )}
+      </TableCell>
+    </TableRow>
+  );
+});
+CourseRow.displayName = 'CourseRow';
 
 
 export default function CoursesPage() {
@@ -468,18 +539,19 @@ export default function CoursesPage() {
                       const canDropThisCourse = isRegisteredForThisPeriod && currentRegistrationMeta.isOpen && !isSavingRegistration && course.academicYear === currentRegistrationMeta.academicYear && course.semester === currentRegistrationMeta.semester;
                       const isRegisteredInFilteredView = allHistoricalRegistrations.includes(course.id) && course.academicYear === filters.academicYear && course.semester === filters.semester;
                       return (
-                        <TableRow key={course.id}>
-                          <TableCell className="font-medium">{course.code}</TableCell><TableCell>{course.title}</TableCell>
-                          <TableCell className="text-center">{course.credits}</TableCell>
-                          <TableCell><Badge variant={course.type === 'Compulsory' ? 'default' : course.type === 'Elective' ? 'secondary' : 'outline'}>{course.type}</Badge></TableCell>
-                          <TableCell className="text-center">{course.level}</TableCell><TableCell>{course.lecturerName}</TableCell>
-                          <TableCell className="text-center">{isRegisteredInFilteredView ? <Badge variant="default" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">Registered</Badge> : <Badge variant="outline">Available</Badge>}</TableCell>
-                          <TableCell className="text-right space-x-1">
-                            <ShadDialog><DialogTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleSetSelectedCourseForDetail(course)}><Eye className="h-4 w-4"/><span className="sr-only">View Details</span></Button></DialogTrigger></ShadDialog>
-                            {isRegisteredForThisPeriod ? (<Button variant="destructive" size="sm" onClick={() => handleDropCourse(course.id)} disabled={!canDropThisCourse || isSavingRegistration}><MinusCircle className="mr-1 h-4 w-4"/> Drop</Button>)
-                                          : (<Button variant="default" size="sm" onClick={() => handleRegisterCourse(course)} disabled={!canRegisterThisCourse || isSavingRegistration || authLoading}><PlusCircle className="mr-1 h-4 w-4"/> Register</Button>)}
-                          </TableCell>
-                        </TableRow>
+                        <CourseRow
+                          key={course.id}
+                          course={course}
+                          isRegisteredInFilteredView={isRegisteredInFilteredView}
+                          isRegisteredForThisPeriod={isRegisteredForThisPeriod}
+                          canRegisterThisCourse={canRegisterThisCourse}
+                          canDropThisCourse={canDropThisCourse}
+                          isSavingRegistration={isSavingRegistration}
+                          authLoading={authLoading}
+                          onViewDetails={handleSetSelectedCourseForDetail}
+                          onDropCourse={handleDropCourse}
+                          onRegisterCourse={handleRegisterCourse}
+                        />
                       );})}
                   </TableBody>
                 </Table>
@@ -554,6 +626,4 @@ export default function CoursesPage() {
     </motion.div>
   );
 }
-
-
       
