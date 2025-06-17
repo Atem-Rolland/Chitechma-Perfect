@@ -109,7 +109,7 @@ export function StudentDashboard() {
 
     async function loadNotifications() {
       setIsLoadingNotifications(true);
-      await new Promise(resolve => setTimeout(resolve, 700));
+      // Removed artificial delay: await new Promise(resolve => setTimeout(resolve, 700));
       setNotifications(MOCK_NOTIFICATIONS.sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime()));
       setIsLoadingNotifications(false);
     }

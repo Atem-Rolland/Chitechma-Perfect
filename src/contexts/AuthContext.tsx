@@ -78,13 +78,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const router = useRouter();
 
   const fetchUserProfile = useCallback(async (firebaseUser: FirebaseUser): Promise<UserProfile | null> => {
-    console.log("AuthContext: Fetching profile for UID:", firebaseUser.uid);
+    // console.log("AuthContext: Fetching profile for UID:", firebaseUser.uid);
     const userDocRef = doc(db, "users", firebaseUser.uid);
     try {
       const userDocSnap = await getDoc(userDocRef);
 
       if (userDocSnap.exists()) {
-        console.log("AuthContext: Profile document found for UID:", firebaseUser.uid);
+        // console.log("AuthContext: Profile document found for UID:", firebaseUser.uid);
         const userProfileData = userDocSnap.data() as UserProfile; 
 
         let completeProfile: UserProfile = {
@@ -135,14 +135,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             completeProfile.currentAcademicYear = userProfileData.currentAcademicYear || ACADEMIC_YEARS[0];
             completeProfile.currentSemester = userProfileData.currentSemester || SEMESTERS[0];
         }
-        console.log("[AuthContext fetchUserProfile] Constructed completeProfile:", JSON.stringify(completeProfile, null, 2));
+        // console.log("[AuthContext fetchUserProfile] Constructed completeProfile:", JSON.stringify(completeProfile, null, 2));
         return completeProfile;
       } else {
         console.warn("AuthContext: User profile document NOT found in Firestore for UID:", firebaseUser.uid);
-        // If it's our specific demo user "Atem Rolland" and no profile exists, create one with fallbacks.
-        // This is a temporary measure for demo robustness. In a real app, users *must* have profiles.
         if (firebaseUser.displayName === "Atem Rolland" || firebaseUser.email === "atem.rolland@example.com") {
-            console.log("AuthContext: Atem Rolland's Firestore profile not found. Creating one with fallback details.");
+            // console.log("AuthContext: Atem Rolland's Firestore profile not found. Creating one with fallback details.");
             const atemProfile: UserProfile = {
                 uid: firebaseUser.uid,
                 email: firebaseUser.email,
@@ -163,14 +161,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             };
             try {
                 await setDoc(doc(db, "users", firebaseUser.uid), atemProfile);
-                console.log("AuthContext: Successfully created fallback profile for Atem Rolland in Firestore.");
+                // console.log("AuthContext: Successfully created fallback profile for Atem Rolland in Firestore.");
                 return atemProfile;
             } catch (setDocError) {
                 console.error("AuthContext: Error creating fallback profile for Atem Rolland:", setDocError);
-                return null; // Failed to create fallback
+                return null; 
             }
         }
-        return null; // User profile not found and not the specific demo case
+        return null; 
       }
     } catch (error) {
       console.error("AuthContext: Error fetching user profile from Firestore:", error);
@@ -180,7 +178,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log("AuthContext: onAuthStateChanged triggered. Firebase user:", firebaseUser ? firebaseUser.uid : "null");
+      // console.log("AuthContext: onAuthStateChanged triggered. Firebase user:", firebaseUser ? firebaseUser.uid : "null");
       setLoading(true);
       if (firebaseUser) {
         const fetchedProfileData = await fetchUserProfile(firebaseUser);
@@ -188,7 +186,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setProfile(fetchedProfileData);
           setRole(fetchedProfileData.role);
           setUser({ ...firebaseUser, profile: fetchedProfileData });
-          console.log("AuthContext: Profile and AppUser state updated from onAuthStateChanged for UID:", firebaseUser.uid, "Profile:", JSON.stringify(fetchedProfileData, null, 2));
+          // console.log("AuthContext: Profile and AppUser state updated from onAuthStateChanged for UID:", firebaseUser.uid);
         } else {
           console.error("AuthContext: CRITICAL - Firebase user exists but no Firestore profile found or could be created. UID:", firebaseUser.uid, "Logging out user.");
           await firebaseSignOut(auth); 
@@ -197,7 +195,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setRole(null);
         }
       } else {
-        console.log("AuthContext: Firebase user is null, clearing user, profile, and role state.");
+        // console.log("AuthContext: Firebase user is null, clearing user, profile, and role state.");
         setUser(null);
         setProfile(null);
         setRole(null);
@@ -208,10 +206,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, [fetchUserProfile]);
 
   const login = async (email: string, password: string): Promise<AppUser> => {
-    console.log("AuthContext: Attempting login for:", email);
+    // console.log("AuthContext: Attempting login for:", email);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      console.log("AuthContext: Firebase signInWithEmailAndPassword successful:", userCredential.user.uid);
+      // console.log("AuthContext: Firebase signInWithEmailAndPassword successful:", userCredential.user.uid);
       const firebaseUser = userCredential.user;
 
       const userProfileData = await fetchUserProfile(firebaseUser);
@@ -231,12 +229,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const userDocRef = doc(db, "users", userProfileData.uid);
         try {
           await updateDoc(userDocRef, { lastLogin: serverTimestamp() });
-          console.log("AuthContext: Last login updated for user:", userProfileData.uid);
+          // console.log("AuthContext: Last login updated for user:", userProfileData.uid);
         } catch (updateError) {
           console.error("AuthContext: Error updating lastLogin:", updateError);
         }
       }
-      console.log("AuthContext: Login process completed for:", email);
+      // console.log("AuthContext: Login process completed for:", email);
       return appUser;
     } catch (error: any) {
       console.error("AuthContext: Login error caught in login function:", error.code, error.message);
@@ -245,14 +243,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const register = async (data: RegistrationData): Promise<AppUser> => {
-    console.log("AuthContext: Attempting registration for:", data.email);
+    // console.log("AuthContext: Attempting registration for:", data.email);
     if (!data.password) {
       console.error("AuthContext: Registration failed - Password is required.");
       throw new Error("Password is required for registration.");
     }
     const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
     const firebaseUser = userCredential.user;
-    console.log("AuthContext: Firebase user created successfully:", firebaseUser.uid);
+    // console.log("AuthContext: Firebase user created successfully:", firebaseUser.uid);
     
     const userRole = data.role || 'student';
     
@@ -302,9 +300,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if(data.guardianAddress) userProfileDataForFirestore.guardianAddress = data.guardianAddress;
     }
     
-    console.log("AuthContext: Saving user profile to Firestore:", userProfileDataForFirestore);
+    // console.log("AuthContext: Saving user profile to Firestore:", userProfileDataForFirestore);
     await setDoc(doc(db, "users", firebaseUser.uid), userProfileDataForFirestore);
-    console.log("AuthContext: Firestore profile saved for UID:", firebaseUser.uid);
+    // console.log("AuthContext: Firestore profile saved for UID:", firebaseUser.uid);
 
     const finalProfileForState = await fetchUserProfile(firebaseUser);
     if (!finalProfileForState) {
@@ -317,21 +315,24 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setRole(finalProfileForState.role); 
     const appUser = { ...firebaseUser, profile: finalProfileForState };
     setUser(appUser);
-    console.log("AuthContext: Registration process completed for:", data.email);
+    // console.log("AuthContext: Registration process completed for:", data.email);
     return appUser;
   };
 
   const logout = async () => {
-    console.log("AuthContext: Logging out user.");
+    // console.log("AuthContext: Logging out user.");
     await firebaseSignOut(auth);
-    router.push('/login');
-    console.log("AuthContext: User logged out, redirected to login.");
+    setUser(null); // Clear local state immediately
+    setProfile(null);
+    setRole(null);
+    router.push('/login'); // Redirect after state is cleared
+    // console.log("AuthContext: User logged out, redirected to login.");
   };
 
   const resetPassword = async (email: string) => {
-    console.log("AuthContext: Sending password reset email to:", email);
+    // console.log("AuthContext: Sending password reset email to:", email);
     await sendPasswordResetEmail(auth, email);
-    console.log("AuthContext: Password reset email sent.");
+    // console.log("AuthContext: Password reset email sent.");
   };
 
   return (
