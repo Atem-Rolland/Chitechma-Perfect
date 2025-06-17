@@ -10,7 +10,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react"; // Added useCallback
 import type { Course, Notification, NotificationType, FeeItem } from "@/types";
 import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS, ALL_UNIVERSITY_COURSES, getGradeDetailsFromScore } from "@/config/data";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -161,11 +161,11 @@ export function StudentDashboard() {
     return name.substring(0, 2);
   };
 
-  const handleNotificationClick = (notificationId: string) => {
+  const handleNotificationClick = useCallback((notificationId: string) => {
     setNotifications(prev =>
       prev.map(n => (n.id === notificationId ? { ...n, isRead: true } : n))
     );
-  };
+  }, []);
 
   const academicProgram = profile?.program || "Program Not Set";
   const studentDepartment = profile?.department || "Department Not Set";

@@ -12,7 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Course } from "@/types";
 import { BookOpen, Search, Filter, Tag, School, Info, CalendarDays, BookUser, PlusCircle, MinusCircle, Download, AlertCircle, XCircle, CheckCircle, Eye, Clock, AlertTriangle, GraduationCap } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense, useCallback } from "react"; // Added useCallback
 import dynamic from 'next/dynamic';
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -241,7 +241,7 @@ export default function CoursesPage() {
       .reduce((sum, course) => sum + course.credits, 0);
   }, [registeredCoursesListForDisplay, filters.academicYear, filters.semester]);
 
-  const handleRegisterCourse = (course: Course) => {
+  const handleRegisterCourse = useCallback((course: Course) => {
     setIsSavingRegistration(true);
     if (!user?.uid) {
       toast({ title: "Error", description: "User not identified.", variant: "destructive" });
@@ -274,9 +274,9 @@ export default function CoursesPage() {
     }
     toast({ title: "Course Registered", description: `${course.code} - ${course.title} successfully registered (localStorage).`, variant: "default" });
     setIsSavingRegistration(false);
-  };
+  }, [user?.uid, currentRegistrationMeta, allHistoricalRegistrations, toast, studentAcademicContext]);
 
-  const handleDropCourse = (courseIdToDrop: string) => {
+  const handleDropCourse = useCallback((courseIdToDrop: string) => {
     const courseToDrop = allCourses.find(c => c.id === courseIdToDrop);
     if (!courseToDrop || !user?.uid) return;
     setIsSavingRegistration(true);
@@ -300,9 +300,9 @@ export default function CoursesPage() {
     }
     toast({ title: "Course Dropped", description: `${courseToDrop.code} - ${courseToDrop.title} has been dropped (localStorage).`, variant: "default" });
     setIsSavingRegistration(false);
-  };
+  }, [allCourses, user?.uid, currentRegistrationMeta, allHistoricalRegistrations, toast]);
   
-  const handleDownloadFormB = () => {
+  const handleDownloadFormB = useCallback(() => {
     if (filters.academicYear === "all" || filters.semester === "all") {
       toast({ title: "Select Period", description: "Please select a specific Academic Year and Semester to download Form B.", variant: "info" });
       return;
@@ -319,7 +319,12 @@ export default function CoursesPage() {
         description: `Generating PDF for Form B (${filters.semester}, ${filters.academicYear}) using ${coursesForFormB.length} course(s) from localStorage. Courses: ${coursesForFormB.map(c=>c.code).join(', ')}. This is a simulated download.`, 
         duration: 7000
     });
-  };
+  }, [filters.academicYear, filters.semester, registeredCoursesListForDisplay, toast]);
+
+  const handleSetSelectedCourseForDetail = useCallback((course: Course | null) => {
+    setSelectedCourseForDetail(course);
+  }, []);
+
 
   const getCreditStatus = () => {
     const periodYear = currentRegistrationMeta.isOpen ? currentRegistrationMeta.academicYear : filters.academicYear;
@@ -457,7 +462,7 @@ export default function CoursesPage() {
                           <TableCell className="text-center">{course.level}</TableCell><TableCell>{course.lecturerName}</TableCell>
                           <TableCell className="text-center">{isRegisteredInFilteredView ? <Badge variant="default" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">Registered</Badge> : <Badge variant="outline">Available</Badge>}</TableCell>
                           <TableCell className="text-right space-x-1">
-                            <Dialog><DialogTrigger asChild><Button variant="ghost" size="icon" onClick={() => setSelectedCourseForDetail(course)}><Eye className="h-4 w-4"/><span className="sr-only">View Details</span></Button></DialogTrigger></Dialog>
+                            <Dialog><DialogTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleSetSelectedCourseForDetail(course)}><Eye className="h-4 w-4"/><span className="sr-only">View Details</span></Button></DialogTrigger></Dialog>
                             {isRegisteredForThisPeriod ? (<Button variant="destructive" size="sm" onClick={() => handleDropCourse(course.id)} disabled={!canDropThisCourse || isSavingRegistration}><MinusCircle className="mr-1 h-4 w-4"/> Drop</Button>)
                                           : (<Button variant="default" size="sm" onClick={() => handleRegisterCourse(course)} disabled={!canRegisterThisCourse || isSavingRegistration || authLoading}><PlusCircle className="mr-1 h-4 w-4"/> Register</Button>)}
                           </TableCell>
@@ -520,7 +525,7 @@ export default function CoursesPage() {
 
       {selectedCourseForDetail && (
         <Suspense fallback={<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><p className="text-white">Loading details...</p></div>}>
-            <CourseDetailDialog course={selectedCourseForDetail} allCourses={allCourses} open={!!selectedCourseForDetail} onOpenChange={(isOpen) => !isOpen && setSelectedCourseForDetail(null)} />
+            <CourseDetailDialog course={selectedCourseForDetail} allCourses={allCourses} open={!!selectedCourseForDetail} onOpenChange={(isOpen) => !isOpen && handleSetSelectedCourseForDetail(null)} />
         </Suspense>
       )}
     </motion.div>
