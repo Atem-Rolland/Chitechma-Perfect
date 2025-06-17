@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog as ShadDialog, DialogTrigger } from "@/components/ui/dialog"; // Renamed to avoid conflict
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import type { Course } from "@/types";
-import { BookOpen, Search, Filter, Tag, School, Info, CalendarDays, BookUser, PlusCircle, MinusCircle, Download, AlertCircle, XCircle, CheckCircle, Eye, Clock, AlertTriangle, GraduationCap } from "lucide-react";
+import type { Course, UserProfile } from "@/types";
+import { BookOpen, Search, Filter, Tag, School, Info, CalendarDays, BookUser, PlusCircle, MinusCircle, Download, AlertCircle, XCircle, CheckCircle, Eye, Clock, AlertTriangle, GraduationCap, Printer } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useMemo, Suspense, useCallback } from "react";
 import dynamic from 'next/dynamic';
@@ -20,6 +20,7 @@ import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { DEPARTMENTS, VALID_LEVELS, ACADEMIC_YEARS, SEMESTERS, ALL_UNIVERSITY_COURSES } from "@/config/data";
+import { PrintPreviewDialog } from "@/components/layout/PrintPreviewDialog"; // Import the new dialog
 
 const CourseDetailDialog = dynamic(() => import('@/components/courses/CourseDetailDialog'), {
   suspense: true,
@@ -34,6 +35,87 @@ const getLocalStorageKeyForAllRegistrations = (uid?: string) => {
   return `allRegisteredCourses_${uid}`;
 };
 
+interface FormBDocumentProps {
+  studentProfile: UserProfile | null;
+  courses: Course[];
+  academicYear: string;
+  semester: string;
+  totalCredits: number;
+}
+
+function FormBDocument({ studentProfile, courses, academicYear, semester, totalCredits }: FormBDocumentProps) {
+  return (
+    <div className="form-b-preview p-4 md:p-6 font-serif text-sm">
+      <header className="text-center mb-8">
+        <h1 className="text-2xl font-bold uppercase">Chitechma University</h1>
+        <p className="text-sm">P.O. Box XXX, City, Region</p>
+        <h2 className="text-xl font-semibold mt-4 underline uppercase">Course Registration Form (Form B)</h2>
+      </header>
+
+      <section className="mb-6 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+        <p><strong>Student Name:</strong> {studentProfile?.displayName || "N/A"}</p>
+        <p><strong>Matricule No:</strong> {studentProfile?.matricule || "N/A"}</p>
+        <p><strong>Department:</strong> {studentProfile?.department || "N/A"}</p>
+        <p><strong>Level:</strong> {studentProfile?.level || "N/A"}</p>
+        <p><strong>Academic Year:</strong> {academicYear}</p>
+        <p><strong>Semester:</strong> {semester}</p>
+        <p><strong>Date Issued:</strong> {new Date().toLocaleDateString()}</p>
+      </section>
+
+      <h3 className="text-base font-semibold mb-2 text-center">Registered Courses</h3>
+      {courses.length > 0 ? (
+        <table className="w-full border-collapse border border-gray-400 text-xs">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border border-gray-300 p-1">S/N</th>
+              <th className="border border-gray-300 p-1">Course Code</th>
+              <th className="border border-gray-300 p-1">Course Title</th>
+              <th className="border border-gray-300 p-1 text-center">Credits</th>
+              <th className="border border-gray-300 p-1 text-center">Type</th>
+            </tr>
+          </thead>
+          <tbody>
+            {courses.map((course, index) => (
+              <tr key={course.id}>
+                <td className="border border-gray-300 p-1 text-center">{index + 1}</td>
+                <td className="border border-gray-300 p-1">{course.code}</td>
+                <td className="border border-gray-300 p-1">{course.title}</td>
+                <td className="border border-gray-300 p-1 text-center">{course.credits}</td>
+                <td className="border border-gray-300 p-1 text-center">{course.type}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="font-bold bg-gray-50">
+              <td colSpan={3} className="border border-gray-300 p-1 text-right">Total Credits Registered:</td>
+              <td className="border border-gray-300 p-1 text-center">{totalCredits}</td>
+              <td className="border border-gray-300 p-1"></td>
+            </tr>
+          </tfoot>
+        </table>
+      ) : (
+        <p className="text-center text-muted-foreground">No courses registered for this period.</p>
+      )}
+
+      <section className="mt-10 text-xs grid grid-cols-2 gap-8">
+        <div>
+          <p className="mb-10">_________________________</p>
+          <p>Student's Signature & Date</p>
+        </div>
+        <div className="text-right">
+          <p className="mb-10">_________________________</p>
+          <p>Head of Department's Signature & Stamp</p>
+        </div>
+      </section>
+
+      <footer className="mt-12 pt-6 border-t border-gray-400 text-center text-xs">
+        <p><em>This form is an official record of course registration for the specified academic period.</em></p>
+      </footer>
+    </div>
+  );
+}
+
+
 export default function CoursesPage() {
   const { user, role, profile, loading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -45,6 +127,10 @@ export default function CoursesPage() {
   const [allHistoricalRegistrations, setAllHistoricalRegistrations] = useState<string[]>([]);
   const [registeredCourseIdsForCurrentPeriod, setRegisteredCourseIdsForCurrentPeriod] = useState<string[]>([]);
   const [isSavingRegistration, setIsSavingRegistration] = useState(false);
+
+  const [isFormBPreviewOpen, setIsFormBPreviewOpen] = useState(false);
+  const [formBData, setFormBData] = useState<FormBDocumentProps | null>(null);
+
 
   const studentAcademicContext = useMemo(() => {
     if (isStudent && profile) {
@@ -151,7 +237,7 @@ export default function CoursesPage() {
             toast({ title: "Courses Auto-Registered", description: "Compulsory and general courses for your current level and semester have been pre-selected and saved.", variant: "default" });
           }
         }
-    } else { // For non-students or if student context is not yet fully ready for this logic block
+    } else { 
          finalCurrentPeriodIds = historicalRegsFromStorage.filter(courseId => {
           const course = ALL_UNIVERSITY_COURSES.find(c => c.id === courseId);
           return course && course.academicYear === filters.academicYear && course.semester === filters.semester;
@@ -264,12 +350,27 @@ export default function CoursesPage() {
   }, [user?.uid, currentRegistrationMeta, allHistoricalRegistrations, toast]);
   
   const handleDownloadFormB = useCallback(() => {
-    if (filters.academicYear === "all" || filters.semester === "all") { toast({ title: "Select Period", description: "Please select a specific Academic Year and Semester to download Form B.", variant: "info" }); return; }
+    if (filters.academicYear === "all" || filters.semester === "all") {
+      toast({ title: "Select Period", description: "Please select a specific Academic Year and Semester to generate Form B.", variant: "info" });
+      return;
+    }
     const coursesForFormB = registeredCoursesListForDisplay.filter(c => c.academicYear === filters.academicYear && c.semester === filters.semester);
-    if (coursesForFormB.length === 0) { toast({ title: "No Courses", description: `No courses registered in localStorage for ${filters.semester}, ${filters.academicYear}.`, variant: "info" }); return; }
+    if (coursesForFormB.length === 0) {
+      toast({ title: "No Courses", description: `No courses registered in localStorage for ${filters.semester}, ${filters.academicYear}.`, variant: "info" });
+      return;
+    }
     const totalCreditsForFormB = coursesForFormB.reduce((sum, course) => sum + course.credits, 0);
-    toast({ title: "Form B Download (Simulated)", description: `Generating PDF for Form B (${filters.semester}, ${filters.academicYear}) using ${coursesForFormB.length} course(s) and ${totalCreditsForFormB} credits from localStorage. Courses: ${coursesForFormB.map(c=>c.code).join(', ')}. This is a simulated download.`, duration: 7000 });
-  }, [filters.academicYear, filters.semester, registeredCoursesListForDisplay, toast]);
+    
+    setFormBData({
+      studentProfile: profile,
+      courses: coursesForFormB,
+      academicYear: filters.academicYear,
+      semester: filters.semester,
+      totalCredits: totalCreditsForFormB,
+    });
+    setIsFormBPreviewOpen(true);
+  }, [filters.academicYear, filters.semester, registeredCoursesListForDisplay, toast, profile]);
+
 
   const handleSetSelectedCourseForDetail = useCallback((course: Course | null) => {
     setSelectedCourseForDetail(course);
@@ -374,7 +475,7 @@ export default function CoursesPage() {
                           <TableCell className="text-center">{course.level}</TableCell><TableCell>{course.lecturerName}</TableCell>
                           <TableCell className="text-center">{isRegisteredInFilteredView ? <Badge variant="default" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">Registered</Badge> : <Badge variant="outline">Available</Badge>}</TableCell>
                           <TableCell className="text-right space-x-1">
-                            <Dialog><DialogTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleSetSelectedCourseForDetail(course)}><Eye className="h-4 w-4"/><span className="sr-only">View Details</span></Button></DialogTrigger></Dialog>
+                            <ShadDialog><DialogTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleSetSelectedCourseForDetail(course)}><Eye className="h-4 w-4"/><span className="sr-only">View Details</span></Button></DialogTrigger></ShadDialog>
                             {isRegisteredForThisPeriod ? (<Button variant="destructive" size="sm" onClick={() => handleDropCourse(course.id)} disabled={!canDropThisCourse || isSavingRegistration}><MinusCircle className="mr-1 h-4 w-4"/> Drop</Button>)
                                           : (<Button variant="default" size="sm" onClick={() => handleRegisterCourse(course)} disabled={!canRegisterThisCourse || isSavingRegistration || authLoading}><PlusCircle className="mr-1 h-4 w-4"/> Register</Button>)}
                           </TableCell>
@@ -406,7 +507,7 @@ export default function CoursesPage() {
                    <Alert variant={creditStatus.variant === "success" ? "default" : creditStatus.variant} className="mt-2">{creditStatus.variant === "success" ? <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" /> : creditStatus.variant === "info" ? <Info className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}<AlertTitle>{creditStatus.variant === "warning" ? "Warning" : creditStatus.variant === "destructive" ? "Error" : "Status"}</AlertTitle><AlertDescription>{creditStatus.message}</AlertDescription></Alert>)}
               </div>
               <Button className="w-full" onClick={handleDownloadFormB} disabled={filters.academicYear === "all" || filters.semester === "all" || registeredCoursesListForDisplay.filter(c => c.academicYear === filters.academicYear && c.semester === filters.semester).length === 0}>
-                <Download className="mr-2 h-4 w-4"/> Download Form B (PDF)
+                <Printer className="mr-2 h-4 w-4"/> Preview Form B
               </Button>
             </CardFooter>
           </Card>
@@ -440,6 +541,19 @@ export default function CoursesPage() {
             <CourseDetailDialog course={selectedCourseForDetail} allCourses={ALL_UNIVERSITY_COURSES} open={!!selectedCourseForDetail} onOpenChange={(isOpen) => !isOpen && handleSetSelectedCourseForDetail(null)} />
         </Suspense>
       )}
+
+      {isFormBPreviewOpen && formBData && (
+        <PrintPreviewDialog
+          open={isFormBPreviewOpen}
+          onOpenChange={setIsFormBPreviewOpen}
+          title={`Course Registration Form B - ${formBData.semester}, ${formBData.academicYear}`}
+        >
+          <FormBDocument {...formBData} />
+        </PrintPreviewDialog>
+      )}
     </motion.div>
   );
 }
+
+
+      
